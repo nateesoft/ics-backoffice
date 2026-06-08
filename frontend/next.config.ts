@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   basePath: '/ics-backoffice',
   output: 'standalone',
+  allowedDevOrigins: ['findigrealtime.dyndns.biz'],
   async rewrites() {
     return [
       {
