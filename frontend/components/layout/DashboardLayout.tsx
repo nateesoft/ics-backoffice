@@ -10,7 +10,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
 
   useEffect(() => {
-    authApi.me().then(r => setUser(r.data)).catch(() => router.push('/ics-backoffice/login'));
+    authApi.me().then(r => setUser(r.data)).catch(() => router.push('/login'));
   }, [router]);
 
   return (

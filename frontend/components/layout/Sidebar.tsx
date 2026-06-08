@@ -11,7 +11,7 @@ interface SidebarProps {
 
 const menuItems = [
   {
-    href: '/ics-backoffice/dashboard',
+    href: '/dashboard',
     label: 'Dashboard',
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -20,7 +20,7 @@ const menuItems = [
     ),
   },
   {
-    href: '/ics-backoffice/issues',
+    href: '/issues',
     label: 'Issue Tickets',
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -29,7 +29,7 @@ const menuItems = [
     ),
   },
   {
-    href: '/ics-backoffice/reports',
+    href: '/reports',
     label: 'Reports',
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -46,7 +46,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
   async function handleLogout() {
     await authApi.logout();
-    router.push('/ics-backoffice/login');
+    router.push('/login');
   }
 
   const sidebarContent = (
