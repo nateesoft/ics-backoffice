@@ -4,7 +4,7 @@ module.exports = {
   apps: [
     {
       name: 'ics-backend',
-      script: 'dist/main.js',
+      script: 'dist/src/main.js',
       cwd: path.join(__dirname, 'backend'),
       instances: 1,
       autorestart: true,
