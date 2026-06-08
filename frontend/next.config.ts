@@ -9,7 +9,6 @@ const nextConfig: NextConfig = {
       {
         source: '/api/:path*',
         destination: 'http://localhost:3001/:path*',
-        basePath: false,
       },
     ];
   },
