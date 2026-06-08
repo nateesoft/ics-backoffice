@@ -15,6 +15,7 @@ import { CSS } from '@dnd-kit/utilities';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Modal from '@/components/ui/Modal';
 import IssueForm from '@/components/issues/IssueForm';
+import PostItBoard from '@/components/dashboard/PostItBoard';
 import { Issue, TaskStatus, TASK_STATUSES, STATUS_COLORS, PRIORITY_COLORS } from '@/types/issue';
 import { issuesApi } from '@/lib/api';
 
@@ -332,6 +333,11 @@ export default function DashboardPage() {
               <div className="text-sm text-slate-500 mt-1">{s.label}</div>
             </div>
           ))}
+        </div>
+
+        {/* Post-it Notes */}
+        <div className="bg-white/60 rounded-2xl border border-slate-200/80 px-5 py-4 shadow-sm">
+          <PostItBoard />
         </div>
 
         {/* Content */}

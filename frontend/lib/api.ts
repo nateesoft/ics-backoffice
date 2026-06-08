@@ -32,4 +32,33 @@ export const attachmentsApi = {
   remove: (issueId: number, id: number) => api.delete(`/issues/${issueId}/attachments/${id}`),
 };
 
+export const notesApi = {
+  getAll: () => api.get('/notes'),
+  create: (data: { content?: string; color?: string }) => api.post('/notes', data),
+  update: (id: number, data: { content?: string; color?: string }) => api.put(`/notes/${id}`, data),
+  remove: (id: number) => api.delete(`/notes/${id}`),
+  reorder: (ids: number[]) => api.patch('/notes/reorder', { ids }),
+};
+
+export const documentsApi = {
+  getAll: () => api.get('/documents'),
+  getOne: (id: number) => api.get(`/documents/${id}`),
+  create: (data: { title: string; category: string; content?: string }) =>
+    api.post('/documents', data),
+  update: (id: number, data: { title?: string; category?: string; content?: string }) =>
+    api.put(`/documents/${id}`, data),
+  remove: (id: number) => api.delete(`/documents/${id}`),
+  uploadAttachment: (documentId: number, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post(`/documents/${documentId}/attachments`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  removeAttachment: (documentId: number, id: number) =>
+    api.delete(`/documents/${documentId}/attachments/${id}`),
+  downloadUrl: (documentId: number, id: number) =>
+    `${api.defaults.baseURL}/documents/${documentId}/attachments/${id}/download`,
+};
+
 export default api;
