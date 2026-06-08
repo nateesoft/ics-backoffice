@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         DEPLOY_DIR = 'C:\\apps\\ics-backoffice'
+        PM2_HOME   = 'C:\\ProgramData\\pm2'
     }
 
     stages {
@@ -51,10 +52,9 @@ pipeline {
             steps {
                 bat "if not exist %DEPLOY_DIR%\\backend\\uploads mkdir %DEPLOY_DIR%\\backend\\uploads"
 
-                // Copy compiled output and package files (ไม่ overwrite .env)
-                bat '''
-                    powershell -Command "Copy-Item -Path backend\\dist -Destination %DEPLOY_DIR%\\backend\\dist -Recurse -Force"
-                '''
+                // Copy compiled output — use robocopy to avoid Copy-Item nested-dir bug on re-deploy
+                // robocopy exit codes 0-7 = success (8+ = error), so normalise with conditional exit
+                bat "robocopy backend\\dist %DEPLOY_DIR%\\backend\\dist /E /PURGE & if %ERRORLEVEL% LEQ 7 exit 0"
                 bat "copy /Y backend\\package.json %DEPLOY_DIR%\\backend\\package.json"
                 bat "copy /Y backend\\package-lock.json %DEPLOY_DIR%\\backend\\package-lock.json"
 
