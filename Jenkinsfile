@@ -27,7 +27,9 @@ pipeline {
             steps {
                 dir('frontend') {
                     bat 'npm ci'
-                    bat 'set NEXT_PUBLIC_API_URL=/ics-backoffice/api && npm run build'
+                    withEnv(['NEXT_PUBLIC_API_URL=/ics-backoffice/api']) {
+                        bat 'npm run build'
+                    }
                 }
             }
         }
