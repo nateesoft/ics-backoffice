@@ -69,7 +69,7 @@ pipeline {
                 bat "if exist backend\\.env copy /Y backend\\.env %DEPLOY_DIR%\\backend\\.env"
 
                 // Install production dependencies — network-timeout guards against hanging
-                bat "cd %DEPLOY_DIR%\\backend && npm ci --omit=dev --prefer-offline"
+                bat "cd /d %DEPLOY_DIR%\\backend && npm ci --omit=dev --prefer-offline"
             }
         }
 
@@ -90,7 +90,7 @@ pipeline {
 
         stage('Start PM2') {
             steps {
-                bat "cd %DEPLOY_DIR% && pm2 start ecosystem.config.js --env production"
+                bat "cd /d %DEPLOY_DIR% && pm2 start ecosystem.config.js --env production"
                 bat 'pm2 save'
             }
         }
