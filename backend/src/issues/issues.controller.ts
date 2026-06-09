@@ -9,8 +9,8 @@ export class IssuesController {
   constructor(private issuesService: IssuesService) {}
 
   @Get()
-  findAll() {
-    return this.issuesService.findAll();
+  findAll(@Request() req: any) {
+    return this.issuesService.findAll(req.user.username);
   }
 
   @Get('stats')

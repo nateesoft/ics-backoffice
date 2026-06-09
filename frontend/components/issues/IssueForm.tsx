@@ -34,6 +34,7 @@ export default function IssueForm({ initial, onSuccess, onCancel, defaultDate }:
     teamViewer: initial?.teamViewer || '',
     contractDetail: initial?.contractDetail || '',
     tags: initial?.tags || [],
+    visibility: initial?.visibility || 'all',
   });
   const pendingFilesRef = useRef<File[]>([]);
   const [loading, setLoading] = useState(false);
@@ -195,6 +196,34 @@ export default function IssueForm({ initial, onSuccess, onCancel, defaultDate }:
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        <div className="md:col-span-2">
+          <label className={labelCls}>Visibility</label>
+          <div className="flex gap-2 mt-1">
+            {([
+              { value: 'all', label: 'เห็นแบบทั้งหมด', icon: (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              )},
+              { value: 'creator', label: 'เฉพาะผู้สร้าง', icon: (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+              )},
+            ] as const).map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => set('visibility', opt.value)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all
+                  ${form.visibility === opt.value
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
+                  }`}
+              >
+                {opt.icon}
+                {opt.label}
+              </button>
+            ))}
           </div>
         </div>
 

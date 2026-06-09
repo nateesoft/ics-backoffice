@@ -22,6 +22,7 @@ const TRACKED_FIELDS: Record<string, string> = {
   teamViewer: 'TeamViewer',
   contractDetail: 'Contract Detail',
   tags: 'Tags',
+  visibility: 'Visibility',
 };
 
 function toStr(val: any): string {
@@ -37,8 +38,11 @@ export class IssuesService {
     @InjectRepository(IssueHistory) private historyRepo: Repository<IssueHistory>,
   ) {}
 
-  findAll() {
-    return this.repo.find({ order: { createdAt: 'DESC' } });
+  findAll(username: string) {
+    return this.repo.createQueryBuilder('issue')
+      .where('(issue.visibility = :all OR issue.visibility IS NULL OR issue.createdBy = :username)', { all: 'all', username })
+      .orderBy('issue.createdAt', 'DESC')
+      .getMany();
   }
 
   async findOne(id: number) {

@@ -27,6 +27,7 @@ export interface Issue {
   tags?: string[];
   createdBy?: string;
   isCancelled: boolean;
+  visibility?: 'all' | 'creator';
   createdAt: string;
   updatedAt: string;
 }

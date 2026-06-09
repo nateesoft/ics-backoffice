@@ -102,6 +102,9 @@ export class Issue {
   @Column({ default: false })
   isCancelled: boolean;
 
+  @Column({ default: 'all' })
+  visibility: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

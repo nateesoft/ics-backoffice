@@ -20,6 +20,7 @@ export class CreateIssueDto {
   @IsOptional() @IsString() teamViewer?: string;
   @IsOptional() @IsString() contractDetail?: string;
   @IsOptional() @IsArray() @IsString({ each: true }) tags?: string[];
+  @IsOptional() @IsString() visibility?: string;
 }
 
 export class UpdateIssueDto extends CreateIssueDto {
