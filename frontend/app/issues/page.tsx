@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Modal from '@/components/ui/Modal';
 import IssueForm from '@/components/issues/IssueForm';
-import IssueComments from '@/components/issues/IssueComments';
+import IssueDetail from '@/components/issues/IssueDetail';
 import { Issue, TASK_STATUSES, PRIORITIES, STATUS_COLORS, PRIORITY_COLORS } from '@/types/issue';
 import { issuesApi, authApi } from '@/lib/api';
 
@@ -178,35 +178,3 @@ export default function IssuesPage() {
   );
 }
 
-function IssueDetail({ issue, currentUser }: { issue: Issue; currentUser: string }) {
-  const row = (label: string, value: any) => value ? (
-    <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-50">
-      <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{label}</div>
-      <div className="col-span-2 text-sm text-slate-800">{value}</div>
-    </div>
-  ) : null;
-
-  return (
-    <div>
-      <div className="space-y-1">
-        {row('Project', issue.projectName)}
-        {row('Code Type', issue.codeType)}
-        {row('Detail', issue.detail)}
-        {row('Github', issue.githubLink)}
-        {row('Created Date', issue.issueCreateDate)}
-        {row('Priority', <span className={`text-xs px-2.5 py-1 rounded-full border ${PRIORITY_COLORS[issue.priority]}`}>{issue.priority}</span>)}
-        {row('Work Period', issue.taskWorkPeriod ? `${issue.taskWorkPeriod} ${issue.taskWorkPeriodUnit}` : null)}
-        {row('Target Date', issue.targetDate)}
-        {row('Issuer', issue.issuer)}
-        {row('Developer', issue.developer)}
-        {row('Tester', issue.tester)}
-        {row('Task Status', <span className={`text-xs px-2.5 py-1 rounded-full ${STATUS_COLORS[issue.taskStatus]}`}>{issue.taskStatus}</span>)}
-        {row('Deployment', issue.deploymentStatus)}
-        {row('Anydesk', issue.anydesk)}
-        {row('TeamViewer', issue.teamViewer)}
-        {row('Contract Detail', issue.contractDetail)}
-      </div>
-      <IssueComments issueId={issue.id} currentUser={currentUser} />
-    </div>
-  );
-}

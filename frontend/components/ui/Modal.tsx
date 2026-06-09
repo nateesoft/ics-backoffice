@@ -6,9 +6,10 @@ interface ModalProps {
   onClose: () => void;
   children: React.ReactNode;
   size?: 'md' | 'lg' | 'xl';
+  action?: React.ReactNode;
 }
 
-export default function Modal({ title, onClose, children, size = 'lg' }: ModalProps) {
+export default function Modal({ title, onClose, children, size = 'lg', action }: ModalProps) {
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
@@ -22,11 +23,14 @@ export default function Modal({ title, onClose, children, size = 'lg' }: ModalPr
       <div className={`relative bg-white rounded-2xl shadow-2xl w-full ${widths[size]} max-h-[90vh] flex flex-col`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 transition">
-            <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            {action}
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 transition">
+              <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
         <div className="overflow-y-auto flex-1 px-6 py-5">{children}</div>
       </div>

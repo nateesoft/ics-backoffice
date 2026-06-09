@@ -15,9 +15,10 @@ import { CSS } from '@dnd-kit/utilities';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Modal from '@/components/ui/Modal';
 import IssueForm from '@/components/issues/IssueForm';
+import IssueDetail from '@/components/issues/IssueDetail';
 import PostItBoard from '@/components/dashboard/PostItBoard';
 import { Issue, TaskStatus, TASK_STATUSES, STATUS_COLORS, PRIORITY_COLORS } from '@/types/issue';
-import { issuesApi } from '@/lib/api';
+import { issuesApi, authApi } from '@/lib/api';
 
 type ViewMode = 'calendar' | 'trello';
 
@@ -81,14 +82,36 @@ function CalendarView({ issues, onDateClick }: { issues: Issue[]; onDateClick: (
   );
 }
 
+function daysAgo(dateStr: string) {
+  return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86_400_000);
+}
+
+function AgeBadge({ createdAt }: { createdAt: string }) {
+  const days = daysAgo(createdAt);
+  const [cls, label] = days === 0
+    ? ['bg-emerald-50 text-emerald-600 border-emerald-200', 'Today']
+    : days <= 3
+    ? ['bg-emerald-50 text-emerald-600 border-emerald-200', `${days}d`]
+    : days <= 7
+    ? ['bg-yellow-50 text-yellow-600 border-yellow-200', `${days}d`]
+    : days <= 14
+    ? ['bg-orange-50 text-orange-600 border-orange-200', `${days}d`]
+    : ['bg-red-50 text-red-600 border-red-200', `${days}d`];
+  return (
+    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border leading-none ${cls}`} title={`Created ${days} day${days !== 1 ? 's' : ''} ago`}>
+      {label}
+    </span>
+  );
+}
+
 // ─── Trello Card (draggable) ──────────────────────────────────────────────────
-function IssueCard({ issue, onEdit, ghost }: { issue: Issue; onEdit?: () => void; ghost?: boolean }) {
+function IssueCard({ issue, onView, ghost }: { issue: Issue; onView?: () => void; ghost?: boolean }) {
   return (
     <div
-      onClick={onEdit}
+      onClick={onView}
       className={`bg-white rounded-lg p-3 border border-slate-100 select-none
         ${ghost ? 'shadow-2xl rotate-2 scale-105 ring-2 ring-indigo-400' : 'shadow-sm hover:shadow-md'}
-        ${onEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-grabbing'}
+        ${onView ? 'cursor-pointer' : 'cursor-grabbing'}
         transition-shadow`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
@@ -103,7 +126,10 @@ function IssueCard({ issue, onEdit, ghost }: { issue: Issue; onEdit?: () => void
       )}
       <div className="flex items-center justify-between text-xs text-slate-400">
         <span className="bg-slate-100 px-2 py-0.5 rounded font-mono">{issue.codeType}</span>
-        {issue.targetDate && <span>{issue.targetDate}</span>}
+        <div className="flex items-center gap-1.5">
+          {issue.targetDate && <span>{issue.targetDate}</span>}
+          <AgeBadge createdAt={issue.createdAt} />
+        </div>
       </div>
       {issue.developer && (
         <div className="mt-2 flex items-center gap-1.5">
@@ -117,7 +143,7 @@ function IssueCard({ issue, onEdit, ghost }: { issue: Issue; onEdit?: () => void
   );
 }
 
-function DraggableCard({ issue, onEdit }: { issue: Issue; onEdit: () => void }) {
+function DraggableCard({ issue, onView }: { issue: Issue; onView: () => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: issue.id,
     data: { issue },
@@ -131,19 +157,19 @@ function DraggableCard({ issue, onEdit }: { issue: Issue; onEdit: () => void }) 
       {...listeners}
       className={`transition-opacity ${isDragging ? 'opacity-30' : 'opacity-100'}`}
     >
-      <IssueCard issue={issue} onEdit={onEdit} />
+      <IssueCard issue={issue} onView={onView} />
     </div>
   );
 }
 
 // ─── Trello Lane (droppable) ──────────────────────────────────────────────────
 function DroppableLane({
-  status, issues, onAddInLane, onEdit,
+  status, issues, onAddInLane, onView,
 }: {
   status: TaskStatus;
   issues: Issue[];
   onAddInLane: () => void;
-  onEdit: (issue: Issue) => void;
+  onView: (issue: Issue) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
@@ -169,7 +195,7 @@ function DroppableLane({
         className={`space-y-2 min-h-[100px] rounded-lg p-1 transition-colors duration-150 ${isOver ? 'bg-indigo-100/60' : ''}`}
       >
         {issues.map(issue => (
-          <DraggableCard key={issue.id} issue={issue} onEdit={() => onEdit(issue)} />
+          <DraggableCard key={issue.id} issue={issue} onView={() => onView(issue)} />
         ))}
         {issues.length === 0 && (
           <div className={`h-16 flex items-center justify-center rounded-lg border-2 border-dashed text-xs transition-colors duration-150 ${isOver ? 'border-indigo-400 text-indigo-500 bg-indigo-50' : 'border-slate-200 text-slate-300'}`}>
@@ -183,12 +209,12 @@ function DroppableLane({
 
 // ─── Trello Board ─────────────────────────────────────────────────────────────
 function TrelloView({
-  issues, setIssues, onAddInLane, onEdit,
+  issues, setIssues, onAddInLane, onView,
 }: {
   issues: Issue[];
   setIssues: React.Dispatch<React.SetStateAction<Issue[]>>;
   onAddInLane: (status: string) => void;
-  onEdit: (issue: Issue) => void;
+  onView: (issue: Issue) => void;
 }) {
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
 
@@ -233,7 +259,7 @@ function TrelloView({
               status={status}
               issues={laneIssues}
               onAddInLane={() => onAddInLane(status)}
-              onEdit={onEdit}
+              onView={onView}
             />
           );
         })}
@@ -255,8 +281,10 @@ export default function DashboardPage() {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editIssue, setEditIssue] = useState<Issue | null>(null);
+  const [viewIssue, setViewIssue] = useState<Issue | null>(null);
   const [defaultDate, setDefaultDate] = useState('');
   const [defaultStatus, setDefaultStatus] = useState('New');
+  const [currentUser, setCurrentUser] = useState('');
 
   const load = useCallback(async () => {
     const res = await issuesApi.getAll();
@@ -264,6 +292,9 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    authApi.me().then(res => setCurrentUser(res.data.username)).catch(() => {});
+  }, []);
 
   function openCreate(date?: string, status?: string) {
     setDefaultDate(date || '');
@@ -272,7 +303,12 @@ export default function DashboardPage() {
     setShowForm(true);
   }
 
+  function openView(issue: Issue) {
+    setViewIssue(issue);
+  }
+
   function openEdit(issue: Issue) {
+    setViewIssue(null);
     setEditIssue(issue);
     setShowForm(true);
   }
@@ -348,10 +384,30 @@ export default function DashboardPage() {
             issues={issues}
             setIssues={setIssues}
             onAddInLane={status => openCreate('', status)}
-            onEdit={openEdit}
+            onView={openView}
           />
         )}
       </div>
+
+      {/* View Detail Modal */}
+      {viewIssue && (
+        <Modal
+          title={`Issue #${viewIssue.id} — ${viewIssue.projectName}`}
+          onClose={() => setViewIssue(null)}
+          size="xl"
+          action={
+            <button
+              onClick={() => openEdit(viewIssue)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+              Edit
+            </button>
+          }
+        >
+          <IssueDetail issue={viewIssue} currentUser={currentUser} />
+        </Modal>
+      )}
 
       {showForm && (
         <Modal title={editIssue ? 'Edit Issue' : 'New Issue'} onClose={() => setShowForm(false)} size="xl">

@@ -22,6 +22,7 @@ export const issuesApi = {
 };
 
 export const attachmentsApi = {
+  getAll: (issueId: number) => api.get(`/issues/${issueId}/attachments`),
   upload: (issueId: number, file: File) => {
     const form = new FormData();
     form.append('file', file);
