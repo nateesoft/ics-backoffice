@@ -49,4 +49,10 @@ export class AuthController {
   changePassword(@Body() dto: ChangePasswordDto, @Req() req: Request & { user: any }) {
     return this.authService.changePassword(req.user.id, dto.currentPassword, dto.newPassword);
   }
+
+  @Get('users')
+  @UseGuards(JwtAuthGuard)
+  getUsers() {
+    return this.authService.getUsers();
+  }
 }

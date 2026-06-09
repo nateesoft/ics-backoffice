@@ -1,7 +1,7 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Issue, CODE_TYPES, PRIORITIES, WORK_PERIOD_UNITS, TASK_STATUSES, DEPLOYMENT_STATUSES, ISSUE_TAGS, TAG_COLORS, IssueTag } from '@/types/issue';
-import { issuesApi, attachmentsApi } from '@/lib/api';
+import { issuesApi, attachmentsApi, usersApi } from '@/lib/api';
 import DetailEditor from './DetailEditor';
 
 interface IssueFormProps {
@@ -38,6 +38,11 @@ export default function IssueForm({ initial, onSuccess, onCancel, defaultDate }:
   const pendingFilesRef = useRef<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [users, setUsers] = useState<{ id: number; username: string }[]>([]);
+
+  useEffect(() => {
+    usersApi.getAll().then(res => setUsers(res.data)).catch(() => {});
+  }, []);
 
   function set(field: string, value: any) {
     setForm(f => ({ ...f, [field]: value }));
@@ -135,11 +140,17 @@ export default function IssueForm({ initial, onSuccess, onCancel, defaultDate }:
         </div>
         <div>
           <label className={labelCls}>Developer</label>
-          <input className={inputCls} value={form.developer} onChange={e => set('developer', e.target.value)} placeholder="Developer name" />
+          <select className={selectCls} value={form.developer} onChange={e => set('developer', e.target.value)}>
+            <option value="">ไม่ระบุ</option>
+            {users.map(u => <option key={u.id} value={u.username}>{u.username}</option>)}
+          </select>
         </div>
         <div>
           <label className={labelCls}>Tester</label>
-          <input className={inputCls} value={form.tester} onChange={e => set('tester', e.target.value)} placeholder="Tester name" />
+          <select className={selectCls} value={form.tester} onChange={e => set('tester', e.target.value)}>
+            <option value="">ไม่ระบุ</option>
+            {users.map(u => <option key={u.id} value={u.username}>{u.username}</option>)}
+          </select>
         </div>
         <div>
           <label className={labelCls}>Task Status</label>

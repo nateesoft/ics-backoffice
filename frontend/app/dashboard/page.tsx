@@ -18,7 +18,9 @@ import IssueForm from '@/components/issues/IssueForm';
 import IssueDetail from '@/components/issues/IssueDetail';
 import PostItBoard from '@/components/dashboard/PostItBoard';
 import { Issue, TaskStatus, TASK_STATUSES, STATUS_COLORS, PRIORITY_COLORS, TAG_COLORS, IssueTag } from '@/types/issue';
-import { issuesApi, authApi } from '@/lib/api';
+import { issuesApi, authApi, usersApi } from '@/lib/api';
+
+interface SystemUser { id: number; username: string; }
 
 type ViewMode = 'calendar' | 'trello';
 
@@ -292,6 +294,81 @@ function TrelloView({
   );
 }
 
+// ─── User Filter Bar ──────────────────────────────────────────────────────────
+function UserFilterBar({ users, selected, onChange }: {
+  users: SystemUser[];
+  selected: Set<string>;
+  onChange: (next: Set<string>) => void;
+}) {
+  if (users.length === 0) return null;
+
+  function toggleUser(username: string) {
+    const next = new Set(selected);
+    if (next.has(username)) next.delete(username); else next.add(username);
+    onChange(next);
+  }
+
+  const allActive = selected.size === 0;
+  const avatarColors = [
+    'bg-indigo-100 text-indigo-700',
+    'bg-violet-100 text-violet-700',
+    'bg-sky-100 text-sky-700',
+    'bg-emerald-100 text-emerald-700',
+    'bg-rose-100 text-rose-700',
+    'bg-amber-100 text-amber-700',
+    'bg-teal-100 text-teal-700',
+    'bg-fuchsia-100 text-fuchsia-700',
+  ];
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <button
+        onClick={() => onChange(new Set())}
+        title="Show all"
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all
+          ${allActive
+            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+            : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
+          }`}
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        All
+      </button>
+
+      {users.map((user, idx) => {
+        const active = selected.has(user.username);
+        const colorCls = avatarColors[idx % avatarColors.length];
+        return (
+          <button
+            key={user.id}
+            onClick={() => toggleUser(user.username)}
+            title={user.username}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold border transition-all
+              ${active
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm ring-2 ring-indigo-200'
+                : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
+              }`}
+          >
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold leading-none
+              ${active ? 'bg-white/20 text-white' : colorCls}`}>
+              {user.username[0]?.toUpperCase()}
+            </div>
+            {user.username}
+          </button>
+        );
+      })}
+
+      {selected.size > 0 && (
+        <span className="text-[10px] text-slate-400 font-medium ml-1">
+          {selected.size} selected
+        </span>
+      )}
+    </div>
+  );
+}
+
 // ─── Dashboard Page ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const [view, setView] = useState<ViewMode>('trello');
@@ -302,6 +379,8 @@ export default function DashboardPage() {
   const [defaultDate, setDefaultDate] = useState('');
   const [defaultStatus, setDefaultStatus] = useState('New');
   const [currentUser, setCurrentUser] = useState('');
+  const [systemUsers, setSystemUsers] = useState<SystemUser[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     const res = await issuesApi.getAll();
@@ -311,7 +390,15 @@ export default function DashboardPage() {
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
     authApi.me().then(res => setCurrentUser(res.data.username)).catch(() => {});
+    usersApi.getAll().then(res => setSystemUsers(res.data)).catch(() => {});
   }, []);
+
+  const filteredIssues = selectedUsers.size === 0
+    ? issues
+    : issues.filter(i =>
+        (i.developer && selectedUsers.has(i.developer)) ||
+        (i.tester && selectedUsers.has(i.tester))
+      );
 
   function openCreate(date?: string, status?: string) {
     setDefaultDate(date || '');
@@ -393,12 +480,22 @@ export default function DashboardPage() {
           <PostItBoard />
         </div>
 
+        {/* User filter (Trello only) */}
+        {view === 'trello' && systemUsers.length > 0 && (
+          <div className="bg-white/70 rounded-xl border border-slate-200 px-4 py-3 shadow-sm">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide shrink-0">Assignee</span>
+              <UserFilterBar users={systemUsers} selected={selectedUsers} onChange={setSelectedUsers} />
+            </div>
+          </div>
+        )}
+
         {/* Content */}
         {view === 'calendar' ? (
-          <CalendarView issues={issues} onDateClick={date => openCreate(date)} />
+          <CalendarView issues={filteredIssues} onDateClick={date => openCreate(date)} />
         ) : (
           <TrelloView
-            issues={issues}
+            issues={filteredIssues}
             setIssues={setIssues}
             onAddInLane={status => openCreate('', status)}
             onView={openView}

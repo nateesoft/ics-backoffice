@@ -14,6 +14,10 @@ export const authApi = {
     api.post('/auth/change-password', { currentPassword, newPassword }),
 };
 
+export const usersApi = {
+  getAll: () => api.get<{ id: number; username: string }[]>('/auth/users'),
+};
+
 export const issuesApi = {
   getAll: () => api.get('/issues'),
   getOne: (id: number) => api.get(`/issues/${id}`),

@@ -37,4 +37,11 @@ export class AuthService implements OnModuleInit {
     const token = this.jwtService.sign({ sub: user.id, username: user.username });
     return { token, user: { id: user.id, username: user.username } };
   }
+
+  async getUsers() {
+    const users = await this.userRepo.find({ where: {} });
+    return users
+      .filter(u => u.username !== 'admin')
+      .map(u => ({ id: u.id, username: u.username }));
+  }
 }
