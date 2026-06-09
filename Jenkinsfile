@@ -45,8 +45,9 @@ pipeline {
 
         stage('Stop PM2') {
             steps {
-                bat 'pm2 stop ics-backend ics-frontend 2>nul & exit 0'
-                bat 'pm2 delete ics-backend ics-frontend 2>nul & exit 0'
+                // Kill the PM2 daemon entirely — avoids hang when daemon is unresponsive
+                // or when app names don't exist yet (first deploy)
+                bat 'pm2 kill 2>nul & exit 0'
             }
         }
 
@@ -54,14 +55,21 @@ pipeline {
             steps {
                 bat "if not exist %DEPLOY_DIR%\\backend\\uploads mkdir %DEPLOY_DIR%\\backend\\uploads"
 
-                // Copy compiled output — use robocopy to avoid Copy-Item nested-dir bug on re-deploy
-                // robocopy exit codes 0-7 = success (8+ = error), so normalise with conditional exit
-                bat "robocopy backend\\dist %DEPLOY_DIR%\\backend\\dist /E /PURGE & if %ERRORLEVEL% LEQ 7 exit 0"
+                // robocopy exit codes 0-7 = success (8+ = error)
+                // Must use separate line so %ERRORLEVEL% is read AFTER robocopy, not at parse time
+                bat """
+                    robocopy backend\\dist %DEPLOY_DIR%\\backend\\dist /E /PURGE
+                    if %ERRORLEVEL% GEQ 8 exit 1
+                    exit 0
+                """
                 bat "copy /Y backend\\package.json %DEPLOY_DIR%\\backend\\package.json"
                 bat "copy /Y backend\\package-lock.json %DEPLOY_DIR%\\backend\\package-lock.json"
 
-                // Install production dependencies only
-                bat "cd %DEPLOY_DIR%\\backend && npm ci --omit=dev"
+                // Deploy .env if it exists in workspace (skip silently on re-deploy if absent)
+                bat "if exist backend\\.env copy /Y backend\\.env %DEPLOY_DIR%\\backend\\.env"
+
+                // Install production dependencies — network-timeout guards against hanging
+                bat "cd %DEPLOY_DIR%\\backend && npm ci --omit=dev --prefer-offline"
             }
         }
 
