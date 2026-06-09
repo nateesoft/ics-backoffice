@@ -101,7 +101,7 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
     await load();
   }
 
-  async function handleUpdate(comment: Comment) {
+  function handleUpdate(comment: Comment) {
     return async (content: string) => {
       await commentsApi.update(issueId, comment.id, content);
       setEditId(null);
