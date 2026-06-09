@@ -8,12 +8,16 @@ import { IssuesModule } from './issues/issues.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { DocumentsModule } from './documents/documents.module';
 import { NotesModule } from './notes/notes.module';
+import { CommentsModule } from './comments/comments.module';
+import { CommentAttachmentsModule } from './comment-attachments/comment-attachments.module';
 import { User } from './entities/user.entity';
 import { Issue } from './entities/issue.entity';
 import { IssueAttachment } from './entities/attachment.entity';
 import { Document } from './entities/document.entity';
 import { DocumentAttachment } from './entities/document-attachment.entity';
 import { Note } from './entities/note.entity';
+import { IssueComment } from './entities/comment.entity';
+import { CommentAttachment } from './entities/comment-attachment.entity';
 
 @Module({
   imports: [
@@ -23,7 +27,7 @@ import { Note } from './entities/note.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, Note],
+        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, Note, IssueComment, CommentAttachment],
         synchronize: true,
       }),
       inject: [ConfigService],
@@ -37,6 +41,8 @@ import { Note } from './entities/note.entity';
     AttachmentsModule,
     DocumentsModule,
     NotesModule,
+    CommentsModule,
+    CommentAttachmentsModule,
   ],
 })
 export class AppModule {}

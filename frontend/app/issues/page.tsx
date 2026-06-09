@@ -3,8 +3,9 @@ import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Modal from '@/components/ui/Modal';
 import IssueForm from '@/components/issues/IssueForm';
+import IssueComments from '@/components/issues/IssueComments';
 import { Issue, TASK_STATUSES, PRIORITIES, STATUS_COLORS, PRIORITY_COLORS } from '@/types/issue';
-import { issuesApi } from '@/lib/api';
+import { issuesApi, authApi } from '@/lib/api';
 
 export default function IssuesPage() {
   const [issues, setIssues] = useState<Issue[]>([]);
@@ -15,6 +16,7 @@ export default function IssuesPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterPriority, setFilterPriority] = useState('');
   const [search, setSearch] = useState('');
+  const [currentUser, setCurrentUser] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -24,6 +26,9 @@ export default function IssuesPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    authApi.me().then(res => setCurrentUser(res.data.username)).catch(() => {});
+  }, []);
 
   async function handleCancel(id: number) {
     if (!confirm('Cancel this issue?')) return;
@@ -166,14 +171,14 @@ export default function IssuesPage() {
 
       {viewIssue && (
         <Modal title={`Issue #${viewIssue.id} — ${viewIssue.projectName}`} onClose={() => setViewIssue(null)} size="xl">
-          <IssueDetail issue={viewIssue} />
+          <IssueDetail issue={viewIssue} currentUser={currentUser} />
         </Modal>
       )}
     </DashboardLayout>
   );
 }
 
-function IssueDetail({ issue }: { issue: Issue }) {
+function IssueDetail({ issue, currentUser }: { issue: Issue; currentUser: string }) {
   const row = (label: string, value: any) => value ? (
     <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-50">
       <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{label}</div>
@@ -182,23 +187,26 @@ function IssueDetail({ issue }: { issue: Issue }) {
   ) : null;
 
   return (
-    <div className="space-y-1">
-      {row('Project', issue.projectName)}
-      {row('Code Type', issue.codeType)}
-      {row('Detail', issue.detail)}
-      {row('Github', issue.githubLink)}
-      {row('Created Date', issue.issueCreateDate)}
-      {row('Priority', <span className={`text-xs px-2.5 py-1 rounded-full border ${PRIORITY_COLORS[issue.priority]}`}>{issue.priority}</span>)}
-      {row('Work Period', issue.taskWorkPeriod ? `${issue.taskWorkPeriod} ${issue.taskWorkPeriodUnit}` : null)}
-      {row('Target Date', issue.targetDate)}
-      {row('Issuer', issue.issuer)}
-      {row('Developer', issue.developer)}
-      {row('Tester', issue.tester)}
-      {row('Task Status', <span className={`text-xs px-2.5 py-1 rounded-full ${STATUS_COLORS[issue.taskStatus]}`}>{issue.taskStatus}</span>)}
-      {row('Deployment', issue.deploymentStatus)}
-      {row('Anydesk', issue.anydesk)}
-      {row('TeamViewer', issue.teamViewer)}
-      {row('Contract Detail', issue.contractDetail)}
+    <div>
+      <div className="space-y-1">
+        {row('Project', issue.projectName)}
+        {row('Code Type', issue.codeType)}
+        {row('Detail', issue.detail)}
+        {row('Github', issue.githubLink)}
+        {row('Created Date', issue.issueCreateDate)}
+        {row('Priority', <span className={`text-xs px-2.5 py-1 rounded-full border ${PRIORITY_COLORS[issue.priority]}`}>{issue.priority}</span>)}
+        {row('Work Period', issue.taskWorkPeriod ? `${issue.taskWorkPeriod} ${issue.taskWorkPeriodUnit}` : null)}
+        {row('Target Date', issue.targetDate)}
+        {row('Issuer', issue.issuer)}
+        {row('Developer', issue.developer)}
+        {row('Tester', issue.tester)}
+        {row('Task Status', <span className={`text-xs px-2.5 py-1 rounded-full ${STATUS_COLORS[issue.taskStatus]}`}>{issue.taskStatus}</span>)}
+        {row('Deployment', issue.deploymentStatus)}
+        {row('Anydesk', issue.anydesk)}
+        {row('TeamViewer', issue.teamViewer)}
+        {row('Contract Detail', issue.contractDetail)}
+      </div>
+      <IssueComments issueId={issue.id} currentUser={currentUser} />
     </div>
   );
 }

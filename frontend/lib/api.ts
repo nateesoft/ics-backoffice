@@ -40,6 +40,24 @@ export const notesApi = {
   reorder: (ids: number[]) => api.patch('/notes/reorder', { ids }),
 };
 
+export const commentsApi = {
+  getAll: (issueId: number) => api.get(`/issues/${issueId}/comments`),
+  create: (issueId: number, content: string) => api.post(`/issues/${issueId}/comments`, { content }),
+  update: (issueId: number, id: number, content: string) => api.put(`/issues/${issueId}/comments/${id}`, { content }),
+  remove: (issueId: number, id: number) => api.delete(`/issues/${issueId}/comments/${id}`),
+};
+
+export const commentAttachmentsApi = {
+  upload: (commentId: number, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post(`/comments/${commentId}/attachments`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  remove: (commentId: number, id: number) => api.delete(`/comments/${commentId}/attachments/${id}`),
+};
+
 export const documentsApi = {
   getAll: () => api.get('/documents'),
   getOne: (id: number) => api.get(`/documents/${id}`),
