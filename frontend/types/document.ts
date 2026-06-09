@@ -28,10 +28,19 @@ export interface DocumentAttachment {
   createdAt: string;
 }
 
+export type DocType = 'general' | 'sequence' | 'flowchart';
+
+export const DOC_TYPES: { value: DocType; label: string; desc: string }[] = [
+  { value: 'general',   label: 'General',          desc: 'Rich-text document' },
+  { value: 'sequence',  label: 'Sequence Diagram',  desc: 'Actor → message flow' },
+  { value: 'flowchart', label: 'Flowchart',          desc: 'Drag-and-drop flow' },
+];
+
 export interface Document {
   id: number;
   title: string;
   category: DocumentCategory;
+  docType: DocType;
   content?: string;
   createdBy: string;
   attachments: DocumentAttachment[];

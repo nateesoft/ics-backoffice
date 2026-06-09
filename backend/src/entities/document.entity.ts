@@ -17,6 +17,9 @@ export class Document {
   @Column({ type: 'text', nullable: true })
   content: string;
 
+  @Column({ default: 'general' })
+  docType: string;
+
   @Column()
   createdBy: string;
 

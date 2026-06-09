@@ -3,7 +3,9 @@ import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Modal from '@/components/ui/Modal';
 import DocumentForm from '@/components/documents/DocumentForm';
-import { Document, DocumentAttachment, DOCUMENT_CATEGORIES, CATEGORY_COLORS } from '@/types/document';
+import SequenceDiagramEditor from '@/components/documents/SequenceDiagramEditor';
+import FlowchartEditor from '@/components/documents/FlowchartEditor';
+import { Document, DocumentAttachment, DOCUMENT_CATEGORIES, CATEGORY_COLORS, DOC_TYPES } from '@/types/document';
 import { documentsApi } from '@/lib/api';
 
 function stripHtml(html: string) {
@@ -133,16 +135,38 @@ export default function DocumentsPage() {
               >
                 {/* Card header */}
                 <div className="px-5 pt-5 pb-3 flex items-start gap-3">
-                  <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg className="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    doc.docType === 'sequence' ? 'bg-violet-50' : doc.docType === 'flowchart' ? 'bg-amber-50' : 'bg-indigo-50'
+                  }`}>
+                    {doc.docType === 'sequence' ? (
+                      <svg className="w-5 h-5 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                      </svg>
+                    ) : doc.docType === 'flowchart' ? (
+                      <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-slate-800 text-sm leading-tight truncate">{doc.title}</h3>
-                    <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full border font-medium ${CATEGORY_COLORS[doc.category]}`}>
-                      {doc.category}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${CATEGORY_COLORS[doc.category]}`}>
+                        {doc.category}
+                      </span>
+                      {doc.docType && doc.docType !== 'general' && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                          doc.docType === 'sequence'  ? 'bg-violet-50 text-violet-600' :
+                          doc.docType === 'flowchart' ? 'bg-amber-50 text-amber-600' : ''
+                        }`}>
+                          {DOC_TYPES.find(d => d.value === doc.docType)?.label}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -280,7 +304,11 @@ function DocumentDetail({ doc, onEdit }: { doc: Document; onEdit: () => void }) 
       <hr className="border-slate-100" />
 
       {/* Content */}
-      {doc.content ? (
+      {doc.docType === 'sequence' ? (
+        <SequenceDiagramEditor value={doc.content ?? ''} readOnly />
+      ) : doc.docType === 'flowchart' ? (
+        <FlowchartEditor value={doc.content ?? ''} readOnly />
+      ) : doc.content ? (
         <div
           className="rounded-xl border border-slate-100 bg-slate-50/50 px-5 py-4 text-sm text-slate-700 leading-relaxed
             [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_s]:line-through
