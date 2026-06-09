@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DEPLOY_DIR = 'C:\\apps\\ics-backoffice'
+        DEPLOY_DIR = 'D:\\ICS-Projects\\apps\\ics-backoffice'
         PM2_HOME   = 'C:\\ProgramData\\pm2'
     }
 
