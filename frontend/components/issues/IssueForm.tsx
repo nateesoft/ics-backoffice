@@ -1,6 +1,6 @@
 'use client';
 import { useRef, useState } from 'react';
-import { Issue, CODE_TYPES, PRIORITIES, WORK_PERIOD_UNITS, TASK_STATUSES, DEPLOYMENT_STATUSES } from '@/types/issue';
+import { Issue, CODE_TYPES, PRIORITIES, WORK_PERIOD_UNITS, TASK_STATUSES, DEPLOYMENT_STATUSES, ISSUE_TAGS, TAG_COLORS, IssueTag } from '@/types/issue';
 import { issuesApi, attachmentsApi } from '@/lib/api';
 import DetailEditor from './DetailEditor';
 
@@ -33,6 +33,7 @@ export default function IssueForm({ initial, onSuccess, onCancel, defaultDate }:
     anydesk: initial?.anydesk || '',
     teamViewer: initial?.teamViewer || '',
     contractDetail: initial?.contractDetail || '',
+    tags: initial?.tags || [],
   });
   const pendingFilesRef = useRef<File[]>([]);
   const [loading, setLoading] = useState(false);
@@ -160,6 +161,32 @@ export default function IssueForm({ initial, onSuccess, onCancel, defaultDate }:
           <label className={labelCls}>TeamViewer</label>
           <input className={inputCls} value={form.teamViewer} onChange={e => set('teamViewer', e.target.value)} placeholder="TeamViewer ID" />
         </div>
+        <div className="md:col-span-2">
+          <label className={labelCls}>Tags</label>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {ISSUE_TAGS.map(tag => {
+              const active = (form.tags as string[]).includes(tag);
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => {
+                    const cur = form.tags as string[];
+                    set('tags', active ? cur.filter(t => t !== tag) : [...cur, tag]);
+                  }}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold border transition select-none
+                    ${active
+                      ? TAG_COLORS[tag as IssueTag] + ' border-transparent ring-2 ring-offset-1 ring-current'
+                      : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600'
+                    }`}
+                >
+                  {tag}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="md:col-span-2">
           <label className={labelCls}>Contract Detail</label>
           <textarea className={inputCls} rows={2} value={form.contractDetail} onChange={e => set('contractDetail', e.target.value)} placeholder="Contract details..." />

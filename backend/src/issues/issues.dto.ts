@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsInt, IsDateString, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsInt, IsDateString, IsBoolean, IsArray } from 'class-validator';
 import { CodeType, Priority, WorkPeriodUnit, TaskStatus, DeploymentStatus } from '../entities/issue.entity';
 
 export class CreateIssueDto {
@@ -19,6 +19,7 @@ export class CreateIssueDto {
   @IsOptional() @IsString() anydesk?: string;
   @IsOptional() @IsString() teamViewer?: string;
   @IsOptional() @IsString() contractDetail?: string;
+  @IsOptional() @IsArray() @IsString({ each: true }) tags?: string[];
 }
 
 export class UpdateIssueDto extends CreateIssueDto {

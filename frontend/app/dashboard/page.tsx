@@ -17,7 +17,7 @@ import Modal from '@/components/ui/Modal';
 import IssueForm from '@/components/issues/IssueForm';
 import IssueDetail from '@/components/issues/IssueDetail';
 import PostItBoard from '@/components/dashboard/PostItBoard';
-import { Issue, TaskStatus, TASK_STATUSES, STATUS_COLORS, PRIORITY_COLORS } from '@/types/issue';
+import { Issue, TaskStatus, TASK_STATUSES, STATUS_COLORS, PRIORITY_COLORS, TAG_COLORS, IssueTag } from '@/types/issue';
 import { issuesApi, authApi } from '@/lib/api';
 
 type ViewMode = 'calendar' | 'trello';
@@ -118,6 +118,15 @@ function IssueCard({ issue, onView, ghost }: { issue: Issue; onView?: () => void
         <span className="text-sm font-medium text-slate-800 leading-tight">{issue.projectName}</span>
         <span className={`text-xs px-2 py-0.5 rounded-full border flex-shrink-0 ${PRIORITY_COLORS[issue.priority]}`}>{issue.priority}</span>
       </div>
+      {issue.tags && issue.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {issue.tags.map(tag => (
+            <span key={tag} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${TAG_COLORS[tag as IssueTag] ?? 'bg-slate-100 text-slate-600'}`}>
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
       {issue.detail && (
         <p
           className="text-xs text-slate-500 line-clamp-2 mb-2"

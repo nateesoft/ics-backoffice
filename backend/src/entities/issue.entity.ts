@@ -93,6 +93,9 @@ export class Issue {
   @Column({ type: 'text', nullable: true })
   contractDetail: string;
 
+  @Column({ type: 'simple-array', nullable: true })
+  tags: string[];
+
   @Column({ default: false })
   isCancelled: boolean;
 

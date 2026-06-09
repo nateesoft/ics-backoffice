@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { attachmentsApi } from '@/lib/api';
 import IssueComments from './IssueComments';
-import { Issue, PRIORITY_COLORS, STATUS_COLORS } from '@/types/issue';
+import { Issue, PRIORITY_COLORS, STATUS_COLORS, TAG_COLORS, IssueTag } from '@/types/issue';
 
 interface IssueAttachment {
   id: number;
@@ -170,12 +170,22 @@ export default function IssueDetail({ issue, currentUser }: { issue: Issue; curr
     </div>
   ) : null;
 
+  const htmlRow = (label: string, html: string | null | undefined) => html ? (
+    <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-50">
+      <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{label}</div>
+      <div
+        className="col-span-2 text-sm text-slate-800 [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:bg-slate-100 [&_pre]:rounded [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-xs [&_blockquote]:border-l-4 [&_blockquote]:border-indigo-300 [&_blockquote]:pl-3 [&_blockquote]:text-slate-600"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    </div>
+  ) : null;
+
   return (
     <div>
       <div className="space-y-1">
         {row('Project', issue.projectName)}
         {row('Code Type', issue.codeType)}
-        {row('Detail', issue.detail)}
+        {htmlRow('Detail', issue.detail)}
         {row('Github', issue.githubLink)}
         {row('Created Date', issue.issueCreateDate)}
         {row('Priority', <span className={`text-xs px-2.5 py-1 rounded-full border ${PRIORITY_COLORS[issue.priority]}`}>{issue.priority}</span>)}
@@ -184,6 +194,18 @@ export default function IssueDetail({ issue, currentUser }: { issue: Issue; curr
         {row('Issuer', issue.issuer)}
         {row('Developer', issue.developer)}
         {row('Tester', issue.tester)}
+        {issue.tags && issue.tags.length > 0 && (
+          <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-50">
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Tags</div>
+            <div className="col-span-2 flex flex-wrap gap-1.5">
+              {issue.tags.map(tag => (
+                <span key={tag} className={`text-xs font-semibold px-2.5 py-1 rounded-full ${TAG_COLORS[tag as IssueTag] ?? 'bg-slate-100 text-slate-600'}`}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
         {row('Task Status', <span className={`text-xs px-2.5 py-1 rounded-full ${STATUS_COLORS[issue.taskStatus]}`}>{issue.taskStatus}</span>)}
         {row('Deployment', issue.deploymentStatus)}
         {row('Anydesk', issue.anydesk)}

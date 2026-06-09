@@ -3,6 +3,7 @@ export type Priority = 'Critical' | 'High' | 'Medium' | 'Low';
 export type WorkPeriodUnit = 'Days' | 'Hours';
 export type TaskStatus = 'New' | 'Todo' | 'InProgress' | 'Test' | 'Done';
 export type DeploymentStatus = 'Wait Approve' | 'Wait Deploy' | 'Deployed';
+export type IssueTag = 'Feature' | 'Bug' | 'Work' | 'Story';
 
 export interface Issue {
   id: number;
@@ -23,6 +24,7 @@ export interface Issue {
   anydesk?: string;
   teamViewer?: string;
   contractDetail?: string;
+  tags?: string[];
   isCancelled: boolean;
   createdAt: string;
   updatedAt: string;
@@ -35,12 +37,20 @@ export const PRIORITIES: Priority[] = ['Critical', 'High', 'Medium', 'Low'];
 export const WORK_PERIOD_UNITS: WorkPeriodUnit[] = ['Days', 'Hours'];
 export const TASK_STATUSES: TaskStatus[] = ['New', 'Todo', 'InProgress', 'Test', 'Done'];
 export const DEPLOYMENT_STATUSES: DeploymentStatus[] = ['Wait Approve', 'Wait Deploy', 'Deployed'];
+export const ISSUE_TAGS: IssueTag[] = ['Feature', 'Bug', 'Work', 'Story'];
 
 export const PRIORITY_COLORS: Record<Priority, string> = {
   Critical: 'bg-red-100 text-red-700 border-red-200',
   High: 'bg-orange-100 text-orange-700 border-orange-200',
   Medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
   Low: 'bg-green-100 text-green-700 border-green-200',
+};
+
+export const TAG_COLORS: Record<IssueTag, string> = {
+  Feature: 'bg-blue-100 text-blue-700',
+  Bug: 'bg-red-100 text-red-700',
+  Work: 'bg-amber-100 text-amber-700',
+  Story: 'bg-emerald-100 text-emerald-700',
 };
 
 export const STATUS_COLORS: Record<TaskStatus, string> = {
