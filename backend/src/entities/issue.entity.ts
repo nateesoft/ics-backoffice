@@ -96,6 +96,9 @@ export class Issue {
   @Column({ type: 'simple-array', nullable: true })
   tags: string[];
 
+  @Column({ nullable: true })
+  createdBy: string;
+
   @Column({ default: false })
   isCancelled: boolean;
 

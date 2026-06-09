@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, OnModuleInit } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -18,6 +18,15 @@ export class AuthService implements OnModuleInit {
       const hashed = await bcrypt.hash('admin', 10);
       await this.userRepo.save({ username: 'admin', password: hashed });
     }
+  }
+
+  async changePassword(userId: number, currentPassword: string, newPassword: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException();
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) throw new BadRequestException('Current password is incorrect');
+    user.password = await bcrypt.hash(newPassword, 10);
+    await this.userRepo.save(user);
   }
 
   async login(username: string, password: string) {

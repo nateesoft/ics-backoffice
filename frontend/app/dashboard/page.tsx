@@ -140,14 +140,22 @@ function IssueCard({ issue, onView, ghost }: { issue: Issue; onView?: () => void
           <AgeBadge createdAt={issue.createdAt} />
         </div>
       </div>
-      {issue.developer && (
-        <div className="mt-2 flex items-center gap-1.5">
-          <div className="w-5 h-5 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center text-xs font-bold">
-            {issue.developer[0]?.toUpperCase()}
+      <div className="mt-2 flex items-center justify-between gap-2">
+        {issue.developer ? (
+          <div className="flex items-center gap-1.5">
+            <div className="w-5 h-5 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center text-xs font-bold">
+              {issue.developer[0]?.toUpperCase()}
+            </div>
+            <span className="text-xs text-slate-500">{issue.developer}</span>
           </div>
-          <span className="text-xs text-slate-500">{issue.developer}</span>
-        </div>
-      )}
+        ) : <span />}
+        {issue.createdBy && (
+          <div className="flex items-center gap-1 text-[10px] text-slate-400" title={`Created by ${issue.createdBy}`}>
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            <span>{issue.createdBy}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

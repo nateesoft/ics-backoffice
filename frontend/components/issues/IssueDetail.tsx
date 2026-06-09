@@ -194,6 +194,7 @@ export default function IssueDetail({ issue, currentUser }: { issue: Issue; curr
         {row('Issuer', issue.issuer)}
         {row('Developer', issue.developer)}
         {row('Tester', issue.tester)}
+        {row('Created By', issue.createdBy)}
         {issue.tags && issue.tags.length > 0 && (
           <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-50">
             <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Tags</div>

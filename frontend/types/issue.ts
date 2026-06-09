@@ -25,6 +25,7 @@ export interface Issue {
   teamViewer?: string;
   contractDetail?: string;
   tags?: string[];
+  createdBy?: string;
   isCancelled: boolean;
   createdAt: string;
   updatedAt: string;

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Patch, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Body, Param, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
 import { IssuesService } from './issues.service';
 import { CreateIssueDto, UpdateIssueDto } from './issues.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -24,8 +24,8 @@ export class IssuesController {
   }
 
   @Post()
-  create(@Body() dto: CreateIssueDto) {
-    return this.issuesService.create(dto);
+  create(@Body() dto: CreateIssueDto, @Request() req: any) {
+    return this.issuesService.create(dto, req.user.username);
   }
 
   @Put(':id')

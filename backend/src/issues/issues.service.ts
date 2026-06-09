@@ -18,8 +18,8 @@ export class IssuesService {
     return issue;
   }
 
-  create(dto: CreateIssueDto) {
-    const issue = this.repo.create({ ...dto, taskStatus: dto.taskStatus || TaskStatus.NEW });
+  create(dto: CreateIssueDto, createdBy: string) {
+    const issue = this.repo.create({ ...dto, taskStatus: dto.taskStatus || TaskStatus.NEW, createdBy });
     return this.repo.save(issue);
   }
 

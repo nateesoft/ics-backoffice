@@ -1,12 +1,17 @@
 import { Controller, Post, Body, Res, HttpCode, UseGuards, Get, Req } from '@nestjs/common';
 import type { Response, Request } from 'express';
 import { AuthService } from './auth.service';
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, MinLength } from 'class-validator';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 class LoginDto {
   @IsString() @IsNotEmpty() username: string;
   @IsString() @IsNotEmpty() password: string;
+}
+
+class ChangePasswordDto {
+  @IsString() @IsNotEmpty() currentPassword: string;
+  @IsString() @IsNotEmpty() @MinLength(4) newPassword: string;
 }
 
 @Controller('auth')
@@ -36,5 +41,12 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   me(@Req() req: Request & { user: any }) {
     return req.user;
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  changePassword(@Body() dto: ChangePasswordDto, @Req() req: Request & { user: any }) {
+    return this.authService.changePassword(req.user.id, dto.currentPassword, dto.newPassword);
   }
 }
