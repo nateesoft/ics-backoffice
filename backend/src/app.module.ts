@@ -18,6 +18,7 @@ import { DocumentAttachment } from './entities/document-attachment.entity';
 import { Note } from './entities/note.entity';
 import { IssueComment } from './entities/comment.entity';
 import { CommentAttachment } from './entities/comment-attachment.entity';
+import { IssueHistory } from './entities/issue-history.entity';
 
 @Module({
   imports: [
@@ -27,7 +28,7 @@ import { CommentAttachment } from './entities/comment-attachment.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, Note, IssueComment, CommentAttachment],
+        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, Note, IssueComment, CommentAttachment, IssueHistory],
         synchronize: true,
       }),
       inject: [ConfigService],

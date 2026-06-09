@@ -2,11 +2,40 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Issue, TaskStatus } from '../entities/issue.entity';
+import { IssueHistory } from '../entities/issue-history.entity';
 import { CreateIssueDto, UpdateIssueDto } from './issues.dto';
+
+const TRACKED_FIELDS: Record<string, string> = {
+  projectName: 'Project Name',
+  codeType: 'Code Type',
+  priority: 'Priority',
+  taskStatus: 'Task Status',
+  deploymentStatus: 'Deployment Status',
+  developer: 'Developer',
+  tester: 'Tester',
+  issuer: 'Issuer',
+  targetDate: 'Target Date',
+  taskWorkPeriod: 'Work Period',
+  taskWorkPeriodUnit: 'Work Period Unit',
+  githubLink: 'Github Link',
+  anydesk: 'Anydesk',
+  teamViewer: 'TeamViewer',
+  contractDetail: 'Contract Detail',
+  tags: 'Tags',
+};
+
+function toStr(val: any): string {
+  if (val === null || val === undefined) return '';
+  if (Array.isArray(val)) return val.join(', ');
+  return String(val);
+}
 
 @Injectable()
 export class IssuesService {
-  constructor(@InjectRepository(Issue) private repo: Repository<Issue>) {}
+  constructor(
+    @InjectRepository(Issue) private repo: Repository<Issue>,
+    @InjectRepository(IssueHistory) private historyRepo: Repository<IssueHistory>,
+  ) {}
 
   findAll() {
     return this.repo.find({ order: { createdAt: 'DESC' } });
@@ -23,16 +52,53 @@ export class IssuesService {
     return this.repo.save(issue);
   }
 
-  async update(id: number, dto: UpdateIssueDto) {
+  async update(id: number, dto: UpdateIssueDto, changedBy: string) {
     const issue = await this.findOne(id);
+
+    const historyRecords: Partial<IssueHistory>[] = [];
+    for (const field of Object.keys(TRACKED_FIELDS)) {
+      const oldVal = toStr((issue as any)[field]);
+      const newVal = toStr((dto as any)[field]);
+      if (oldVal !== newVal) {
+        historyRecords.push({
+          issueId: id,
+          changedBy,
+          fieldName: TRACKED_FIELDS[field],
+          oldValue: oldVal || null,
+          newValue: newVal || null,
+        });
+      }
+    }
+
     Object.assign(issue, dto);
-    return this.repo.save(issue);
+    await this.repo.save(issue);
+
+    if (historyRecords.length > 0) {
+      await this.historyRepo.save(historyRecords);
+    }
+
+    return issue;
   }
 
-  async cancel(id: number) {
+  async cancel(id: number, changedBy: string) {
     const issue = await this.findOne(id);
     issue.isCancelled = true;
-    return this.repo.save(issue);
+    await this.repo.save(issue);
+    await this.historyRepo.save({
+      issueId: id,
+      changedBy,
+      fieldName: 'Status',
+      oldValue: 'Active',
+      newValue: 'Cancelled',
+    });
+    return issue;
+  }
+
+  findHistory(issueId: number) {
+    return this.historyRepo.find({
+      where: { issueId },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async getStats() {

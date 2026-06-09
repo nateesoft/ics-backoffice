@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { attachmentsApi } from '@/lib/api';
+import { attachmentsApi, issuesApi } from '@/lib/api';
 import IssueComments from './IssueComments';
 import { Issue, PRIORITY_COLORS, STATUS_COLORS, TAG_COLORS, IssueTag } from '@/types/issue';
 
@@ -162,6 +162,94 @@ export function IssueAttachments({ issueId }: { issueId: number }) {
   );
 }
 
+interface HistoryEntry {
+  id: number;
+  issueId: number;
+  changedBy: string;
+  fieldName: string;
+  oldValue: string | null;
+  newValue: string | null;
+  createdAt: string;
+}
+
+function formatDateTime(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function IssueHistory({ issueId }: { issueId: number }) {
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    issuesApi.getHistory(issueId)
+      .then(r => setHistory(r.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [issueId]);
+
+  return (
+    <div className="mt-5 pt-5 border-t border-slate-100">
+      <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Edit History
+        {history.length > 0 && (
+          <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{history.length}</span>
+        )}
+      </h3>
+
+      {loading ? (
+        <p className="text-xs text-slate-400 py-2">Loading...</p>
+      ) : history.length === 0 ? (
+        <p className="text-xs text-slate-400 py-2">No edit history yet.</p>
+      ) : (
+        <div className="relative pl-5">
+          {/* vertical line */}
+          <div className="absolute left-1.5 top-1 bottom-1 w-px bg-slate-200" />
+
+          <div className="space-y-4">
+            {history.map(entry => (
+              <div key={entry.id} className="relative">
+                {/* dot */}
+                <div className="absolute -left-[15px] top-1.5 w-2.5 h-2.5 rounded-full bg-white border-2 border-indigo-300" />
+
+                <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-5 h-5 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                        {entry.changedBy?.[0]?.toUpperCase()}
+                      </div>
+                      <span className="text-xs font-semibold text-slate-700">{entry.changedBy}</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 flex-shrink-0">{formatDateTime(entry.createdAt)}</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs font-medium text-slate-500">{entry.fieldName}</span>
+                    {entry.oldValue ? (
+                      <>
+                        <span className="text-xs bg-red-50 text-red-600 px-1.5 py-0.5 rounded line-through">{entry.oldValue}</span>
+                        <svg className="w-3 h-3 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+                      </>
+                    ) : null}
+                    {entry.newValue ? (
+                      <span className="text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded font-medium">{entry.newValue}</span>
+                    ) : (
+                      <span className="text-xs text-slate-400 italic">cleared</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function IssueDetail({ issue, currentUser }: { issue: Issue; currentUser: string }) {
   const row = (label: string, value: any) => value ? (
     <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-50">
@@ -215,6 +303,7 @@ export default function IssueDetail({ issue, currentUser }: { issue: Issue; curr
       </div>
       <IssueAttachments issueId={issue.id} />
       <IssueComments issueId={issue.id} currentUser={currentUser} />
+      <IssueHistory issueId={issue.id} />
     </div>
   );
 }

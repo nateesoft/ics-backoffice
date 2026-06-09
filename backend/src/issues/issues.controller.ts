@@ -23,18 +23,23 @@ export class IssuesController {
     return this.issuesService.findOne(id);
   }
 
+  @Get(':id/history')
+  findHistory(@Param('id', ParseIntPipe) id: number) {
+    return this.issuesService.findHistory(id);
+  }
+
   @Post()
   create(@Body() dto: CreateIssueDto, @Request() req: any) {
     return this.issuesService.create(dto, req.user.username);
   }
 
   @Put(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateIssueDto) {
-    return this.issuesService.update(id, dto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateIssueDto, @Request() req: any) {
+    return this.issuesService.update(id, dto, req.user.username);
   }
 
   @Patch(':id/cancel')
-  cancel(@Param('id', ParseIntPipe) id: number) {
-    return this.issuesService.cancel(id);
+  cancel(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
+    return this.issuesService.cancel(id, req.user.username);
   }
 }
