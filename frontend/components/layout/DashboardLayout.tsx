@@ -141,6 +141,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   async function handleMarkRead(n: AppNotification) {
     await notificationsApi.markRead(n.id);
     setNotifications(prev => prev.filter(x => x.id !== n.id));
+    setDropdownOpen(false);
+    router.push(`/issues?issue=${n.issueId}`);
   }
 
   const unreadCount = notifications.length;
