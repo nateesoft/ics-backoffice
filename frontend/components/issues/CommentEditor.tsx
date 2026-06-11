@@ -11,6 +11,11 @@ export interface CommentAttachment {
   size: number;
 }
 
+export interface MentionUser {
+  id: number;
+  username: string;
+}
+
 interface CommentEditorProps {
   commentId?: number;
   initialContent?: string;
@@ -19,9 +24,12 @@ interface CommentEditorProps {
   onCancel?: () => void;
   submitLabel?: string;
   placeholder?: string;
+  users?: MentionUser[];
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/ics-backoffice/api';
+
+const ALL_USER: MentionUser = { id: -1, username: 'all' };
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -57,9 +65,11 @@ export default function CommentEditor({
   onCancel,
   submitLabel = 'Comment',
   placeholder = 'Write a comment...',
+  users = [],
 }: CommentEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [attachments, setAttachments] = useState<CommentAttachment[]>(initialAttachments);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
@@ -67,11 +77,115 @@ export default function CommentEditor({
   const [preview, setPreview] = useState<CommentAttachment | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Mention state
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const [mentionPos, setMentionPos] = useState({ top: 0, left: 0 });
+
+  const allUsers = [ALL_USER, ...users];
+  const filteredUsers = mentionQuery
+    ? allUsers.filter(u => u.username.toLowerCase().includes(mentionQuery.toLowerCase()))
+    : allUsers;
+
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== initialContent) {
       editorRef.current.innerHTML = initialContent;
     }
   }, []);
+
+  // Scroll selected item into view
+  useEffect(() => {
+    if (!mentionOpen || !dropdownRef.current) return;
+    const item = dropdownRef.current.children[mentionIndex] as HTMLElement;
+    item?.scrollIntoView({ block: 'nearest' });
+  }, [mentionIndex, mentionOpen]);
+
+  function detectMention() {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount) { setMentionOpen(false); return; }
+    const range = sel.getRangeAt(0);
+    const node = range.startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) { setMentionOpen(false); return; }
+    const text = node.textContent || '';
+    const offset = range.startOffset;
+    const before = text.slice(0, offset);
+    const atIdx = before.lastIndexOf('@');
+    if (atIdx === -1 || before.slice(atIdx + 1).includes(' ')) {
+      setMentionOpen(false);
+      return;
+    }
+    const query = before.slice(atIdx + 1);
+    setMentionQuery(query);
+    setMentionIndex(0);
+    const rect = range.getBoundingClientRect();
+    setMentionPos({ top: rect.bottom + 4, left: rect.left });
+    setMentionOpen(true);
+  }
+
+  function insertMention(username: string) {
+    editorRef.current?.focus();
+    const sel = window.getSelection();
+    if (!sel?.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    const node = range.startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) return;
+    const text = node.textContent || '';
+    const offset = range.startOffset;
+    const before = text.slice(0, offset);
+    const atIdx = before.lastIndexOf('@');
+    if (atIdx === -1) return;
+
+    const mentionRange = range.cloneRange();
+    mentionRange.setStart(node, atIdx);
+    mentionRange.setEnd(node, offset);
+    mentionRange.deleteContents();
+
+    const span = document.createElement('span');
+    span.className = 'mention text-indigo-600 font-semibold bg-indigo-50 rounded px-0.5';
+    span.dataset.mention = username;
+    span.contentEditable = 'false';
+    span.textContent = `@${username}`;
+    mentionRange.insertNode(span);
+
+    const afterRange = document.createRange();
+    afterRange.setStartAfter(span);
+    afterRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(afterRange);
+    document.execCommand('insertText', false, ' ');
+
+    setMentionOpen(false);
+  }
+
+  function handleEditorKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (mentionOpen && filteredUsers.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setMentionIndex(i => Math.min(i + 1, filteredUsers.length - 1));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setMentionIndex(i => Math.max(i - 1, 0));
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const u = filteredUsers[mentionIndex];
+        if (u) insertMention(u.username);
+        return;
+      }
+      if (e.key === 'Escape') {
+        setMentionOpen(false);
+        return;
+      }
+    }
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleSubmit(e as any);
+    }
+  }
 
   function execCmd(cmd: string, val?: string) {
     document.execCommand(cmd, false, val);
@@ -92,7 +206,6 @@ export default function CommentEditor({
   const handleFiles = useCallback(async (files: FileList | File[]) => {
     for (const file of Array.from(files)) {
       if (commentId !== undefined) {
-        // Edit mode: upload immediately
         const key = file.name + file.size;
         setUploading(u => ({ ...u, [key]: true }));
         try {
@@ -102,7 +215,6 @@ export default function CommentEditor({
           setUploading(u => { const n = { ...u }; delete n[key]; return n; });
         }
       } else {
-        // New comment mode: queue as pending
         setPendingFiles(prev => [...prev, file]);
       }
     }
@@ -188,9 +300,10 @@ export default function CommentEditor({
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
-          onInput={() => {}}
+          onInput={detectMention}
+          onKeyDown={handleEditorKeyDown}
           data-placeholder={placeholder}
-          className="min-h-[80px] max-h-[250px] overflow-y-auto px-3 py-2.5 text-sm text-slate-800 focus:outline-none leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:bg-slate-100 [&_pre]:rounded [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-xs [&_blockquote]:border-l-4 [&_blockquote]:border-indigo-300 [&_blockquote]:pl-3 [&_blockquote]:text-slate-600"
+          className="min-h-[80px] max-h-[250px] overflow-y-auto px-3 py-2.5 text-sm text-slate-800 focus:outline-none leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:bg-slate-100 [&_pre]:rounded [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-xs [&_blockquote]:border-l-4 [&_blockquote]:border-indigo-300 [&_blockquote]:pl-3 [&_blockquote]:text-slate-600 [&_.mention]:text-indigo-600 [&_.mention]:font-semibold [&_.mention]:bg-indigo-50 [&_.mention]:rounded [&_.mention]:px-0.5"
         />
 
         {/* Drop zone */}
@@ -246,7 +359,7 @@ export default function CommentEditor({
 
       {/* Actions */}
       <div className="flex items-center justify-between mt-1.5">
-        <span className="text-xs text-slate-400">Ctrl+Enter to submit</span>
+        <span className="text-xs text-slate-400">Ctrl+Enter to submit · @ to mention</span>
         <div className="flex gap-2">
           {onCancel && (
             <button type="button" onClick={onCancel} className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-medium transition">
@@ -257,13 +370,41 @@ export default function CommentEditor({
             type="button"
             disabled={submitting}
             onClick={handleSubmit}
-            onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e as any); }}
             className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium transition disabled:opacity-40"
           >
             {submitting ? 'Posting...' : submitLabel}
           </button>
         </div>
       </div>
+
+      {/* Mention dropdown */}
+      {mentionOpen && filteredUsers.length > 0 && (
+        <div
+          ref={dropdownRef}
+          style={{ position: 'fixed', top: mentionPos.top, left: mentionPos.left, zIndex: 9999 }}
+          className="w-52 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg py-1"
+        >
+          {filteredUsers.map((u, i) => (
+            <div
+              key={u.id}
+              onMouseDown={e => { e.preventDefault(); insertMention(u.username); }}
+              className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer text-sm transition ${
+                i === mentionIndex ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              {u.id === -1 ? (
+                <span className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs text-indigo-600 font-bold flex-shrink-0">*</span>
+              ) : (
+                <span className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-600 font-bold flex-shrink-0">
+                  {u.username[0]?.toUpperCase()}
+                </span>
+              )}
+              <span className="font-medium">@{u.username}</span>
+              {u.id === -1 && <span className="text-xs text-slate-400 ml-auto">Everyone</span>}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Image preview */}
       {preview && (

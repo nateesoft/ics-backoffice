@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { commentsApi, commentAttachmentsApi } from '@/lib/api';
-import CommentEditor, { CommentAttachment } from './CommentEditor';
+import { commentsApi, commentAttachmentsApi, usersApi } from '@/lib/api';
+import CommentEditor, { CommentAttachment, MentionUser } from './CommentEditor';
 
 interface Comment {
   id: number;
@@ -79,6 +79,11 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [editId, setEditId] = useState<number | null>(null);
+  const [users, setUsers] = useState<MentionUser[]>([]);
+
+  useEffect(() => {
+    usersApi.getAll().then(r => setUsers(r.data)).catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -152,6 +157,7 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
                     onSubmit={async (content) => { await handleUpdate(c)(content); }}
                     onCancel={() => setEditId(null)}
                     submitLabel="Save"
+                    users={users}
                   />
                 ) : (
                   <div className="group relative">
@@ -188,6 +194,7 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
           onSubmit={handleCreate}
           placeholder="Write a comment..."
           submitLabel="Comment"
+          users={users}
         />
       </div>
     </div>
