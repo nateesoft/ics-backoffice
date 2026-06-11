@@ -58,10 +58,26 @@ export default function IssuesPage() {
 
   function handleShare(issue: Issue) {
     const url = `${window.location.origin}${window.location.pathname}?issue=${issue.id}`;
-    navigator.clipboard.writeText(url).then(() => {
+    const doCopy = () => {
       setCopiedId(issue.id);
       setTimeout(() => setCopiedId(null), 2000);
-    });
+    };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(doCopy).catch(() => fallbackCopy(url, doCopy));
+    } else {
+      fallbackCopy(url, doCopy);
+    }
+  }
+
+  function fallbackCopy(text: string, onSuccess: () => void) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); onSuccess(); } catch {}
+    document.body.removeChild(ta);
   }
 
   async function handleCancel(id: number) {
