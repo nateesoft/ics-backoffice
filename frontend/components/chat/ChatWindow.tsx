@@ -1,6 +1,12 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useChatContext } from './ChatContext';
+import dynamic from 'next/dynamic';
+
+const JitsiCallModal = dynamic(() => import('./JitsiCallModal'), { ssr: false });
+const IncomingCallModal = dynamic(() => import('./IncomingCallModal'), { ssr: false });
+
+const JITSI_URL = process.env.NEXT_PUBLIC_JITSI_URL || 'https://meet.jit.si';
 
 function formatTime(iso: string) {
   const d = new Date(iso);
@@ -20,7 +26,7 @@ function ThreadWindow({
   onFocus: () => void;
   index: number;
 }) {
-  const { sendMessage, closeThread } = useChatContext();
+  const { sendMessage, closeThread, startCall } = useChatContext();
   const [input, setInput] = useState('');
   const [minimized, setMinimized] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -36,7 +42,6 @@ function ThreadWindow({
     setInput('');
   }
 
-  // position from right: each window is 280px wide + 12px gap
   const rightOffset = 16 + index * (280 + 12);
 
   return (
@@ -63,9 +68,29 @@ function ThreadWindow({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+          {/* Voice call button */}
           <button
-            onClick={e => { e.stopPropagation(); setMinimized(v => !v); }}
+            title="Voice Call"
+            onClick={() => startCall(thread.userId, thread.username, 'voice')}
+            className="p-1 hover:bg-white/20 rounded transition text-white"
+          >
+            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z" />
+            </svg>
+          </button>
+          {/* Video call button */}
+          <button
+            title="Video Call"
+            onClick={() => startCall(thread.userId, thread.username, 'video')}
+            className="p-1 hover:bg-white/20 rounded transition text-white"
+          >
+            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setMinimized(v => !v)}
             className="p-1 hover:bg-white/20 rounded transition text-white"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -73,7 +98,7 @@ function ThreadWindow({
             </svg>
           </button>
           <button
-            onClick={e => { e.stopPropagation(); closeThread(thread.userId); }}
+            onClick={() => closeThread(thread.userId)}
             className="p-1 hover:bg-white/20 rounded transition text-white"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -135,11 +160,10 @@ function ThreadWindow({
   );
 }
 
-export default function ChatWindow({ currentUserId }: { currentUserId: number }) {
-  const { threads, activeThreadId, openThread } = useChatContext();
+export default function ChatWindow({ currentUserId, currentUsername }: { currentUserId: number; currentUsername: string }) {
+  const { threads, activeThreadId, activeCall, incomingCall, acceptCall, rejectCall, endCall } = useChatContext();
   const [focusedId, setFocusedId] = useState<number | null>(null);
 
-  // show max 3 windows at once to avoid overflow
   const visibleThreads = threads.slice(-3);
 
   return (
@@ -154,6 +178,28 @@ export default function ChatWindow({ currentUserId }: { currentUserId: number })
           index={idx}
         />
       ))}
+
+      {/* Active call — Jitsi modal */}
+      {activeCall && (
+        <JitsiCallModal
+          roomId={activeCall.roomId}
+          displayName={currentUsername}
+          withUsername={activeCall.withUsername}
+          callType={activeCall.callType}
+          jitsiUrl={JITSI_URL}
+          onClose={endCall}
+        />
+      )}
+
+      {/* Incoming call notification */}
+      {incomingCall && !activeCall && (
+        <IncomingCallModal
+          callerName={incomingCall.callerName}
+          callType={incomingCall.callType}
+          onAccept={acceptCall}
+          onReject={rejectCall}
+        />
+      )}
     </>
   );
 }

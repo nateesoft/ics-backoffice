@@ -315,7 +315,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
       {showUnauthorized && <UnauthorizedModal />}
-      <ChatWindow currentUserId={user.id} />
+      <ChatWindow currentUserId={user.id} currentUsername={user.username} />
     </div>
     </ChatProvider>
   );

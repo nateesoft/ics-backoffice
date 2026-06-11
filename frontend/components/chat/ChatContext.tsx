@@ -10,6 +10,20 @@ interface ChatThread {
   unread: number;
 }
 
+export interface CallInfo {
+  roomId: string;
+  callType: 'voice' | 'video';
+  withUserId: number;
+  withUsername: string;
+}
+
+export interface IncomingCall {
+  roomId: string;
+  callType: 'voice' | 'video';
+  callerId: number;
+  callerName: string;
+}
+
 interface ChatContextValue {
   openThread: (userId: number, username: string) => void;
   closeThread: (userId: number) => void;
@@ -17,6 +31,12 @@ interface ChatContextValue {
   threads: ChatThread[];
   activeThreadId: number | null;
   totalUnread: number;
+  startCall: (userId: number, username: string, callType: 'voice' | 'video') => void;
+  activeCall: CallInfo | null;
+  incomingCall: IncomingCall | null;
+  acceptCall: () => void;
+  rejectCall: () => void;
+  endCall: () => void;
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -31,11 +51,10 @@ export function ChatProvider({ children, currentUserId }: { children: React.Reac
   const socketRef = useRef<Socket | null>(null);
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<number | null>(null);
+  const [activeCall, setActiveCall] = useState<CallInfo | null>(null);
+  const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
 
   useEffect(() => {
-    const wsBase = (process.env.NEXT_PUBLIC_API_URL || '/ics-backoffice/api')
-      .replace(/\/api$/, '')
-      .replace(/^\//, '');
     const wsUrl = typeof window !== 'undefined'
       ? `${window.location.protocol}//${window.location.hostname}:3001`
       : 'http://localhost:3001';
@@ -62,28 +81,37 @@ export function ChatProvider({ children, currentUserId }: { children: React.Reac
           return updated;
         }
         if (msg.senderId !== currentUserId) {
-          return [...prev, {
-            userId: otherId,
-            username: otherName,
-            messages: [msg],
-            unread: 1,
-          }];
+          return [...prev, { userId: otherId, username: otherName, messages: [msg], unread: 1 }];
         }
         return prev;
       });
     });
 
     socket.on('marked_read', ({ fromUserId }: { fromUserId: number }) => {
-      setThreads(prev => prev.map(t =>
-        t.userId === fromUserId ? { ...t, unread: 0 } : t
-      ));
+      setThreads(prev => prev.map(t => t.userId === fromUserId ? { ...t, unread: 0 } : t));
+    });
+
+    // --- Call signaling ---
+    socket.on('incoming_call', (data: { callerId: number; callerName: string; roomId: string; callType: 'voice' | 'video' }) => {
+      setIncomingCall({ callerId: data.callerId, callerName: data.callerName, roomId: data.roomId, callType: data.callType });
+    });
+
+    socket.on('call_accepted', (data: { acceptedByName: string; roomId: string }) => {
+      setActiveCall(prev => prev ? { ...prev } : null);
+    });
+
+    socket.on('call_rejected', (data: { rejectedByName: string }) => {
+      setActiveCall(null);
+    });
+
+    socket.on('call_ended', () => {
+      setActiveCall(null);
     });
 
     return () => { socket.disconnect(); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId]);
 
-  // keep a ref so the socket event closure can read the latest value
   const activeThreadIdRef = useRef<number | null>(null);
   useEffect(() => { activeThreadIdRef.current = activeThreadId; }, [activeThreadId]);
 
@@ -93,17 +121,12 @@ export function ChatProvider({ children, currentUserId }: { children: React.Reac
       if (prev.find(t => t.userId === userId)) return prev;
       return [...prev, { userId, username, messages: [], unread: 0 }];
     });
-
-    // load history & clear unread
     try {
       const res = await chatApi.getConversation(userId);
       setThreads(prev => prev.map(t =>
-        t.userId === userId
-          ? { ...t, messages: res.data, unread: 0, username: username || t.username }
-          : t
+        t.userId === userId ? { ...t, messages: res.data, unread: 0, username: username || t.username } : t
       ));
     } catch {}
-
     socketRef.current?.emit('mark_read', { fromUserId: userId });
   }, []);
 
@@ -116,10 +139,44 @@ export function ChatProvider({ children, currentUserId }: { children: React.Reac
     socketRef.current?.emit('send_message', { toUserId, content });
   }, []);
 
+  const startCall = useCallback((userId: number, username: string, callType: 'voice' | 'video') => {
+    const roomId = `ics-${Math.min(currentUserId, userId)}-${Math.max(currentUserId, userId)}-${Date.now()}`;
+    socketRef.current?.emit('call_invite', { toUserId: userId, roomId, callType });
+    setActiveCall({ roomId, callType, withUserId: userId, withUsername: username });
+  }, [currentUserId]);
+
+  const acceptCall = useCallback(() => {
+    if (!incomingCall) return;
+    socketRef.current?.emit('call_accept', { callerId: incomingCall.callerId, roomId: incomingCall.roomId });
+    setActiveCall({
+      roomId: incomingCall.roomId,
+      callType: incomingCall.callType,
+      withUserId: incomingCall.callerId,
+      withUsername: incomingCall.callerName,
+    });
+    setIncomingCall(null);
+  }, [incomingCall]);
+
+  const rejectCall = useCallback(() => {
+    if (!incomingCall) return;
+    socketRef.current?.emit('call_reject', { callerId: incomingCall.callerId, roomId: incomingCall.roomId });
+    setIncomingCall(null);
+  }, [incomingCall]);
+
+  const endCall = useCallback(() => {
+    if (!activeCall) return;
+    socketRef.current?.emit('call_end', { toUserId: activeCall.withUserId, roomId: activeCall.roomId });
+    setActiveCall(null);
+  }, [activeCall]);
+
   const totalUnread = threads.reduce((sum, t) => sum + t.unread, 0);
 
   return (
-    <ChatContext.Provider value={{ openThread, closeThread, sendMessage, threads, activeThreadId, totalUnread }}>
+    <ChatContext.Provider value={{
+      openThread, closeThread, sendMessage,
+      threads, activeThreadId, totalUnread,
+      startCall, activeCall, incomingCall, acceptCall, rejectCall, endCall,
+    }}>
       {children}
     </ChatContext.Provider>
   );

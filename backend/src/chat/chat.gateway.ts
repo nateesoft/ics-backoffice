@@ -14,7 +14,7 @@ import * as cookie from 'cookie';
 
 @WebSocketGateway({ cors: { origin: true, credentials: true } })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  @WebSocketServer() server: Server;
+  @WebSocketServer() server!: Server;
 
   constructor(
     private chatService: ChatService,
@@ -76,5 +76,61 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!userId) return;
     await this.chatService.markAsRead(userId, body.fromUserId);
     socket.emit('marked_read', { fromUserId: body.fromUserId });
+  }
+
+  @SubscribeMessage('call_invite')
+  handleCallInvite(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() body: { toUserId: number; roomId: string; callType: 'voice' | 'video' },
+  ) {
+    const { userId, username } = socket.data;
+    if (!userId) return;
+    this.server.to(`user_${body.toUserId}`).emit('incoming_call', {
+      callerId: userId,
+      callerName: username,
+      roomId: body.roomId,
+      callType: body.callType,
+    });
+  }
+
+  @SubscribeMessage('call_accept')
+  handleCallAccept(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() body: { callerId: number; roomId: string },
+  ) {
+    const { userId, username } = socket.data;
+    if (!userId) return;
+    this.server.to(`user_${body.callerId}`).emit('call_accepted', {
+      acceptedBy: userId,
+      acceptedByName: username,
+      roomId: body.roomId,
+    });
+  }
+
+  @SubscribeMessage('call_reject')
+  handleCallReject(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() body: { callerId: number; roomId: string },
+  ) {
+    const { userId, username } = socket.data;
+    if (!userId) return;
+    this.server.to(`user_${body.callerId}`).emit('call_rejected', {
+      rejectedBy: userId,
+      rejectedByName: username,
+      roomId: body.roomId,
+    });
+  }
+
+  @SubscribeMessage('call_end')
+  handleCallEnd(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() body: { toUserId: number; roomId: string },
+  ) {
+    const { userId } = socket.data;
+    if (!userId) return;
+    this.server.to(`user_${body.toUserId}`).emit('call_ended', {
+      byUserId: userId,
+      roomId: body.roomId,
+    });
   }
 }
