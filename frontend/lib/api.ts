@@ -5,6 +5,17 @@ const api = axios.create({
   withCredentials: true,
 });
 
+api.interceptors.response.use(
+  res => res,
+  err => {
+    if (err?.response?.status === 401 && typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('auth:unauthorized'));
+      return new Promise(() => {}); // swallow — ป้องกัน error ไปถึง Next.js overlay
+    }
+    return Promise.reject(err);
+  },
+);
+
 export const authApi = {
   login: (username: string, password: string) =>
     api.post('/auth/login', { username, password }),
@@ -107,6 +118,23 @@ export const notificationsApi = {
   getUnread: () => api.get<AppNotification[]>('/notifications'),
   markAllRead: () => api.patch('/notifications/read-all'),
   markRead: (id: number) => api.patch(`/notifications/${id}/read`),
+};
+
+export interface ChatMessage {
+  id: number;
+  senderId: number;
+  senderUsername: string;
+  receiverId: number;
+  content: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export const chatApi = {
+  getConversation: (otherUserId: number) =>
+    api.get<ChatMessage[]>(`/chat/conversation/${otherUserId}`),
+  getUnread: () =>
+    api.get<Record<number, number>>('/chat/unread'),
 };
 
 export default api;

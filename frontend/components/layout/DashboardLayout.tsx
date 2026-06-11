@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
+import { ChatProvider } from '@/components/chat/ChatContext';
+import ChatWindow from '@/components/chat/ChatWindow';
 import { authApi, notificationsApi, AppNotification } from '@/lib/api';
 
 const POLL_INTERVAL = 30_000;
@@ -93,17 +95,62 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+function UnauthorizedModal() {
+  const router = useRouter();
+  function handleLogin() {
+    router.push('/login');
+  }
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 flex flex-col items-center gap-4">
+        <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center">
+          <svg className="w-7 h-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m2-10a4 4 0 100 8 4 4 0 000-8zm0 0V5" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+        </div>
+        <div className="text-center">
+          <h2 className="text-base font-bold text-slate-800 mb-1">Session หมดอายุ</h2>
+          <p className="text-sm text-slate-500">กรุณา Login ใหม่เพื่อใช้งานต่อ</p>
+        </div>
+        <button
+          onClick={handleLogin}
+          className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition"
+        >
+          ไปหน้า Login
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const userRef = useRef<any>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showUnauthorized, setShowUnauthorized] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
-    authApi.me().then(r => setUser(r.data)).catch(() => router.push('/login'));
+    authApi.me().then(r => { userRef.current = r.data; setUser(r.data); });
+  }, [router]);
+
+  useEffect(() => {
+    function handler() {
+      if (userRef.current) {
+        // session หมดอายุขณะใช้งานอยู่ → แสดง modal
+        setShowUnauthorized(true);
+      } else {
+        // ยังไม่เคย login → redirect เงียบ
+        router.push('/login');
+      }
+    }
+    window.addEventListener('auth:unauthorized', handler);
+    return () => window.removeEventListener('auth:unauthorized', handler);
   }, [router]);
 
   useEffect(() => {
@@ -153,7 +200,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const unreadCount = notifications.length;
 
+  if (!user) return showUnauthorized ? <UnauthorizedModal /> : null;
+
   return (
+    <ChatProvider currentUserId={user.id}>
     <div className="flex h-screen overflow-hidden bg-slate-50">
       <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -264,6 +314,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
+      {showUnauthorized && <UnauthorizedModal />}
+      <ChatWindow currentUserId={user.id} />
     </div>
+    </ChatProvider>
   );
 }

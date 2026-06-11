@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { authApi, usersApi, OnlineUser } from '@/lib/api';
+import { useChatContext } from '@/components/chat/ChatContext';
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -73,6 +74,8 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   }
 
   const onlineCount = teamUsers.filter(u => u.isOnline).length;
+  const { openThread, threads } = useChatContext();
+  const chatUnreadByUser = Object.fromEntries(threads.map(t => [t.userId, t.unread]));
 
   const sidebarContent = (
     <div className={`flex flex-col h-full bg-slate-900 text-white transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`}>
@@ -132,32 +135,59 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                 </span>
               </div>
               <div className="space-y-0.5">
-                {teamUsers.map(u => (
-                  <div key={u.id} className="flex items-center gap-2.5 px-1 py-1">
-                    <div className="relative flex-shrink-0">
-                      <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-semibold text-slate-300">
-                        {u.username[0].toUpperCase()}
+                {teamUsers.map(u => {
+                  const unread = chatUnreadByUser[u.id] ?? 0;
+                  return (
+                    <button
+                      key={u.id}
+                      onClick={() => openThread(u.id, u.username)}
+                      className="flex items-center gap-2.5 px-1 py-1 w-full rounded-lg hover:bg-slate-800 transition group"
+                    >
+                      <div className="relative flex-shrink-0">
+                        <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-semibold text-slate-300">
+                          {u.username[0].toUpperCase()}
+                        </div>
+                        <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${u.isOnline ? 'bg-green-400' : 'bg-slate-500'}`} />
                       </div>
-                      <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${u.isOnline ? 'bg-green-400' : 'bg-slate-500'}`} />
-                    </div>
-                    <span className="text-xs text-slate-400 truncate">{u.username}</span>
-                    {u.isOnline && (
-                      <span className="ml-auto text-[10px] text-green-400 font-medium">Online</span>
-                    )}
-                  </div>
-                ))}
+                      <span className="text-xs text-slate-400 truncate group-hover:text-white transition">{u.username}</span>
+                      <div className="ml-auto flex items-center gap-1">
+                        {unread > 0 && (
+                          <span className="bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[14px] h-3.5 flex items-center justify-center px-1">
+                            {unread}
+                          </span>
+                        )}
+                        {u.isOnline && !unread && (
+                          <span className="text-[10px] text-green-400 font-medium">Online</span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </>
           ) : (
             <div className="flex flex-col items-center gap-1.5">
-              {teamUsers.slice(0, 4).map(u => (
-                <div key={u.id} className="relative" title={`${u.username} — ${u.isOnline ? 'Online' : 'Offline'}`}>
-                  <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-[11px] font-semibold text-slate-300">
-                    {u.username[0].toUpperCase()}
-                  </div>
-                  <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${u.isOnline ? 'bg-green-400' : 'bg-slate-500'}`} />
-                </div>
-              ))}
+              {teamUsers.slice(0, 4).map(u => {
+                const unread = chatUnreadByUser[u.id] ?? 0;
+                return (
+                  <button
+                    key={u.id}
+                    onClick={() => openThread(u.id, u.username)}
+                    className="relative hover:opacity-80 transition"
+                    title={`${u.username} — ${u.isOnline ? 'Online' : 'Offline'}`}
+                  >
+                    <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-[11px] font-semibold text-slate-300">
+                      {u.username[0].toUpperCase()}
+                    </div>
+                    <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${u.isOnline ? 'bg-green-400' : 'bg-slate-500'}`} />
+                    {unread > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[12px] h-3 flex items-center justify-center px-0.5">
+                        {unread}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
               {teamUsers.length > 4 && (
                 <span className="text-[9px] text-slate-500">+{teamUsers.length - 4}</span>
               )}
