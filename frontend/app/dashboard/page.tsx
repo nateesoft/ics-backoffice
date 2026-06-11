@@ -106,7 +106,7 @@ function AgeBadge({ createdAt }: { createdAt: string }) {
   );
 }
 
-// ─── Trello Card (draggable) ──────────────────────────────────────────────────
+// ─── Trello Card ──────────────────────────────────────────────────────────────
 function IssueCard({ issue, onView, ghost }: { issue: Issue; onView?: () => void; ghost?: boolean }) {
   return (
     <div
@@ -162,7 +162,7 @@ function IssueCard({ issue, onView, ghost }: { issue: Issue; onView?: () => void
   );
 }
 
-function DraggableCard({ issue, onView }: { issue: Issue; onView: () => void }) {
+function DraggableCard({ issue, onView, onCancel }: { issue: Issue; onView: () => void; onCancel: () => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: issue.id,
     data: { issue },
@@ -176,25 +176,35 @@ function DraggableCard({ issue, onView }: { issue: Issue; onView: () => void }) 
       {...listeners}
       className={`transition-opacity ${isDragging ? 'opacity-30' : 'opacity-100'}`}
     >
-      <IssueCard issue={issue} onView={onView} />
+      <div className="relative group">
+        <IssueCard issue={issue} onView={onView} />
+        <button
+          onPointerDown={e => e.stopPropagation()}
+          onClick={e => { e.stopPropagation(); onCancel(); }}
+          className="absolute top-1.5 right-1.5 hidden group-hover:flex w-5 h-5 items-center justify-center rounded bg-red-50 hover:bg-red-100 text-red-400 hover:text-red-600 transition border border-red-100"
+          title="Cancel issue"
+        >
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
     </div>
   );
 }
 
-// ─── Trello Lane (droppable) ──────────────────────────────────────────────────
+// ─── Droppable Lane ───────────────────────────────────────────────────────────
 function DroppableLane({
-  status, issues, onAddInLane, onView,
+  status, issues, onAddInLane, onView, onCancel,
 }: {
   status: TaskStatus;
   issues: Issue[];
   onAddInLane: () => void;
   onView: (issue: Issue) => void;
+  onCancel: (issueId: number) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
     <div className={`flex-shrink-0 w-72 rounded-xl p-3 transition-colors duration-150 ${isOver ? 'bg-indigo-50 ring-2 ring-indigo-300' : 'bg-slate-100'}`}>
-      {/* Lane header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COLORS[status]}`}>{status}</span>
@@ -208,17 +218,72 @@ function DroppableLane({
         </button>
       </div>
 
-      {/* Drop zone */}
       <div
         ref={setNodeRef}
         className={`space-y-2 min-h-[100px] rounded-lg p-1 transition-colors duration-150 ${isOver ? 'bg-indigo-100/60' : ''}`}
       >
         {issues.map(issue => (
-          <DraggableCard key={issue.id} issue={issue} onView={() => onView(issue)} />
+          <DraggableCard
+            key={issue.id}
+            issue={issue}
+            onView={() => onView(issue)}
+            onCancel={() => onCancel(issue.id)}
+          />
         ))}
         {issues.length === 0 && (
           <div className={`h-16 flex items-center justify-center rounded-lg border-2 border-dashed text-xs transition-colors duration-150 ${isOver ? 'border-indigo-400 text-indigo-500 bg-indigo-50' : 'border-slate-200 text-slate-300'}`}>
             Drop here
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Cancelled Lane ───────────────────────────────────────────────────────────
+function CancelledLane({
+  issues, onRestore, onView,
+}: {
+  issues: Issue[];
+  onRestore: (issueId: number) => void;
+  onView: (issue: Issue) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: '__cancelled__' });
+
+  return (
+    <div className={`flex-shrink-0 w-72 rounded-xl p-3 transition-colors duration-150 ${isOver ? 'bg-red-50 ring-2 ring-red-300' : 'bg-slate-100'}`}>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-red-100 text-red-600">
+          Cancelled
+        </span>
+        <span className="text-xs text-slate-500 font-medium">{issues.length}</span>
+      </div>
+
+      <div
+        ref={setNodeRef}
+        className={`space-y-2 min-h-[100px] rounded-lg p-1 transition-colors duration-150 ${isOver ? 'bg-red-100/60' : ''}`}
+      >
+        {issues.map(issue => (
+          <div key={issue.id} className="relative group">
+            <div
+              onClick={() => onView(issue)}
+              className="opacity-55 hover:opacity-80 transition-opacity cursor-pointer"
+            >
+              <IssueCard issue={issue} />
+            </div>
+            <button
+              onClick={() => onRestore(issue.id)}
+              className="absolute top-1.5 right-1.5 hidden group-hover:flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 text-xs font-medium border border-emerald-200 transition"
+              title="Restore issue"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              Restore
+            </button>
+          </div>
+        ))}
+        {issues.length === 0 && (
+          <div className={`h-16 flex items-center justify-center rounded-lg border-2 border-dashed text-xs transition-colors duration-150 ${isOver ? 'border-red-400 text-red-500 bg-red-50' : 'border-slate-200 text-slate-300'}`}>
+            Drag here to cancel
           </div>
         )}
       </div>
@@ -246,26 +311,57 @@ function TrelloView({
     setActiveIssue(issue);
   }
 
+  async function doCancelIssue(issueId: number) {
+    setIssues(all => all.map(i => i.id === issueId ? { ...i, isCancelled: true } : i));
+    try {
+      await issuesApi.cancel(issueId);
+    } catch {
+      setIssues(all => all.map(i => i.id === issueId ? { ...i, isCancelled: false } : i));
+    }
+  }
+
+  async function handleCancelBtn(issueId: number) {
+    if (!confirm('Cancel this issue?')) return;
+    await doCancelIssue(issueId);
+  }
+
+  async function handleRestore(issueId: number) {
+    setIssues(all => all.map(i => i.id === issueId ? { ...i, isCancelled: false } : i));
+    try {
+      await issuesApi.restore(issueId);
+    } catch {
+      setIssues(all => all.map(i => i.id === issueId ? { ...i, isCancelled: true } : i));
+    }
+  }
+
   async function onDragEnd(event: DragEndEvent) {
     setActiveIssue(null);
     const { active, over } = event;
     if (!over) return;
 
     const issueId = active.id as number;
-    const newStatus = over.id as TaskStatus;
+    const overId = over.id as string;
     const issue = issues.find(i => i.id === issueId);
-    if (!issue || issue.taskStatus === newStatus) return;
+    if (!issue) return;
 
-    // Optimistic update
-    const prev = [...issues];
+    if (overId === '__cancelled__') {
+      if (issue.isCancelled) return;
+      await doCancelIssue(issueId);
+      return;
+    }
+
+    const newStatus = overId as TaskStatus;
+    if (!issue.isCancelled && issue.taskStatus === newStatus) return;
+
     setIssues(all => all.map(i => i.id === issueId ? { ...i, taskStatus: newStatus } : i));
-
     try {
       await issuesApi.update(issueId, { ...issue, taskStatus: newStatus });
     } catch {
-      setIssues(prev); // rollback
+      setIssues(all => all.map(i => i.id === issueId ? { ...i, taskStatus: issue.taskStatus } : i));
     }
   }
+
+  const cancelledIssues = issues.filter(i => i.isCancelled);
 
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
@@ -279,9 +375,15 @@ function TrelloView({
               issues={laneIssues}
               onAddInLane={() => onAddInLane(status)}
               onView={onView}
+              onCancel={handleCancelBtn}
             />
           );
         })}
+        <CancelledLane
+          issues={cancelledIssues}
+          onRestore={handleRestore}
+          onView={onView}
+        />
       </div>
 
       <DragOverlay dropAnimation={{
@@ -510,13 +612,15 @@ export default function DashboardPage() {
           onClose={() => setViewIssue(null)}
           size="xl"
           action={
-            <button
-              onClick={() => openEdit(viewIssue)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-              Edit
-            </button>
+            !viewIssue.isCancelled ? (
+              <button
+                onClick={() => openEdit(viewIssue)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                Edit
+              </button>
+            ) : undefined
           }
         >
           <IssueDetail issue={viewIssue} currentUser={currentUser} />

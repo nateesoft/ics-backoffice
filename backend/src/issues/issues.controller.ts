@@ -42,4 +42,9 @@ export class IssuesController {
   cancel(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
     return this.issuesService.cancel(id, req.user.username);
   }
+
+  @Patch(':id/restore')
+  restore(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
+    return this.issuesService.restore(id, req.user.username);
+  }
 }

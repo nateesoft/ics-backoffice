@@ -98,6 +98,20 @@ export class IssuesService {
     return issue;
   }
 
+  async restore(id: number, changedBy: string) {
+    const issue = await this.findOne(id);
+    issue.isCancelled = false;
+    await this.repo.save(issue);
+    await this.historyRepo.save({
+      issueId: id,
+      changedBy,
+      fieldName: 'Status',
+      oldValue: 'Cancelled',
+      newValue: 'Active',
+    });
+    return issue;
+  }
+
   findHistory(issueId: number) {
     return this.historyRepo.find({
       where: { issueId },

@@ -43,6 +43,7 @@ export const issuesApi = {
   create: (data: any) => api.post('/issues', data),
   update: (id: number, data: any) => api.put(`/issues/${id}`, data),
   cancel: (id: number) => api.patch(`/issues/${id}/cancel`),
+  restore: (id: number) => api.patch(`/issues/${id}/restore`),
   getHistory: (id: number) => api.get(`/issues/${id}/history`),
 };
 
