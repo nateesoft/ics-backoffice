@@ -12,10 +12,17 @@ export const authApi = {
   me: () => api.get('/auth/me'),
   changePassword: (currentPassword: string, newPassword: string) =>
     api.post('/auth/change-password', { currentPassword, newPassword }),
+  heartbeat: () => api.post('/auth/heartbeat'),
 };
 
+export interface OnlineUser {
+  id: number;
+  username: string;
+  isOnline: boolean;
+}
+
 export const usersApi = {
-  getAll: () => api.get<{ id: number; username: string }[]>('/auth/users'),
+  getAll: () => api.get<OnlineUser[]>('/auth/users'),
 };
 
 export const issuesApi = {

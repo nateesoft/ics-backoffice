@@ -1,8 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { authApi } from '@/lib/api';
+import { authApi, usersApi, OnlineUser } from '@/lib/api';
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -50,13 +50,29 @@ const menuItems = [
 
 export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [teamUsers, setTeamUsers] = useState<OnlineUser[]>([]);
   const pathname = usePathname();
   const router = useRouter();
+
+  const fetchTeam = useCallback(async () => {
+    try {
+      const res = await usersApi.getAll();
+      setTeamUsers(res.data);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    fetchTeam();
+    const timer = setInterval(fetchTeam, 30_000);
+    return () => clearInterval(timer);
+  }, [fetchTeam]);
 
   async function handleLogout() {
     await authApi.logout();
     router.push('/login');
   }
+
+  const onlineCount = teamUsers.filter(u => u.isOnline).length;
 
   const sidebarContent = (
     <div className={`flex flex-col h-full bg-slate-900 text-white transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`}>
@@ -103,6 +119,52 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           );
         })}
       </nav>
+
+      {/* Team Online Status */}
+      {teamUsers.length > 0 && (
+        <div className="px-3 py-3 border-t border-slate-700">
+          {!collapsed ? (
+            <>
+              <div className="flex items-center justify-between px-1 mb-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Team</span>
+                <span className="text-[10px] text-slate-500">
+                  {onlineCount}/{teamUsers.length} online
+                </span>
+              </div>
+              <div className="space-y-0.5">
+                {teamUsers.map(u => (
+                  <div key={u.id} className="flex items-center gap-2.5 px-1 py-1">
+                    <div className="relative flex-shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-semibold text-slate-300">
+                        {u.username[0].toUpperCase()}
+                      </div>
+                      <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${u.isOnline ? 'bg-green-400' : 'bg-slate-500'}`} />
+                    </div>
+                    <span className="text-xs text-slate-400 truncate">{u.username}</span>
+                    {u.isOnline && (
+                      <span className="ml-auto text-[10px] text-green-400 font-medium">Online</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-1.5">
+              {teamUsers.slice(0, 4).map(u => (
+                <div key={u.id} className="relative" title={`${u.username} — ${u.isOnline ? 'Online' : 'Offline'}`}>
+                  <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-[11px] font-semibold text-slate-300">
+                    {u.username[0].toUpperCase()}
+                  </div>
+                  <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${u.isOnline ? 'bg-green-400' : 'bg-slate-500'}`} />
+                </div>
+              ))}
+              {teamUsers.length > 4 && (
+                <span className="text-[9px] text-slate-500">+{teamUsers.length - 4}</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Logout */}
       <div className="px-3 py-4 border-t border-slate-700">

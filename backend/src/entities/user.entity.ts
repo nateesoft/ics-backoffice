@@ -13,4 +13,7 @@ export class User {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true, default: null })
+  lastSeenAt: Date | null;
 }

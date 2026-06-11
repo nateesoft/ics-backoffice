@@ -38,10 +38,17 @@ export class AuthService implements OnModuleInit {
     return { token, user: { id: user.id, username: user.username } };
   }
 
+  async heartbeat(userId: number) {
+    await this.userRepo.update(userId, { lastSeenAt: new Date() });
+  }
+
   async getUsers() {
     const users = await this.userRepo.find({ where: {} });
-    return users
-      .filter(u => u.username !== 'admin')
-      .map(u => ({ id: u.id, username: u.username }));
+    const onlineThreshold = new Date(Date.now() - 3 * 60 * 1000);
+    return users.map(u => ({
+      id: u.id,
+      username: u.username,
+      isOnline: u.lastSeenAt != null && u.lastSeenAt > onlineThreshold,
+    }));
   }
 }

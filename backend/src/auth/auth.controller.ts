@@ -50,6 +50,13 @@ export class AuthController {
     return this.authService.changePassword(req.user.id, dto.currentPassword, dto.newPassword);
   }
 
+  @Post('heartbeat')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  heartbeat(@Req() req: Request & { user: any }) {
+    return this.authService.heartbeat(req.user.id);
+  }
+
   @Get('users')
   @UseGuards(JwtAuthGuard)
   getUsers() {

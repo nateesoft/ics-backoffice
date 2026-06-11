@@ -106,6 +106,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     authApi.me().then(r => setUser(r.data)).catch(() => router.push('/login'));
   }, [router]);
 
+  useEffect(() => {
+    authApi.heartbeat().catch(() => {});
+    const timer = setInterval(() => authApi.heartbeat().catch(() => {}), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await notificationsApi.getUnread();
