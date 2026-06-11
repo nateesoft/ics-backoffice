@@ -87,4 +87,19 @@ export const documentsApi = {
     `${api.defaults.baseURL}/documents/${documentId}/attachments/${id}/download`,
 };
 
+export interface AppNotification {
+  id: number;
+  senderUsername: string;
+  issueId: number;
+  commentId: number;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export const notificationsApi = {
+  getUnread: () => api.get<AppNotification[]>('/notifications'),
+  markAllRead: () => api.patch('/notifications/read-all'),
+  markRead: (id: number) => api.patch(`/notifications/${id}/read`),
+};
+
 export default api;

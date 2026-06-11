@@ -1,8 +1,20 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
-import { authApi } from '@/lib/api';
+import { authApi, notificationsApi, AppNotification } from '@/lib/api';
+
+const POLL_INTERVAL = 30_000;
+
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
 
 function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -53,35 +65,15 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className={labelCls}>Current Password</label>
-              <input
-                type="password"
-                className={inputCls}
-                value={form.currentPassword}
-                onChange={e => setForm(f => ({ ...f, currentPassword: e.target.value }))}
-                required
-                autoFocus
-              />
+              <input type="password" className={inputCls} value={form.currentPassword} onChange={e => setForm(f => ({ ...f, currentPassword: e.target.value }))} required autoFocus />
             </div>
             <div>
               <label className={labelCls}>New Password</label>
-              <input
-                type="password"
-                className={inputCls}
-                value={form.newPassword}
-                onChange={e => setForm(f => ({ ...f, newPassword: e.target.value }))}
-                required
-                minLength={4}
-              />
+              <input type="password" className={inputCls} value={form.newPassword} onChange={e => setForm(f => ({ ...f, newPassword: e.target.value }))} required minLength={4} />
             </div>
             <div>
               <label className={labelCls}>Confirm New Password</label>
-              <input
-                type="password"
-                className={inputCls}
-                value={form.confirmPassword}
-                onChange={e => setForm(f => ({ ...f, confirmPassword: e.target.value }))}
-                required
-              />
+              <input type="password" className={inputCls} value={form.confirmPassword} onChange={e => setForm(f => ({ ...f, confirmPassword: e.target.value }))} required />
             </div>
 
             {error && (
@@ -89,9 +81,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
             )}
 
             <div className="flex justify-end gap-3 pt-1">
-              <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium hover:bg-slate-50 transition">
-                Cancel
-              </button>
+              <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium hover:bg-slate-50 transition">Cancel</button>
               <button type="submit" disabled={loading} className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition disabled:opacity-50">
                 {loading ? 'Saving...' : 'Change Password'}
               </button>
@@ -108,12 +98,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<any>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
     authApi.me().then(r => setUser(r.data)).catch(() => router.push('/login'));
   }, [router]);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await notificationsApi.getUnread();
+      setNotifications(res.data);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const timer = setInterval(fetchNotifications, POLL_INTERVAL);
+    return () => clearInterval(timer);
+  }, [fetchNotifications]);
 
   useEffect(() => {
     if (!dropdownOpen) return;
@@ -129,16 +133,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/login');
   }
 
+  async function handleMarkAllRead() {
+    await notificationsApi.markAllRead();
+    setNotifications([]);
+  }
+
+  async function handleMarkRead(n: AppNotification) {
+    await notificationsApi.markRead(n.id);
+    setNotifications(prev => prev.filter(x => x.id !== n.id));
+  }
+
+  const unreadCount = notifications.length;
+
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
       <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
         <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
-          <button
-            className="md:hidden p-2 rounded-lg hover:bg-slate-100 transition"
-            onClick={() => setMobileOpen(true)}
-          >
+          <button className="md:hidden p-2 rounded-lg hover:bg-slate-100 transition" onClick={() => setMobileOpen(true)}>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
@@ -151,19 +164,72 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   onClick={() => setDropdownOpen(v => !v)}
                   className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition"
                 >
-                  <div className="w-8 h-8 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-semibold text-sm">
-                    {user.username?.[0]?.toUpperCase()}
+                  {/* Avatar with notification badge */}
+                  <div className="relative">
+                    <div className="w-8 h-8 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-semibold text-sm">
+                      {user.username?.[0]?.toUpperCase()}
+                    </div>
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none pointer-events-none">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
                   </div>
                   <span className="text-sm font-medium text-slate-700 hidden sm:block">{user.username}</span>
                   <svg className="w-3.5 h-3.5 text-slate-400 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl border border-slate-200 shadow-lg py-1 z-40">
+                  <div className="absolute right-0 top-full mt-1.5 w-72 bg-white rounded-xl border border-slate-200 shadow-lg py-1 z-40">
+                    {/* User info */}
                     <div className="px-3 py-2 border-b border-slate-100">
                       <p className="text-xs text-slate-400">Signed in as</p>
                       <p className="text-sm font-semibold text-slate-700">{user.username}</p>
                     </div>
+
+                    {/* Notifications section */}
+                    <div className="border-b border-slate-100">
+                      <div className="flex items-center justify-between px-3 pt-2 pb-1">
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                          Notifications
+                          {unreadCount > 0 && (
+                            <span className="ml-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">{unreadCount}</span>
+                          )}
+                        </span>
+                        {unreadCount > 0 && (
+                          <button onClick={handleMarkAllRead} className="text-xs text-indigo-500 hover:text-indigo-700 font-medium transition">
+                            Mark all read
+                          </button>
+                        )}
+                      </div>
+
+                      {notifications.length === 0 ? (
+                        <p className="px-3 pb-2.5 text-xs text-slate-400">No new notifications</p>
+                      ) : (
+                        <ul className="max-h-52 overflow-y-auto">
+                          {notifications.map(n => (
+                            <li key={n.id}>
+                              <button
+                                onClick={() => handleMarkRead(n)}
+                                className="w-full text-left px-3 py-2 hover:bg-indigo-50 transition flex items-start gap-2.5 group"
+                              >
+                                <span className="mt-0.5 w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />
+                                <span className="flex-1 min-w-0">
+                                  <span className="text-xs text-slate-700 leading-snug">
+                                    <span className="font-semibold text-indigo-600">@{n.senderUsername}</span>
+                                    {' mentioned you in '}
+                                    <span className="font-medium">Issue #{n.issueId}</span>
+                                  </span>
+                                  <span className="block text-[11px] text-slate-400 mt-0.5">{timeAgo(n.createdAt)}</span>
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+
+                    {/* Actions */}
                     <button
                       onClick={() => { setDropdownOpen(false); setShowChangePassword(true); }}
                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 transition"
