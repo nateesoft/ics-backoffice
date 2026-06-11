@@ -38,7 +38,12 @@ export class CommentsService {
   }
 
   async create(issueId: number, dto: CreateCommentDto, createdBy: string) {
-    const comment = await this.repo.save({ issueId, content: dto.content, createdBy });
+    const comment = await this.repo.save({
+      issueId,
+      content: dto.content,
+      createdBy,
+      parentId: dto.parentId ?? null,
+    });
     await this.notifSvc.createFromComment(dto.content, issueId, comment.id, createdBy);
     return comment;
   }
@@ -57,7 +62,18 @@ export class CommentsService {
     const comment = await this.repo.findOne({ where: { id } });
     if (!comment) throw new NotFoundException();
     if (comment.createdBy !== username) throw new ForbiddenException();
+
+    // Cascade-delete replies
+    const replies = await this.repo.find({ where: { parentId: id } });
+    if (replies.length > 0) {
+      const replyIds = replies.map(r => r.id);
+      await this.attRepo.delete({ commentId: In(replyIds) });
+      await this.rxnRepo.delete({ commentId: In(replyIds) });
+      await this.repo.delete(replyIds);
+    }
+
     await this.attRepo.delete({ commentId: id });
+    await this.rxnRepo.delete({ commentId: id });
     await this.repo.delete(id);
   }
 }

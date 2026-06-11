@@ -69,7 +69,8 @@ export const notesApi = {
 
 export const commentsApi = {
   getAll: (issueId: number) => api.get(`/issues/${issueId}/comments`),
-  create: (issueId: number, content: string) => api.post(`/issues/${issueId}/comments`, { content }),
+  create: (issueId: number, content: string, parentId?: number) =>
+    api.post(`/issues/${issueId}/comments`, parentId ? { content, parentId } : { content }),
   update: (issueId: number, id: number, content: string) => api.put(`/issues/${issueId}/comments/${id}`, { content }),
   remove: (issueId: number, id: number) => api.delete(`/issues/${issueId}/comments/${id}`),
 };

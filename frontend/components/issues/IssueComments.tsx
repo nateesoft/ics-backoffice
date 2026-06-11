@@ -19,6 +19,7 @@ interface Comment {
   updatedAt: string;
   attachments: CommentAttachment[];
   reactions: CommentReaction[];
+  parentId: number | null;
 }
 
 interface IssueCommentsProps {
@@ -87,7 +88,7 @@ function ReactionBar({ commentId, reactions, currentUser, onToggle }: {
   }, [showPicker]);
 
   return (
-    <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+    <div className="flex items-center gap-1 flex-wrap">
       {Object.entries(groups).map(([emoji, { count, reacted, users }]) => (
         <button
           key={emoji}
@@ -130,7 +131,7 @@ function ReactionBar({ commentId, reactions, currentUser, onToggle }: {
   );
 }
 
-function AttachmentList({ attachments, commentId }: { attachments: CommentAttachment[]; commentId: number }) {
+function AttachmentList({ attachments }: { attachments: CommentAttachment[] }) {
   const [preview, setPreview] = useState<CommentAttachment | null>(null);
   if (attachments.length === 0) return null;
   return (
@@ -164,6 +165,7 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [editId, setEditId] = useState<number | null>(null);
+  const [replyToId, setReplyToId] = useState<number | null>(null);
   const [users, setUsers] = useState<MentionUser[]>([]);
 
   useEffect(() => {
@@ -182,21 +184,29 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
 
   useEffect(() => { load(); }, [load]);
 
-  async function handleCreate(content: string, pendingFiles: File[]) {
-    const res = await commentsApi.create(issueId, content);
-    const newCommentId: number = res.data.id;
-    for (const file of pendingFiles) {
-      await commentAttachmentsApi.upload(newCommentId, file);
+  const topLevel = comments.filter(c => !c.parentId);
+  const repliesMap: Record<number, Comment[]> = {};
+  for (const c of comments) {
+    if (c.parentId) {
+      if (!repliesMap[c.parentId]) repliesMap[c.parentId] = [];
+      repliesMap[c.parentId].push(c);
     }
-    await load();
   }
 
-  function handleUpdate(comment: Comment) {
-    return async (content: string) => {
-      await commentsApi.update(issueId, comment.id, content);
-      setEditId(null);
-      await load();
-    };
+  async function handleCreate(content: string, pendingFiles: File[], parentId?: number) {
+    const res = await commentsApi.create(issueId, content, parentId);
+    const newId: number = res.data.id;
+    for (const file of pendingFiles) {
+      await commentAttachmentsApi.upload(newId, file);
+    }
+    await load();
+    if (parentId) setReplyToId(null);
+  }
+
+  async function handleUpdate(comment: Comment, content: string) {
+    await commentsApi.update(issueId, comment.id, content);
+    setEditId(null);
+    await load();
   }
 
   async function handleDelete(id: number) {
@@ -207,83 +217,158 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
 
   async function handleToggleReaction(commentId: number, emoji: string) {
     const res = await commentReactionsApi.toggle(commentId, emoji);
-    const updatedReactions: CommentReaction[] = res.data;
-    setComments(prev => prev.map(c =>
-      c.id === commentId ? { ...c, reactions: updatedReactions } : c,
-    ));
+    const updated: CommentReaction[] = res.data;
+    setComments(prev => prev.map(c => c.id === commentId ? { ...c, reactions: updated } : c));
+  }
+
+  function renderCommentBody(c: Comment, isReply: boolean) {
+    if (editId === c.id) {
+      return (
+        <CommentEditor
+          key={`edit-${c.id}`}
+          commentId={c.id}
+          initialContent={c.content}
+          initialAttachments={c.attachments}
+          onSubmit={async (content) => handleUpdate(c, content)}
+          onCancel={() => setEditId(null)}
+          submitLabel="Save"
+          users={users}
+        />
+      );
+    }
+    return (
+      <div className="group relative">
+        <div
+          className={`bg-slate-50 rounded-lg px-3 py-2 leading-relaxed text-slate-700
+            [&_strong]:font-bold [&_em]:italic [&_u]:underline
+            [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4
+            [&_pre]:bg-slate-100 [&_pre]:rounded [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-xs
+            [&_blockquote]:border-l-4 [&_blockquote]:border-indigo-300 [&_blockquote]:pl-3 [&_blockquote]:text-slate-600
+            ${isReply ? 'text-xs' : 'text-sm'}`}
+          dangerouslySetInnerHTML={{ __html: c.content }}
+        />
+        <AttachmentList attachments={c.attachments} />
+
+        {/* Reactions + Reply */}
+        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+          <ReactionBar
+            commentId={c.id}
+            reactions={c.reactions}
+            currentUser={currentUser}
+            onToggle={handleToggleReaction}
+          />
+          {!isReply && (
+            <button
+              onClick={() => setReplyToId(replyToId === c.id ? null : c.id)}
+              className={`flex items-center gap-1 text-xs font-medium transition-colors ${
+                replyToId === c.id
+                  ? 'text-indigo-600'
+                  : 'text-slate-400 hover:text-indigo-600'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+              Reply
+              {(repliesMap[c.id]?.length ?? 0) > 0 && (
+                <span className="ml-0.5 text-slate-400 font-normal">{repliesMap[c.id].length}</span>
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Edit / Delete */}
+        {c.createdBy === currentUser && (
+          <div className="absolute top-1.5 right-2 hidden group-hover:flex gap-1">
+            <button onClick={() => setEditId(c.id)} className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-indigo-600 transition" title="Edit">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+            </button>
+            <button onClick={() => handleDelete(c.id)} className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-red-500 transition" title="Delete">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            </button>
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (
     <div className="mt-6 pt-5 border-t border-slate-100">
       <h3 className="text-sm font-semibold text-slate-700 mb-4">
         Comments
-        {comments.length > 0 && (
-          <span className="ml-2 text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{comments.length}</span>
+        {topLevel.length > 0 && (
+          <span className="ml-2 text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{topLevel.length}</span>
         )}
       </h3>
 
-      {/* Comment list */}
       {loading ? (
         <div className="text-slate-400 text-xs py-3">Loading comments...</div>
-      ) : comments.length === 0 ? (
+      ) : topLevel.length === 0 ? (
         <div className="text-slate-400 text-xs py-3">No comments yet.</div>
       ) : (
         <div className="space-y-5 mb-6">
-          {comments.map(c => (
-            <div key={c.id} className="flex gap-3">
-              <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold ${avatarColor(c.createdBy)}`}>
-                {c.createdBy[0]?.toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-medium text-slate-800">{c.createdBy}</span>
-                  <span className="text-xs text-slate-400">{timeAgo(c.createdAt)}</span>
-                  {c.updatedAt !== c.createdAt && <span className="text-xs text-slate-300 italic">edited</span>}
+          {topLevel.map(c => (
+            <div key={c.id}>
+              {/* Top-level comment */}
+              <div className="flex gap-3">
+                <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold ${avatarColor(c.createdBy)}`}>
+                  {c.createdBy[0]?.toUpperCase()}
                 </div>
-
-                {editId === c.id ? (
-                  <CommentEditor
-                    key={`edit-${c.id}`}
-                    commentId={c.id}
-                    initialContent={c.content}
-                    initialAttachments={c.attachments}
-                    onSubmit={async (content) => { await handleUpdate(c)(content); }}
-                    onCancel={() => setEditId(null)}
-                    submitLabel="Save"
-                    users={users}
-                  />
-                ) : (
-                  <div className="group relative">
-                    <div
-                      className="bg-slate-50 rounded-lg px-3 py-2 text-sm text-slate-700 leading-relaxed [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:bg-slate-100 [&_pre]:rounded [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-xs [&_blockquote]:border-l-4 [&_blockquote]:border-indigo-300 [&_blockquote]:pl-3 [&_blockquote]:text-slate-600"
-                      dangerouslySetInnerHTML={{ __html: c.content }}
-                    />
-                    <AttachmentList attachments={c.attachments} commentId={c.id} />
-                    <ReactionBar
-                      commentId={c.id}
-                      reactions={c.reactions}
-                      currentUser={currentUser}
-                      onToggle={handleToggleReaction}
-                    />
-                    {c.createdBy === currentUser && (
-                      <div className="absolute top-1.5 right-2 hidden group-hover:flex gap-1">
-                        <button onClick={() => setEditId(c.id)} className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-indigo-600 transition" title="Edit">
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                        </button>
-                        <button onClick={() => handleDelete(c.id)} className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-red-500 transition" title="Delete">
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                      </div>
-                    )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-medium text-slate-800">{c.createdBy}</span>
+                    <span className="text-xs text-slate-400">{timeAgo(c.createdAt)}</span>
+                    {c.updatedAt !== c.createdAt && <span className="text-xs text-slate-300 italic">edited</span>}
                   </div>
-                )}
+                  {renderCommentBody(c, false)}
+                </div>
               </div>
+
+              {/* Replies thread */}
+              {(repliesMap[c.id]?.length ?? 0) > 0 && (
+                <div className="ml-11 mt-3 pl-4 border-l-2 border-slate-100 space-y-3">
+                  {repliesMap[c.id].map(r => (
+                    <div key={r.id} className="flex gap-2">
+                      <div className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[10px] font-bold ${avatarColor(r.createdBy)}`}>
+                        {r.createdBy[0]?.toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-medium text-slate-800">{r.createdBy}</span>
+                          <span className="text-xs text-slate-400">{timeAgo(r.createdAt)}</span>
+                          {r.updatedAt !== r.createdAt && <span className="text-xs text-slate-300 italic">edited</span>}
+                        </div>
+                        {renderCommentBody(r, true)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Inline reply editor */}
+              {replyToId === c.id && (
+                <div className="ml-11 mt-3 flex gap-2">
+                  <div className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[10px] font-bold ${avatarColor(currentUser || 'u')}`}>
+                    {(currentUser || 'u')[0]?.toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <CommentEditor
+                      key={`reply-${c.id}`}
+                      onSubmit={async (content, files) => handleCreate(content, files, c.id)}
+                      onCancel={() => setReplyToId(null)}
+                      placeholder={`Reply to @${c.createdBy}...`}
+                      submitLabel="Reply"
+                      users={users}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      {/* New comment */}
+      {/* New top-level comment */}
       <div className="flex gap-3">
         <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold ${avatarColor(currentUser || 'u')}`}>
           {(currentUser || 'u')[0]?.toUpperCase()}

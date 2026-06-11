@@ -8,6 +8,9 @@ export class IssueComment {
   @Column({ type: 'int' })
   issueId: number;
 
+  @Column({ type: 'int', nullable: true, default: null })
+  parentId: number | null;
+
   @Column({ type: 'text' })
   content: string;
 
