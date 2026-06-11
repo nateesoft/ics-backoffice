@@ -84,6 +84,11 @@ export const commentAttachmentsApi = {
   remove: (commentId: number, id: number) => api.delete(`/comments/${commentId}/attachments/${id}`),
 };
 
+export const commentReactionsApi = {
+  toggle: (commentId: number, emoji: string) =>
+    api.post(`/comments/${commentId}/reactions`, { emoji }),
+};
+
 export const documentsApi = {
   getAll: () => api.get('/documents'),
   getOne: (id: number) => api.get(`/documents/${id}`),

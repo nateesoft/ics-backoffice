@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { IssueComment } from '../entities/comment.entity';
 import { CommentAttachment } from '../entities/comment-attachment.entity';
+import { CommentReaction } from '../entities/comment-reaction.entity';
 import { CreateCommentDto, UpdateCommentDto } from './comments.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -11,22 +12,29 @@ export class CommentsService {
   constructor(
     @InjectRepository(IssueComment) private repo: Repository<IssueComment>,
     @InjectRepository(CommentAttachment) private attRepo: Repository<CommentAttachment>,
+    @InjectRepository(CommentReaction) private rxnRepo: Repository<CommentReaction>,
     private notifSvc: NotificationsService,
   ) {}
 
   async findByIssue(issueId: number) {
     const comments = await this.repo.find({ where: { issueId }, order: { createdAt: 'ASC' } });
     if (comments.length === 0) return [];
-    const attachments = await this.attRepo.find({
-      where: { commentId: In(comments.map(c => c.id)) },
-      order: { createdAt: 'ASC' },
-    });
+    const ids = comments.map(c => c.id);
+    const [attachments, reactions] = await Promise.all([
+      this.attRepo.find({ where: { commentId: In(ids) }, order: { createdAt: 'ASC' } }),
+      this.rxnRepo.find({ where: { commentId: In(ids) } }),
+    ]);
     const attMap: Record<number, CommentAttachment[]> = {};
     for (const a of attachments) {
       if (!attMap[a.commentId]) attMap[a.commentId] = [];
       attMap[a.commentId].push(a);
     }
-    return comments.map(c => ({ ...c, attachments: attMap[c.id] || [] }));
+    const rxnMap: Record<number, CommentReaction[]> = {};
+    for (const r of reactions) {
+      if (!rxnMap[r.commentId]) rxnMap[r.commentId] = [];
+      rxnMap[r.commentId].push(r);
+    }
+    return comments.map(c => ({ ...c, attachments: attMap[c.id] || [], reactions: rxnMap[c.id] || [] }));
   }
 
   async create(issueId: number, dto: CreateCommentDto, createdBy: string) {

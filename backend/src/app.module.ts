@@ -10,6 +10,7 @@ import { DocumentsModule } from './documents/documents.module';
 import { NotesModule } from './notes/notes.module';
 import { CommentsModule } from './comments/comments.module';
 import { CommentAttachmentsModule } from './comment-attachments/comment-attachments.module';
+import { CommentReactionsModule } from './comment-reactions/comment-reactions.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ChatModule } from './chat/chat.module';
 import { User } from './entities/user.entity';
@@ -23,6 +24,7 @@ import { CommentAttachment } from './entities/comment-attachment.entity';
 import { IssueHistory } from './entities/issue-history.entity';
 import { Notification } from './entities/notification.entity';
 import { ChatMessage } from './entities/chat-message.entity';
+import { CommentReaction } from './entities/comment-reaction.entity';
 
 @Module({
   imports: [
@@ -32,7 +34,7 @@ import { ChatMessage } from './entities/chat-message.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, Note, IssueComment, CommentAttachment, IssueHistory, Notification, ChatMessage],
+        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage],
         synchronize: true,
       }),
       inject: [ConfigService],
@@ -48,6 +50,7 @@ import { ChatMessage } from './entities/chat-message.entity';
     NotesModule,
     CommentsModule,
     CommentAttachmentsModule,
+    CommentReactionsModule,
     NotificationsModule,
     ChatModule,
   ],

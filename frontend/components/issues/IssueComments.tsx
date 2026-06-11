@@ -1,7 +1,14 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
-import { commentsApi, commentAttachmentsApi, usersApi } from '@/lib/api';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { commentsApi, commentAttachmentsApi, commentReactionsApi, usersApi } from '@/lib/api';
 import CommentEditor, { CommentAttachment, MentionUser } from './CommentEditor';
+
+interface CommentReaction {
+  id: number;
+  commentId: number;
+  emoji: string;
+  createdBy: string;
+}
 
 interface Comment {
   id: number;
@@ -11,6 +18,7 @@ interface Comment {
   createdAt: string;
   updatedAt: string;
   attachments: CommentAttachment[];
+  reactions: CommentReaction[];
 }
 
 interface IssueCommentsProps {
@@ -19,6 +27,7 @@ interface IssueCommentsProps {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/ics-backoffice/api';
+const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -43,6 +52,82 @@ function avatarColor(name: string) {
   let hash = 0;
   for (const c of name) hash = (hash + c.charCodeAt(0)) % colors.length;
   return colors[hash];
+}
+
+function groupReactions(reactions: CommentReaction[], currentUser: string) {
+  const groups: Record<string, { count: number; reacted: boolean; users: string[] }> = {};
+  for (const r of reactions) {
+    if (!groups[r.emoji]) groups[r.emoji] = { count: 0, reacted: false, users: [] };
+    groups[r.emoji].count++;
+    groups[r.emoji].users.push(r.createdBy);
+    if (r.createdBy === currentUser) groups[r.emoji].reacted = true;
+  }
+  return groups;
+}
+
+function ReactionBar({ commentId, reactions, currentUser, onToggle }: {
+  commentId: number;
+  reactions: CommentReaction[];
+  currentUser: string;
+  onToggle: (commentId: number, emoji: string) => Promise<void>;
+}) {
+  const [showPicker, setShowPicker] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const groups = groupReactions(reactions, currentUser);
+
+  useEffect(() => {
+    if (!showPicker) return;
+    function handler(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowPicker(false);
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showPicker]);
+
+  return (
+    <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+      {Object.entries(groups).map(([emoji, { count, reacted, users }]) => (
+        <button
+          key={emoji}
+          onClick={() => onToggle(commentId, emoji)}
+          title={users.join(', ')}
+          className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-all ${
+            reacted
+              ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-medium'
+              : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50'
+          }`}
+        >
+          <span>{emoji}</span>
+          <span>{count}</span>
+        </button>
+      ))}
+      <div ref={pickerRef} className="relative">
+        <button
+          onClick={() => setShowPicker(p => !p)}
+          className="flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs border border-slate-200 bg-white text-slate-400 hover:border-indigo-300 hover:text-indigo-500 transition-all"
+          title="Add reaction"
+        >
+          <span>😊</span>
+          <span className="font-bold">+</span>
+        </button>
+        {showPicker && (
+          <div className="absolute bottom-full left-0 mb-1 z-20 flex gap-1 bg-white border border-slate-200 rounded-xl shadow-xl px-2 py-1.5">
+            {EMOJIS.map(e => (
+              <button
+                key={e}
+                onClick={() => { onToggle(commentId, e); setShowPicker(false); }}
+                className="text-lg hover:scale-125 transition-transform leading-none"
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function AttachmentList({ attachments, commentId }: { attachments: CommentAttachment[]; commentId: number }) {
@@ -120,6 +205,14 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
     await load();
   }
 
+  async function handleToggleReaction(commentId: number, emoji: string) {
+    const res = await commentReactionsApi.toggle(commentId, emoji);
+    const updatedReactions: CommentReaction[] = res.data;
+    setComments(prev => prev.map(c =>
+      c.id === commentId ? { ...c, reactions: updatedReactions } : c,
+    ));
+  }
+
   return (
     <div className="mt-6 pt-5 border-t border-slate-100">
       <h3 className="text-sm font-semibold text-slate-700 mb-4">
@@ -166,6 +259,12 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
                       dangerouslySetInnerHTML={{ __html: c.content }}
                     />
                     <AttachmentList attachments={c.attachments} commentId={c.id} />
+                    <ReactionBar
+                      commentId={c.id}
+                      reactions={c.reactions}
+                      currentUser={currentUser}
+                      onToggle={handleToggleReaction}
+                    />
                     {c.createdBy === currentUser && (
                       <div className="absolute top-1.5 right-2 hidden group-hover:flex gap-1">
                         <button onClick={() => setEditId(c.id)} className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-indigo-600 transition" title="Edit">
