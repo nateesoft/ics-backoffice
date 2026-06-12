@@ -4,9 +4,34 @@ import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import { ChatProvider } from '@/components/chat/ChatContext';
 import ChatWindow from '@/components/chat/ChatWindow';
-import { authApi, notificationsApi, AppNotification } from '@/lib/api';
+import { authApi, avatarSrc, notificationsApi, AppNotification } from '@/lib/api';
 
 const POLL_INTERVAL = 30_000;
+
+function UserAvatar({ user, size, avatarKey }: { user: any; size: number; avatarKey?: number }) {
+  const [imgError, setImgError] = useState(false);
+  useEffect(() => { setImgError(false); }, [user?.avatarFilename, avatarKey]);
+  const px = size * 4;
+  const base = `rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center font-semibold`;
+  const style = { width: px, height: px };
+  if (user?.avatarFilename && !imgError) {
+    return (
+      <div className={base} style={style}>
+        <img
+          src={`${avatarSrc(user.id)}?v=${avatarKey ?? 0}`}
+          alt={user.username}
+          className="w-full h-full object-cover"
+          onError={() => setImgError(true)}
+        />
+      </div>
+    );
+  }
+  return (
+    <div className={`${base} bg-indigo-100 text-indigo-700`} style={style}>
+      <span style={{ fontSize: px * 0.4 }}>{user?.username?.[0]?.toUpperCase()}</span>
+    </div>
+  );
+}
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -16,6 +41,143 @@ function timeAgo(dateStr: string) {
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function AvatarModal({ user, onClose, onUpdated }: { user: any; onClose: () => void; onUpdated: (avatarFilename: string | null) => void }) {
+  const [preview, setPreview] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > 3 * 1024 * 1024) { setError('File must be under 3MB'); return; }
+    setError('');
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+  }
+
+  async function handleUpload() {
+    if (!file) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await authApi.uploadAvatar(file);
+      onUpdated(res.data.avatarFilename);
+      setSuccess(true);
+      setTimeout(onClose, 1200);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Upload failed');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRemove() {
+    setLoading(true);
+    setError('');
+    try {
+      await authApi.removeAvatar();
+      onUpdated(null);
+      onClose();
+    } catch {
+      setError('Failed to remove avatar');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const currentAvatarUrl = user.avatarFilename ? avatarSrc(user.id) : null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-base font-bold text-slate-800">Profile Photo</h2>
+          <button onClick={onClose} className="p-1.5 hover:bg-slate-100 rounded-lg transition text-slate-400">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        {success ? (
+          <div className="flex flex-col items-center gap-3 py-4">
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <p className="text-sm font-medium text-slate-700">Profile photo updated</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-5">
+            {/* Avatar preview */}
+            <div className="relative group cursor-pointer" onClick={() => inputRef.current?.click()}>
+              <div className="w-28 h-28 rounded-full overflow-hidden ring-4 ring-indigo-100 bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-3xl">
+                {preview ? (
+                  <img src={preview} alt="preview" className="w-full h-full object-cover" />
+                ) : currentAvatarUrl && !imgError ? (
+                  <img
+                    src={currentAvatarUrl}
+                    alt={user.username}
+                    className="w-full h-full object-cover"
+                    onError={() => setImgError(true)}
+                  />
+                ) : (
+                  user.username?.[0]?.toUpperCase()
+                )}
+              </div>
+              <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+            </div>
+
+            <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+
+            <div className="flex gap-2 w-full">
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                className="flex-1 px-4 py-2 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 text-sm font-medium hover:bg-indigo-100 transition"
+              >
+                {file ? 'Change Photo' : 'Choose Photo'}
+              </button>
+              {(currentAvatarUrl && !imgError) && !file && (
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  disabled={loading}
+                  className="px-4 py-2 rounded-lg border border-red-200 bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition disabled:opacity-50"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+
+            {error && <div className="w-full bg-red-50 text-red-600 text-sm px-3 py-2 rounded-lg border border-red-100">{error}</div>}
+
+            <p className="text-xs text-slate-400">JPG, PNG, GIF or WebP · Max 3MB</p>
+
+            <div className="flex justify-end gap-3 w-full pt-1 border-t border-slate-100">
+              <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium hover:bg-slate-50 transition">Cancel</button>
+              <button
+                type="button"
+                onClick={handleUpload}
+                disabled={!file || loading}
+                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition disabled:opacity-40"
+              >
+                {loading ? 'Uploading...' : 'Save Photo'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function ChangePasswordModal({ onClose }: { onClose: () => void }) {
@@ -130,7 +292,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const userRef = useRef<any>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [showUnauthorized, setShowUnauthorized] = useState(false);
+  const [avatarKey, setAvatarKey] = useState(0);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -224,9 +388,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 >
                   {/* Avatar with notification badge */}
                   <div className="relative">
-                    <div className="w-8 h-8 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-semibold text-sm">
-                      {user.username?.[0]?.toUpperCase()}
-                    </div>
+                    <UserAvatar user={user} size={8} avatarKey={avatarKey} />
                     {unreadCount > 0 && (
                       <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none pointer-events-none">
                         {unreadCount > 99 ? '99+' : unreadCount}
@@ -240,9 +402,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {dropdownOpen && (
                   <div className="absolute right-0 top-full mt-1.5 w-72 bg-white rounded-xl border border-slate-200 shadow-lg py-1 z-40">
                     {/* User info */}
-                    <div className="px-3 py-2 border-b border-slate-100">
-                      <p className="text-xs text-slate-400">Signed in as</p>
-                      <p className="text-sm font-semibold text-slate-700">{user.username}</p>
+                    <div className="px-3 py-3 border-b border-slate-100 flex items-center gap-3">
+                      <UserAvatar user={user} size={10} avatarKey={avatarKey} />
+                      <div>
+                        <p className="text-xs text-slate-400">Signed in as</p>
+                        <p className="text-sm font-semibold text-slate-700">{user.username}</p>
+                      </div>
                     </div>
 
                     {/* Notifications section */}
@@ -289,6 +454,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                     {/* Actions */}
                     <button
+                      onClick={() => { setDropdownOpen(false); setShowAvatarModal(true); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 transition"
+                    >
+                      <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Edit Profile Photo
+                    </button>
+                    <button
                       onClick={() => { setDropdownOpen(false); setShowChangePassword(true); }}
                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 transition"
                     >
@@ -314,6 +489,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
+      {showAvatarModal && (
+        <AvatarModal
+          user={user}
+          onClose={() => setShowAvatarModal(false)}
+          onUpdated={(avatarFilename) => {
+            setUser((u: any) => ({ ...u, avatarFilename }));
+            setAvatarKey(k => k + 1);
+          }}
+        />
+      )}
       {showUnauthorized && <UnauthorizedModal />}
       <ChatWindow currentUserId={user.id} currentUsername={user.username} />
     </div>

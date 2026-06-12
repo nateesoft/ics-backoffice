@@ -24,12 +24,23 @@ export const authApi = {
   changePassword: (currentPassword: string, newPassword: string) =>
     api.post('/auth/change-password', { currentPassword, newPassword }),
   heartbeat: () => api.post('/auth/heartbeat'),
+  uploadAvatar: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post('/auth/avatar', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+  removeAvatar: () => api.delete('/auth/avatar'),
 };
+
+export function avatarSrc(userId: number): string {
+  return `${api.defaults.baseURL}/auth/avatar/${userId}`;
+}
 
 export interface OnlineUser {
   id: number;
   username: string;
   isOnline: boolean;
+  avatarFilename: string | null;
 }
 
 export const usersApi = {

@@ -2,8 +2,32 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { authApi, usersApi, OnlineUser } from '@/lib/api';
+import { authApi, usersApi, avatarSrc, OnlineUser } from '@/lib/api';
 import { useChatContext } from '@/components/chat/ChatContext';
+
+function TeamAvatar({ user, size }: { user: OnlineUser; size: number }) {
+  const [imgError, setImgError] = useState(false);
+  const px = size * 4;
+  if (user.avatarFilename && !imgError) {
+    return (
+      <img
+        src={`${avatarSrc(user.id)}`}
+        alt={user.username}
+        className="rounded-full object-cover"
+        style={{ width: px, height: px }}
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+  return (
+    <div
+      className="rounded-full bg-slate-700 flex items-center justify-center font-semibold text-slate-300"
+      style={{ width: px, height: px, fontSize: px * 0.4 }}
+    >
+      {user.username[0].toUpperCase()}
+    </div>
+  );
+}
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -153,9 +177,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                       className="flex items-center gap-2.5 px-1 py-1 w-full rounded-lg hover:bg-slate-800 transition group"
                     >
                       <div className="relative flex-shrink-0">
-                        <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-semibold text-slate-300">
-                          {u.username[0].toUpperCase()}
-                        </div>
+                        <TeamAvatar user={u} size={6} />
                         <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${u.isOnline ? 'bg-green-400' : 'bg-slate-500'}`} />
                       </div>
                       <span className="text-xs text-slate-400 truncate group-hover:text-white transition">{u.username}</span>
@@ -185,9 +207,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                     className="relative hover:opacity-80 transition"
                     title={`${u.username} — ${u.isOnline ? 'Online' : 'Offline'}`}
                   >
-                    <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-[11px] font-semibold text-slate-300">
-                      {u.username[0].toUpperCase()}
-                    </div>
+                    <TeamAvatar user={u} size={7} />
                     <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-900 ${u.isOnline ? 'bg-green-400' : 'bg-slate-500'}`} />
                     {unread > 0 && (
                       <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[12px] h-3 flex items-center justify-center px-0.5">

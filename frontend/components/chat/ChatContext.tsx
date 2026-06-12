@@ -56,10 +56,14 @@ export function ChatProvider({ children, currentUserId }: { children: React.Reac
 
   useEffect(() => {
     const wsUrl = typeof window !== 'undefined'
-      ? `${window.location.protocol}//${window.location.hostname}:3001`
-      : 'http://localhost:3001';
+      ? `${window.location.protocol}//${window.location.host}`
+      : 'http://localhost:9191';
 
-    const socket = io(wsUrl, { withCredentials: true, transports: ['websocket', 'polling'] });
+    const socket = io(wsUrl, {
+      path: '/ics-backoffice/socket.io',
+      withCredentials: true,
+      transports: ['websocket', 'polling'],
+    });
     socketRef.current = socket;
 
     socket.on('new_message', (msg: ChatMessage) => {

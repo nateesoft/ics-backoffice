@@ -1,5 +1,8 @@
-import { Controller, Post, Body, Res, HttpCode, UseGuards, Get, Req } from '@nestjs/common';
+import { Controller, Post, Delete, Body, Res, HttpCode, UseGuards, Get, Req, Param, ParseIntPipe, UseInterceptors, UploadedFile, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import type { Response, Request } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
 import { AuthService } from './auth.service';
 import { IsString, IsNotEmpty, MinLength } from 'class-validator';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -39,8 +42,63 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  me(@Req() req: Request & { user: any }) {
-    return req.user;
+  async me(@Req() req: Request & { user: any }) {
+    const user = await this.authService.getUserById(req.user.id);
+    if (!user) throw new UnauthorizedException();
+    return { id: user.id, username: user.username, avatarFilename: user.avatarFilename };
+  }
+
+  @Post('avatar')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: join(process.cwd(), 'uploads', 'avatars'),
+        filename: (req, file, cb) => {
+          const userId = (req as any).user?.id ?? 'unknown';
+          const timestamp = Date.now();
+          cb(null, `${userId}_${timestamp}${extname(file.originalname).toLowerCase()}`);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.match(/^image\/(jpeg|png|gif|webp)$/)) {
+          return cb(new BadRequestException('Only image files are allowed'), false);
+        }
+        cb(null, true);
+      },
+      limits: { fileSize: 3 * 1024 * 1024 },
+    }),
+  )
+  uploadAvatar(@UploadedFile() file: Express.Multer.File, @Req() req: Request & { user: any }) {
+    return this.authService.uploadAvatar(req.user.id, file.filename);
+  }
+
+  @Delete('avatar')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  removeAvatar(@Req() req: Request & { user: any }) {
+    return this.authService.removeAvatar(req.user.id);
+  }
+
+  @Get('avatar/:userId')
+  async getAvatar(@Param('userId', ParseIntPipe) userId: number, @Res() res: Response) {
+    const user = await this.authService.getUserById(userId);
+    if (!user?.avatarFilename) {
+      res.status(404).send();
+      return;
+    }
+    const ext = extname(user.avatarFilename).toLowerCase();
+    const mimeMap: Record<string, string> = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+    };
+    res.setHeader('Content-Type', mimeMap[ext] ?? 'application/octet-stream');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.sendFile(join(process.cwd(), 'uploads', 'avatars', user.avatarFilename));
   }
 
   @Post('change-password')
