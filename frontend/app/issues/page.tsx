@@ -4,7 +4,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import Modal from '@/components/ui/Modal';
 import IssueForm from '@/components/issues/IssueForm';
 import IssueDetail from '@/components/issues/IssueDetail';
-import { Issue, TASK_STATUSES, PRIORITIES, STATUS_COLORS, PRIORITY_COLORS } from '@/types/issue';
+import { Issue, TASK_STATUSES, PRIORITIES, CODE_TYPES, DEPLOYMENT_STATUSES, ISSUE_TAGS, STATUS_COLORS, PRIORITY_COLORS } from '@/types/issue';
 import { issuesApi, authApi } from '@/lib/api';
 
 export default function IssuesPage() {
@@ -15,10 +15,27 @@ export default function IssuesPage() {
   const [viewIssue, setViewIssue] = useState<Issue | null>(null);
   const [filterStatus, setFilterStatus] = useState('');
   const [filterPriority, setFilterPriority] = useState('');
+  const [filterCodeType, setFilterCodeType] = useState('');
+  const [filterDeployment, setFilterDeployment] = useState('');
+  const [filterTag, setFilterTag] = useState('');
+  const [showCancelled, setShowCancelled] = useState(true);
   const [search, setSearch] = useState('');
   const [currentUser, setCurrentUser] = useState('');
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
   const initialIssueIdRef = useRef<number | null>(null);
+
+  const hasActiveFilters = filterStatus || filterPriority || filterCodeType || filterDeployment || filterTag || !showCancelled || search;
+
+  function clearFilters() {
+    setFilterStatus('');
+    setFilterPriority('');
+    setFilterCodeType('');
+    setFilterDeployment('');
+    setFilterTag('');
+    setShowCancelled(true);
+    setSearch('');
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -87,9 +104,19 @@ export default function IssuesPage() {
   }
 
   const filtered = issues.filter(i => {
+    if (!showCancelled && i.isCancelled) return false;
     if (filterStatus && i.taskStatus !== filterStatus) return false;
     if (filterPriority && i.priority !== filterPriority) return false;
-    if (search && !i.projectName.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterCodeType && i.codeType !== filterCodeType) return false;
+    if (filterDeployment && i.deploymentStatus !== filterDeployment) return false;
+    if (filterTag && !(i.tags ?? []).includes(filterTag)) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      const match = i.projectName.toLowerCase().includes(q)
+        || (i.developer ?? '').toLowerCase().includes(q)
+        || (i.issuer ?? '').toLowerCase().includes(q);
+      if (!match) return false;
+    }
     return true;
   });
 
@@ -113,22 +140,74 @@ export default function IssuesPage() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-3">
-          <input
-            type="text"
-            placeholder="Search project..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className={selectCls + " flex-1 min-w-40"}
-          />
-          <select className={selectCls} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-            <option value="">All Status</option>
-            {TASK_STATUSES.map(s => <option key={s}>{s}</option>)}
-          </select>
-          <select className={selectCls} value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
-            <option value="">All Priority</option>
-            {PRIORITIES.map(p => <option key={p}>{p}</option>)}
-          </select>
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
+          {/* Row 1: Search + main filters */}
+          <div className="flex flex-wrap gap-3">
+            <div className="relative flex-1 min-w-48">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              <input
+                type="text"
+                placeholder="Search project, developer, issuer..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className={selectCls + " pl-9 w-full"}
+              />
+            </div>
+            <select className={selectCls} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+              <option value="">All Status</option>
+              {TASK_STATUSES.map(s => <option key={s}>{s}</option>)}
+            </select>
+            <select className={selectCls} value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
+              <option value="">All Priority</option>
+              {PRIORITIES.map(p => <option key={p}>{p}</option>)}
+            </select>
+            <button
+              onClick={() => setShowMoreFilters(v => !v)}
+              className={`px-3 py-2 rounded-lg border text-sm font-medium transition flex items-center gap-1.5 ${showMoreFilters ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
+              More Filters
+              {(filterCodeType || filterDeployment || filterTag || !showCancelled) && (
+                <span className="w-2 h-2 rounded-full bg-indigo-500" />
+              )}
+            </button>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition flex items-center gap-1.5"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Row 2: Extra filters (collapsible) */}
+          {showMoreFilters && (
+            <div className="flex flex-wrap gap-3 pt-2 border-t border-slate-100">
+              <select className={selectCls} value={filterCodeType} onChange={e => setFilterCodeType(e.target.value)}>
+                <option value="">All Code Types</option>
+                {CODE_TYPES.map(c => <option key={c}>{c}</option>)}
+              </select>
+              <select className={selectCls} value={filterDeployment} onChange={e => setFilterDeployment(e.target.value)}>
+                <option value="">All Deploy Status</option>
+                {DEPLOYMENT_STATUSES.map(d => <option key={d}>{d}</option>)}
+              </select>
+              <select className={selectCls} value={filterTag} onChange={e => setFilterTag(e.target.value)}>
+                <option value="">All Tags</option>
+                {ISSUE_TAGS.map(t => <option key={t}>{t}</option>)}
+              </select>
+              <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 cursor-pointer hover:bg-slate-50 select-none">
+                <input
+                  type="checkbox"
+                  checked={showCancelled}
+                  onChange={e => setShowCancelled(e.target.checked)}
+                  className="rounded"
+                />
+                Show Cancelled
+              </label>
+            </div>
+          )}
         </div>
 
         {/* Table */}

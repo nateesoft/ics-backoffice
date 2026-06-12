@@ -317,14 +317,10 @@ export default function PostItBoard() {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M4 4h16v12l-4 4H4V4z" />
-        </svg>
-        <h2 className="text-sm font-semibold text-slate-700">Quick Notes</h2>
         {notes.length > 0 && (
           <span className="text-xs text-slate-400">{notes.length} note{notes.length > 1 ? 's' : ''}</span>
         )}
-        <span className="text-xs text-slate-300 ml-1">· drag handle to reorder</span>
+        <span className="text-xs text-slate-300">· drag handle to reorder</span>
       </div>
 
       <DndContext

@@ -17,7 +17,7 @@ import Modal from '@/components/ui/Modal';
 import IssueForm from '@/components/issues/IssueForm';
 import IssueDetail from '@/components/issues/IssueDetail';
 import PostItBoard from '@/components/dashboard/PostItBoard';
-import { Issue, TaskStatus, TASK_STATUSES, STATUS_COLORS, PRIORITY_COLORS, TAG_COLORS, IssueTag } from '@/types/issue';
+import { Issue, TaskStatus, TASK_STATUSES, PRIORITIES, CODE_TYPES, ISSUE_TAGS, STATUS_COLORS, PRIORITY_COLORS, TAG_COLORS, IssueTag } from '@/types/issue';
 import { issuesApi, authApi, usersApi } from '@/lib/api';
 
 interface SystemUser { id: number; username: string; }
@@ -474,6 +474,7 @@ function UserFilterBar({ users, selected, onChange }: {
 // ─── Dashboard Page ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const [view, setView] = useState<ViewMode>('trello');
+  const [showNotes, setShowNotes] = useState(true);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editIssue, setEditIssue] = useState<Issue | null>(null);
@@ -483,6 +484,19 @@ export default function DashboardPage() {
   const [currentUser, setCurrentUser] = useState('');
   const [systemUsers, setSystemUsers] = useState<SystemUser[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [boardSearch, setBoardSearch] = useState('');
+  const [boardPriority, setBoardPriority] = useState('');
+  const [boardCodeType, setBoardCodeType] = useState('');
+  const [boardTag, setBoardTag] = useState('');
+
+  const hasBoardFilters = boardSearch || boardPriority || boardCodeType || boardTag || selectedUsers.size > 0;
+  function clearBoardFilters() {
+    setBoardSearch('');
+    setBoardPriority('');
+    setBoardCodeType('');
+    setBoardTag('');
+    setSelectedUsers(new Set());
+  }
 
   const load = useCallback(async () => {
     const res = await issuesApi.getAll();
@@ -495,12 +509,21 @@ export default function DashboardPage() {
     usersApi.getAll().then(res => setSystemUsers(res.data)).catch(() => {});
   }, []);
 
-  const filteredIssues = selectedUsers.size === 0
-    ? issues
-    : issues.filter(i =>
-        (i.developer && selectedUsers.has(i.developer)) ||
-        (i.tester && selectedUsers.has(i.tester))
-      );
+  const filteredIssues = issues.filter(i => {
+    if (selectedUsers.size > 0 && !(
+      (i.developer && selectedUsers.has(i.developer)) ||
+      (i.tester && selectedUsers.has(i.tester))
+    )) return false;
+    if (boardPriority && i.priority !== boardPriority) return false;
+    if (boardCodeType && i.codeType !== boardCodeType) return false;
+    if (boardTag && !(i.tags ?? []).includes(boardTag)) return false;
+    if (boardSearch) {
+      const q = boardSearch.toLowerCase();
+      if (!i.projectName.toLowerCase().includes(q) &&
+          !(i.developer ?? '').toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
 
   function openCreate(date?: string, status?: string) {
     setDefaultDate(date || '');
@@ -578,17 +601,85 @@ export default function DashboardPage() {
         </div>
 
         {/* Post-it Notes */}
-        <div className="bg-white/60 rounded-2xl border border-slate-200/80 px-5 py-4 shadow-sm">
-          <PostItBoard />
+        <div className="bg-white/60 rounded-2xl border border-slate-200/80 shadow-sm">
+          <button
+            onClick={() => setShowNotes(v => !v)}
+            className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-50/80 transition rounded-2xl"
+          >
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h16v12l-4 4H4V4z" /></svg>
+              <span className="text-sm font-semibold text-slate-600">Quick Notes</span>
+            </div>
+            <svg
+              className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${showNotes ? 'rotate-180' : ''}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showNotes && (
+            <div className="px-5 pb-4">
+              <PostItBoard />
+            </div>
+          )}
         </div>
 
-        {/* User filter (Trello only) */}
-        {view === 'trello' && systemUsers.length > 0 && (
-          <div className="bg-white/70 rounded-xl border border-slate-200 px-4 py-3 shadow-sm">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide shrink-0">Assignee</span>
-              <UserFilterBar users={systemUsers} selected={selectedUsers} onChange={setSelectedUsers} />
+        {/* Board Filters (Trello only) */}
+        {view === 'trello' && (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-4 space-y-3">
+            {/* Row 1: search + dropdowns + clear */}
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="relative flex-1 min-w-48">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <input
+                  type="text"
+                  placeholder="Search project or developer..."
+                  value={boardSearch}
+                  onChange={e => setBoardSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                />
+              </div>
+              <select
+                value={boardPriority}
+                onChange={e => setBoardPriority(e.target.value)}
+                className="px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              >
+                <option value="">All Priority</option>
+                {PRIORITIES.map(p => <option key={p}>{p}</option>)}
+              </select>
+              <select
+                value={boardCodeType}
+                onChange={e => setBoardCodeType(e.target.value)}
+                className="px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              >
+                <option value="">All Code Types</option>
+                {CODE_TYPES.map(c => <option key={c}>{c}</option>)}
+              </select>
+              <select
+                value={boardTag}
+                onChange={e => setBoardTag(e.target.value)}
+                className="px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              >
+                <option value="">All Tags</option>
+                {ISSUE_TAGS.map(t => <option key={t}>{t}</option>)}
+              </select>
+              {hasBoardFilters && (
+                <button
+                  onClick={clearBoardFilters}
+                  className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition flex items-center gap-1.5 shrink-0"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  Clear
+                </button>
+              )}
             </div>
+            {/* Row 2: Assignee avatars */}
+            {systemUsers.length > 0 && (
+              <div className="flex items-center gap-3 flex-wrap pt-2 border-t border-slate-100">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide shrink-0">Assignee</span>
+                <UserFilterBar users={systemUsers} selected={selectedUsers} onChange={setSelectedUsers} />
+              </div>
+            )}
           </div>
         )}
 
