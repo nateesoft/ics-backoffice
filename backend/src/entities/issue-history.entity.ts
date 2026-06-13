@@ -20,6 +20,6 @@ export class IssueHistory {
   @Column({ type: 'text', nullable: true })
   newValue: string | null;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

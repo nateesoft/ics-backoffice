@@ -29,9 +29,9 @@ export class Document {
   @OneToMany(() => DocumentAttachment, att => att.document, { cascade: true, eager: true })
   attachments: DocumentAttachment[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
 }

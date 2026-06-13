@@ -31,7 +31,7 @@ function fileIcon(mime: string) {
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('th-TH', {
     year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+    hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok',
   });
 }
 
@@ -321,13 +321,13 @@ function DocumentDetail({ doc, onEdit }: { doc: Document; onEdit: () => void }) 
         <span className="text-xs text-slate-400">
           {new Date(doc.createdAt).toLocaleDateString('th-TH', {
             year: 'numeric', month: 'long', day: 'numeric',
-            hour: '2-digit', minute: '2-digit',
+            hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok',
           })}
         </span>
         {doc.updatedAt !== doc.createdAt && (
           <span className="text-xs text-slate-400">
             Updated {new Date(doc.updatedAt).toLocaleDateString('th-TH', {
-              year: 'numeric', month: 'short', day: 'numeric',
+              year: 'numeric', month: 'short', day: 'numeric', timeZone: 'Asia/Bangkok',
             })}
           </span>
         )}

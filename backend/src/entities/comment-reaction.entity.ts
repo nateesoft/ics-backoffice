@@ -15,6 +15,6 @@ export class CommentReaction {
   @Column()
   createdBy: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

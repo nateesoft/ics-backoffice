@@ -6,7 +6,7 @@ echo "Frontend -> http://localhost:3000"
 echo ""
 
 # Start backend
-cd backend && npm run start:dev &
+cd backend && TZ=Asia/Bangkok npm run start:dev &
 BACKEND_PID=$!
 
 # Start frontend

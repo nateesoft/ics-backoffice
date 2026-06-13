@@ -1,5 +1,3 @@
-process.env.TZ = 'Asia/Bangkok';
-
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';

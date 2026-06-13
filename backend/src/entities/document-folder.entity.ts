@@ -11,6 +11,6 @@ export class DocumentFolder {
   @Column({ default: 0 })
   sortOrder: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

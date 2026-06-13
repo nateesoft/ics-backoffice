@@ -174,7 +174,7 @@ interface HistoryEntry {
 
 function formatDateTime(iso: string) {
   const d = new Date(iso);
-  return d.toLocaleString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
 }
 
 function IssueHistory({ issueId }: { issueId: number }) {

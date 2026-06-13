@@ -14,7 +14,7 @@ export class User {
   @Column({ type: 'varchar', nullable: true, default: null })
   avatarFilename: string | null;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
   @Column({ type: 'timestamp', nullable: true, default: null })

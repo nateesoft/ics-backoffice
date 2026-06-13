@@ -20,6 +20,6 @@ export class CommentAttachment {
   @Column()
   size: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

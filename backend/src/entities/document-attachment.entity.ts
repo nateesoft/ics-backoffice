@@ -25,6 +25,6 @@ export class DocumentAttachment {
   @Column()
   size: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

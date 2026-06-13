@@ -10,7 +10,7 @@ const JITSI_URL = process.env.NEXT_PUBLIC_JITSI_URL || 'https://meet.jit.si';
 
 function formatTime(iso: string) {
   const d = new Date(iso);
-  return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
 }
 
 function ThreadWindow({

@@ -48,7 +48,7 @@ function formatRelative(iso: string) {
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
   if (d < 7) return `${d}d ago`;
-  return new Date(iso).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+  return new Date(iso).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', timeZone: 'Asia/Bangkok' });
 }
 
 // ─── Post-it Card ─────────────────────────────────────────────────────────────
