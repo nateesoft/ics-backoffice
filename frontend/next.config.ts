@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/socket.io',
-        destination: 'http://localhost:3001/socket.io',
+        destination: 'http://localhost:3001/socket.io/',
       },
       {
         source: '/socket.io/:path*',
