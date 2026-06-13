@@ -1,6 +1,6 @@
 'use client';
 import { useRef, useCallback, useEffect, useState } from 'react';
-import api from '@/lib/api';
+import api, { uploadsApi } from '@/lib/api';
 
 interface Attachment {
   id: number;
@@ -55,11 +55,15 @@ function FileIcon({ mime }: { mime: string }) {
 export default function DetailEditor({ value, onChange, issueId, onAttachmentsChange, onPendingFilesChange }: DetailEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const savedRange = useRef<Range | null>(null);
+  const selectedImgRef = useRef<HTMLImageElement | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [dragOver, setDragOver] = useState(false);
   const [preview, setPreview] = useState<Attachment | null>(null);
+  const [imgToolbar, setImgToolbar] = useState<{ top: number; left: number } | null>(null);
 
   // Load existing attachments
   useEffect(() => {
@@ -76,6 +80,17 @@ export default function DetailEditor({ value, onChange, issueId, onAttachmentsCh
     }
   }, [value]);
 
+  function saveRange() {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) savedRange.current = sel.getRangeAt(0).cloneRange();
+  }
+
+  function restoreRange() {
+    if (!savedRange.current) return;
+    const sel = window.getSelection();
+    if (sel) { sel.removeAllRanges(); sel.addRange(savedRange.current); }
+  }
+
   function execCmd(cmd: string, val?: string) {
     document.execCommand(cmd, false, val);
     editorRef.current?.focus();
@@ -84,6 +99,96 @@ export default function DetailEditor({ value, onChange, issueId, onAttachmentsCh
 
   function handleInput() {
     onChange(editorRef.current?.innerHTML || '');
+  }
+
+  function insertImgHtml(src: string) {
+    restoreRange();
+    editorRef.current?.focus();
+    document.execCommand('insertHTML', false, `<img src="${src}" style="max-width:100%;height:auto;border-radius:6px;margin:6px 0;display:block" />`);
+    handleInput();
+  }
+
+  function clearImgSelection() {
+    if (selectedImgRef.current) {
+      selectedImgRef.current.style.outline = '';
+      selectedImgRef.current.style.boxShadow = '';
+      selectedImgRef.current = null;
+    }
+    setImgToolbar(null);
+  }
+
+  function selectImage(img: HTMLImageElement) {
+    clearImgSelection();
+    selectedImgRef.current = img;
+    img.style.outline = '2.5px solid #6366f1';
+    img.style.boxShadow = '0 0 0 4px rgba(99,102,241,0.15)';
+    const range = document.createRange();
+    range.selectNode(img);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    const editorEl = editorRef.current;
+    if (editorEl) {
+      const er = editorEl.getBoundingClientRect();
+      const ir = img.getBoundingClientRect();
+      const top = ir.top - er.top + editorEl.scrollTop - 38;
+      const left = ir.left - er.left;
+      setImgToolbar({ top: Math.max(2, top), left: Math.max(0, left) });
+    }
+  }
+
+  function handleEditorClick(e: React.MouseEvent) {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG') selectImage(target as HTMLImageElement);
+    else clearImgSelection();
+  }
+
+  function deleteSelectedImg() {
+    if (!selectedImgRef.current) return;
+    selectedImgRef.current.remove();
+    selectedImgRef.current = null;
+    setImgToolbar(null);
+    handleInput();
+    editorRef.current?.focus();
+  }
+
+  function handleEditorKeyDown(e: React.KeyboardEvent) {
+    if (selectedImgRef.current && (e.key === 'Delete' || e.key === 'Backspace')) {
+      e.preventDefault();
+      deleteSelectedImg();
+    }
+  }
+
+  async function handleImageFile(file: File) {
+    try {
+      const res = await uploadsApi.uploadImage(file);
+      insertImgHtml(uploadsApi.imageUrl(res.data.filename));
+    } catch { /* ignore */ }
+  }
+
+  function handleEditorPaste(e: React.ClipboardEvent) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) handleImageFile(file);
+        return;
+      }
+    }
+  }
+
+  function handleEditorDrop(e: React.DragEvent) {
+    const files = e.dataTransfer?.files;
+    if (!files) return;
+    for (const file of Array.from(files)) {
+      if (file.type.startsWith('image/')) {
+        e.preventDefault();
+        handleImageFile(file);
+        return;
+      }
+    }
   }
 
   async function uploadFile(file: File) {
@@ -181,6 +286,26 @@ export default function DetailEditor({ value, onChange, issueId, onAttachmentsCh
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
           () => execCmd('removeFormat'), 'Clear format'
         )}
+        <div className="w-px h-5 bg-slate-200 mx-1" />
+        {/* Insert Image inline */}
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={e => {
+            const file = e.target.files?.[0];
+            if (file) handleImageFile(file);
+            e.target.value = '';
+          }}
+        />
+        {toolbarBtn(
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>,
+          () => { saveRange(); imageInputRef.current?.click(); },
+          'Insert Image'
+        )}
         <div className="flex-1" />
         <button
           type="button"
@@ -200,13 +325,46 @@ export default function DetailEditor({ value, onChange, issueId, onAttachmentsCh
       </div>
 
       {/* Editable area */}
-      <div
-        ref={editorRef}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={handleInput}
-        className="min-h-[120px] max-h-[300px] overflow-y-auto px-3 py-2.5 text-sm text-slate-800 focus:outline-none leading-relaxed [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:bg-slate-100 [&_pre]:rounded [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-xs [&_blockquote]:border-l-4 [&_blockquote]:border-indigo-300 [&_blockquote]:pl-3 [&_blockquote]:text-slate-600"
-      />
+      <div className="relative">
+        {/* Floating image toolbar */}
+        {imgToolbar && (
+          <div
+            className="absolute z-20 flex items-center gap-1 bg-white border border-slate-200 rounded-lg shadow-lg px-1.5 py-1"
+            style={{ top: imgToolbar.top, left: imgToolbar.left }}
+            onMouseDown={e => e.preventDefault()}
+          >
+            <span className="text-xs text-slate-400 px-1 select-none">Image</span>
+            <div className="w-px h-4 bg-slate-200" />
+            <button
+              type="button"
+              onClick={deleteSelectedImg}
+              title="Delete image (Del)"
+              className="w-6 h-6 flex items-center justify-center rounded hover:bg-red-50 text-red-400 hover:text-red-500 transition"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        )}
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          onInput={handleInput}
+          onBlur={saveRange}
+          onPaste={handleEditorPaste}
+          onDrop={handleEditorDrop}
+          onClick={handleEditorClick}
+          onKeyDown={handleEditorKeyDown}
+          className="min-h-[120px] max-h-[300px] overflow-y-auto px-3 py-2.5 text-sm text-slate-800 focus:outline-none leading-relaxed
+            [&_strong]:font-bold [&_em]:italic [&_u]:underline
+            [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4
+            [&_pre]:bg-slate-100 [&_pre]:rounded [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-xs
+            [&_blockquote]:border-l-4 [&_blockquote]:border-indigo-300 [&_blockquote]:pl-3 [&_blockquote]:text-slate-600
+            [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-2 [&_img]:cursor-pointer [&_img]:transition-all"
+        />
+      </div>
 
       {/* Drop zone */}
       <div
