@@ -1,34 +1,31 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { commentsApi, commentAttachmentsApi, commentReactionsApi, usersApi } from '@/lib/api';
-import CommentEditor, { CommentAttachment, MentionUser } from './CommentEditor';
+import { docCommentsApi } from '@/lib/api';
 
-interface CommentReaction {
+interface DocReaction {
   id: number;
   commentId: number;
   emoji: string;
   createdBy: string;
 }
 
-interface Comment {
+interface DocComment {
   id: number;
-  issueId: number;
+  documentId: number;
   content: string;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
-  attachments: CommentAttachment[];
-  reactions: CommentReaction[];
+  reactions: DocReaction[];
   parentId: number | null;
 }
 
-interface IssueCommentsProps {
-  issueId: number;
+interface Props {
+  docId: number;
   currentUser: string;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/ics-backoffice/api';
-const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
+const EMOJIS = ['👍', '👎', '❤️', '😂', '😮', '😢', '🎉', '🔥', '✅', '❌', '💡', '🤔'];
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -40,14 +37,6 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function isImage(mime: string) { return mime.startsWith('image/'); }
-
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 function avatarColor(name: string) {
   const colors = ['bg-indigo-500', 'bg-violet-500', 'bg-sky-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500'];
   let hash = 0;
@@ -55,7 +44,7 @@ function avatarColor(name: string) {
   return colors[hash];
 }
 
-function groupReactions(reactions: CommentReaction[], currentUser: string) {
+function groupReactions(reactions: DocReaction[], currentUser: string) {
   const groups: Record<string, { count: number; reacted: boolean; users: string[] }> = {};
   for (const r of reactions) {
     if (!groups[r.emoji]) groups[r.emoji] = { count: 0, reacted: false, users: [] };
@@ -66,9 +55,74 @@ function groupReactions(reactions: CommentReaction[], currentUser: string) {
   return groups;
 }
 
+function CommentInput({ onSubmit, onCancel, placeholder = 'Write a comment...', submitLabel = 'Comment', initialValue = '' }: {
+  onSubmit: (text: string) => Promise<void>;
+  onCancel?: () => void;
+  placeholder?: string;
+  submitLabel?: string;
+  initialValue?: string;
+}) {
+  const [text, setText] = useState(initialValue);
+  const [submitting, setSubmitting] = useState(false);
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.style.height = 'auto';
+      ref.current.style.height = `${ref.current.scrollHeight}px`;
+    }
+  }, [text]);
+
+  useEffect(() => { ref.current?.focus(); }, []);
+
+  async function submit() {
+    if (!text.trim()) return;
+    setSubmitting(true);
+    try {
+      await onSubmit(text.trim());
+      setText('');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="flex-1 space-y-1.5">
+      <textarea
+        ref={ref}
+        value={text}
+        onChange={e => setText(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); }}
+        placeholder={placeholder}
+        rows={2}
+        className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none leading-relaxed text-slate-700 placeholder:text-slate-300"
+      />
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-slate-400">Ctrl+Enter to submit</span>
+        <div className="flex gap-2">
+          {onCancel && (
+            <button type="button" onClick={onCancel}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-medium text-slate-600 transition">
+              Cancel
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={submitting || !text.trim()}
+            onClick={submit}
+            className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-xs font-medium transition"
+          >
+            {submitting ? 'Posting...' : submitLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ReactionBar({ commentId, reactions, currentUser, onToggle }: {
   commentId: number;
-  reactions: CommentReaction[];
+  reactions: DocReaction[];
   currentUser: string;
   onToggle: (commentId: number, emoji: string) => Promise<void>;
 }) {
@@ -98,7 +152,7 @@ function ReactionBar({ commentId, reactions, currentUser, onToggle }: {
   }
 
   return (
-    <div className="flex items-center gap-1 flex-wrap">
+    <div className="flex items-center gap-1 flex-wrap mt-1.5">
       {Object.entries(groups).map(([emoji, { count, reacted, users }]) => (
         <button
           key={emoji}
@@ -110,18 +164,16 @@ function ReactionBar({ commentId, reactions, currentUser, onToggle }: {
               : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50'
           }`}
         >
-          <span>{emoji}</span>
-          <span>{count}</span>
+          <span>{emoji}</span><span>{count}</span>
         </button>
       ))}
       <button
         ref={triggerRef}
         onClick={openPicker}
-        className="flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs border border-slate-200 bg-white text-slate-400 hover:border-indigo-300 hover:text-indigo-500 transition-all"
         title="Add reaction"
+        className="flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs border border-slate-200 bg-white text-slate-400 hover:border-indigo-300 hover:text-indigo-500 transition-all"
       >
-        <span>😊</span>
-        <span className="font-bold">+</span>
+        <span>😊</span><span className="font-bold text-[10px]">+</span>
       </button>
       {showPicker && (
         <div
@@ -133,13 +185,13 @@ function ReactionBar({ commentId, reactions, currentUser, onToggle }: {
             transform: 'translateY(-110%)',
             zIndex: 9999,
           }}
-          className="flex gap-1 bg-white border border-slate-200 rounded-xl shadow-xl px-2 py-1.5"
+          className="grid grid-cols-6 gap-0.5 bg-white border border-slate-200 rounded-xl shadow-xl p-1.5"
         >
           {EMOJIS.map(e => (
             <button
               key={e}
               onClick={() => { onToggle(commentId, e); setShowPicker(false); }}
-              className="text-lg hover:scale-125 transition-transform leading-none"
+              className="w-8 h-8 flex items-center justify-center text-lg hover:scale-125 transition-transform rounded-lg hover:bg-slate-50"
             >
               {e}
             </button>
@@ -150,61 +202,26 @@ function ReactionBar({ commentId, reactions, currentUser, onToggle }: {
   );
 }
 
-function AttachmentList({ attachments }: { attachments: CommentAttachment[] }) {
-  const [preview, setPreview] = useState<CommentAttachment | null>(null);
-  if (attachments.length === 0) return null;
-  return (
-    <div className="mt-2 space-y-1">
-      {attachments.map(att => (
-        <div key={att.id} className="flex items-center gap-2 bg-white border border-slate-100 rounded-lg px-3 py-1.5">
-          {isImage(att.mimetype) ? (
-            <img src={`${API_BASE}/uploads/${att.storedName}`} alt={att.originalName} className="w-6 h-6 rounded object-cover cursor-pointer" onClick={() => setPreview(att)} />
-          ) : (
-            <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-          )}
-          <a href={`${API_BASE}/uploads/${att.storedName}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-xs text-slate-700 hover:text-indigo-600 truncate font-medium">
-            {att.originalName}
-          </a>
-          <span className="text-xs text-slate-400 flex-shrink-0">{formatBytes(att.size)}</span>
-        </div>
-      ))}
-      {preview && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70" onClick={() => setPreview(null)}>
-          <div className="max-w-4xl max-h-[90vh] p-4">
-            <img src={`${API_BASE}/uploads/${preview.storedName}`} alt={preview.originalName} className="max-w-full max-h-[85vh] rounded-xl shadow-2xl object-contain" onClick={e => e.stopPropagation()} />
-            <p className="text-white text-sm text-center mt-3 opacity-75">{preview.originalName}</p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default function IssueComments({ issueId, currentUser }: IssueCommentsProps) {
-  const [comments, setComments] = useState<Comment[]>([]);
+export default function DocumentComments({ docId, currentUser }: Props) {
+  const [comments, setComments] = useState<DocComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [editId, setEditId] = useState<number | null>(null);
   const [replyToId, setReplyToId] = useState<number | null>(null);
-  const [users, setUsers] = useState<MentionUser[]>([]);
-
-  useEffect(() => {
-    usersApi.getAll().then(r => setUsers(r.data)).catch(() => {});
-  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await commentsApi.getAll(issueId);
+      const res = await docCommentsApi.getAll(docId);
       setComments(res.data);
     } finally {
       setLoading(false);
     }
-  }, [issueId]);
+  }, [docId]);
 
   useEffect(() => { load(); }, [load]);
 
   const topLevel = comments.filter(c => !c.parentId);
-  const repliesMap: Record<number, Comment[]> = {};
+  const repliesMap: Record<number, DocComment[]> = {};
   for (const c of comments) {
     if (c.parentId) {
       if (!repliesMap[c.parentId]) repliesMap[c.parentId] = [];
@@ -212,64 +229,50 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
     }
   }
 
-  async function handleCreate(content: string, pendingFiles: File[], parentId?: number) {
-    const res = await commentsApi.create(issueId, content, parentId);
-    const newId: number = res.data.id;
-    for (const file of pendingFiles) {
-      await commentAttachmentsApi.upload(newId, file);
-    }
+  async function handleCreate(content: string, parentId?: number) {
+    await docCommentsApi.create(docId, content, parentId);
     await load();
     if (parentId) setReplyToId(null);
   }
 
-  async function handleUpdate(comment: Comment, content: string) {
-    await commentsApi.update(issueId, comment.id, content);
+  async function handleUpdate(id: number, content: string) {
+    await docCommentsApi.update(id, content);
     setEditId(null);
     await load();
   }
 
   async function handleDelete(id: number) {
     if (!confirm('Delete this comment?')) return;
-    await commentsApi.remove(issueId, id);
+    await docCommentsApi.remove(id);
     await load();
   }
 
   async function handleToggleReaction(commentId: number, emoji: string) {
-    const res = await commentReactionsApi.toggle(commentId, emoji);
-    const updated: CommentReaction[] = res.data;
+    const res = await docCommentsApi.toggleReaction(commentId, emoji);
+    const updated: DocReaction[] = res.data;
     setComments(prev => prev.map(c => c.id === commentId ? { ...c, reactions: updated } : c));
   }
 
-  function renderCommentBody(c: Comment, isReply: boolean) {
+  function renderCommentBody(c: DocComment, isReply: boolean) {
     if (editId === c.id) {
       return (
-        <CommentEditor
+        <CommentInput
           key={`edit-${c.id}`}
-          commentId={c.id}
-          initialContent={c.content}
-          initialAttachments={c.attachments}
-          onSubmit={async (content) => handleUpdate(c, content)}
+          initialValue={c.content}
+          onSubmit={content => handleUpdate(c.id, content)}
           onCancel={() => setEditId(null)}
           submitLabel="Save"
-          users={users}
         />
       );
     }
+
     return (
       <div className="group relative">
-        <div
-          className={`bg-slate-50 rounded-lg px-3 py-2 leading-relaxed text-slate-700
-            [&_strong]:font-bold [&_em]:italic [&_u]:underline
-            [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4
-            [&_pre]:bg-slate-100 [&_pre]:rounded [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-xs
-            [&_blockquote]:border-l-4 [&_blockquote]:border-indigo-300 [&_blockquote]:pl-3 [&_blockquote]:text-slate-600
-            ${isReply ? 'text-xs' : 'text-sm'}`}
-          dangerouslySetInnerHTML={{ __html: c.content }}
-        />
-        <AttachmentList attachments={c.attachments} />
+        <div className={`bg-slate-50 rounded-xl px-3 py-2 text-slate-700 whitespace-pre-wrap leading-relaxed ${isReply ? 'text-xs' : 'text-sm'}`}>
+          {c.content}
+        </div>
 
-        {/* Reactions + Reply */}
-        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
           <ReactionBar
             commentId={c.id}
             reactions={c.reactions}
@@ -279,10 +282,8 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
           {!isReply && (
             <button
               onClick={() => setReplyToId(replyToId === c.id ? null : c.id)}
-              className={`flex items-center gap-1 text-xs font-medium transition-colors ${
-                replyToId === c.id
-                  ? 'text-indigo-600'
-                  : 'text-slate-400 hover:text-indigo-600'
+              className={`flex items-center gap-1 text-xs font-medium transition-colors mt-1.5 ${
+                replyToId === c.id ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-500'
               }`}
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -290,20 +291,25 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
               </svg>
               Reply
               {(repliesMap[c.id]?.length ?? 0) > 0 && (
-                <span className="ml-0.5 text-slate-400 font-normal">{repliesMap[c.id].length}</span>
+                <span className="text-slate-400 font-normal">{repliesMap[c.id].length}</span>
               )}
             </button>
           )}
         </div>
 
-        {/* Edit / Delete */}
         {c.createdBy === currentUser && (
           <div className="absolute top-1.5 right-2 hidden group-hover:flex gap-1">
-            <button onClick={() => setEditId(c.id)} className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-indigo-600 transition" title="Edit">
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+            <button onClick={() => setEditId(c.id)}
+              className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-indigo-600 transition" title="Edit">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
             </button>
-            <button onClick={() => handleDelete(c.id)} className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-red-500 transition" title="Delete">
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            <button onClick={() => handleDelete(c.id)}
+              className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-red-500 transition" title="Delete">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
             </button>
           </div>
         )}
@@ -313,17 +319,19 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
 
   return (
     <div className="mt-6 pt-5 border-t border-slate-100">
-      <h3 className="text-sm font-semibold text-slate-700 mb-4">
+      <h4 className="text-sm font-semibold text-slate-700 mb-4">
         Comments
         {topLevel.length > 0 && (
-          <span className="ml-2 text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{topLevel.length}</span>
+          <span className="ml-2 text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-normal">
+            {topLevel.length}
+          </span>
         )}
-      </h3>
+      </h4>
 
       {loading ? (
         <div className="text-slate-400 text-xs py-3">Loading comments...</div>
       ) : topLevel.length === 0 ? (
-        <div className="text-slate-400 text-xs py-3">No comments yet.</div>
+        <div className="text-slate-400 text-xs py-2">No comments yet. Be the first to comment!</div>
       ) : (
         <div className="space-y-5 mb-6">
           {topLevel.map(c => (
@@ -343,7 +351,7 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
                 </div>
               </div>
 
-              {/* Replies thread */}
+              {/* Replies */}
               {(repliesMap[c.id]?.length ?? 0) > 0 && (
                 <div className="ml-11 mt-3 pl-4 border-l-2 border-slate-100 space-y-3">
                   {repliesMap[c.id].map(r => (
@@ -367,19 +375,16 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
               {/* Inline reply editor */}
               {replyToId === c.id && (
                 <div className="ml-11 mt-3 flex gap-2">
-                  <div className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[10px] font-bold ${avatarColor(currentUser || 'u')}`}>
-                    {(currentUser || 'u')[0]?.toUpperCase()}
+                  <div className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[10px] font-bold ${avatarColor(currentUser)}`}>
+                    {currentUser[0]?.toUpperCase()}
                   </div>
-                  <div className="flex-1">
-                    <CommentEditor
-                      key={`reply-${c.id}`}
-                      onSubmit={async (content, files) => handleCreate(content, files, c.id)}
-                      onCancel={() => setReplyToId(null)}
-                      placeholder={`Reply to @${c.createdBy}...`}
-                      submitLabel="Reply"
-                      users={users}
-                    />
-                  </div>
+                  <CommentInput
+                    key={`reply-${c.id}`}
+                    placeholder={`Reply to @${c.createdBy}...`}
+                    submitLabel="Reply"
+                    onSubmit={content => handleCreate(content, c.id)}
+                    onCancel={() => setReplyToId(null)}
+                  />
                 </div>
               )}
             </div>
@@ -389,15 +394,14 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
 
       {/* New top-level comment */}
       <div className="flex gap-3">
-        <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold ${avatarColor(currentUser || 'u')}`}>
-          {(currentUser || 'u')[0]?.toUpperCase()}
+        <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold ${avatarColor(currentUser)}`}>
+          {currentUser[0]?.toUpperCase()}
         </div>
-        <CommentEditor
+        <CommentInput
           key="new-comment"
-          onSubmit={handleCreate}
+          onSubmit={content => handleCreate(content)}
           placeholder="Write a comment..."
           submitLabel="Comment"
-          users={users}
         />
       </div>
     </div>

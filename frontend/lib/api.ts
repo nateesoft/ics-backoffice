@@ -123,6 +123,31 @@ export const documentsApi = {
     `${api.defaults.baseURL}/documents/${documentId}/attachments/${id}/download`,
 };
 
+export const docCommentsApi = {
+  getAll: (documentId: number) =>
+    api.get(`/documents/${documentId}/comments`),
+  create: (documentId: number, content: string, parentId?: number) =>
+    api.post(`/documents/${documentId}/comments`, { content, parentId }),
+  update: (id: number, content: string) =>
+    api.put(`/document-comments/${id}`, { content }),
+  remove: (id: number) =>
+    api.delete(`/document-comments/${id}`),
+  toggleReaction: (commentId: number, emoji: string) =>
+    api.post(`/document-comments/${commentId}/reactions`, { emoji }),
+};
+
+export const uploadsApi = {
+  uploadImage: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post<{ filename: string }>('/doc-images', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  imageUrl: (filename: string) =>
+    `${api.defaults.baseURL}/doc-images/${filename}`,
+};
+
 export interface DocFolder {
   id: number;
   name: string;

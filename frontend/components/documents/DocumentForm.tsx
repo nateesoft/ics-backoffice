@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, useCallback } from 'react';
 import { Document, DocumentAttachment, DOCUMENT_CATEGORIES, DOC_TYPES, DocType } from '@/types/document';
-import { documentsApi } from '@/lib/api';
+import { documentsApi, uploadsApi } from '@/lib/api';
 import RichEditor from './RichEditor';
 import SequenceDiagramEditor from './SequenceDiagramEditor';
 import FlowchartEditor from './FlowchartEditor';
@@ -203,8 +203,15 @@ export default function DocumentForm({ initial, defaultFolderId, onSuccess, onCa
         {form.docType === 'mindmap'   && <MindMapEditor         value={form.content} onChange={val => set('content', val)} />}
         {form.docType === 'erdiagram' && <ERDiagramEditor       value={form.content} onChange={val => set('content', val)} />}
         {form.docType === 'general'   && (
-          <RichEditor value={form.content} onChange={val => set('content', val)}
-            placeholder="Write document details here..." />
+          <RichEditor
+            value={form.content}
+            onChange={val => set('content', val)}
+            placeholder="Write document details here..."
+            onImageUpload={async (file) => {
+              const res = await uploadsApi.uploadImage(file);
+              return uploadsApi.imageUrl(res.data.filename);
+            }}
+          />
         )}
       </div>
 

@@ -10,7 +10,8 @@ import FlowchartEditor from '@/components/documents/FlowchartEditor';
 import MindMapEditor from '@/components/documents/MindMapEditor';
 import ERDiagramEditor from '@/components/documents/ERDiagramEditor';
 import { Document, DocumentAttachment, DOCUMENT_CATEGORIES, CATEGORY_COLORS, DOC_TYPES } from '@/types/document';
-import { documentsApi, docFoldersApi, DocFolder } from '@/lib/api';
+import { documentsApi, docFoldersApi, authApi, DocFolder } from '@/lib/api';
+import DocumentComments from '@/components/documents/DocumentComments';
 
 function stripHtml(html: string) {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -58,9 +59,11 @@ function DocumentsInner() {
   const [viewDoc, setViewDoc] = useState<Document | null>(null);
   const [filterCategory, setFilterCategory] = useState('');
   const [search, setSearch] = useState('');
+  const [currentUser, setCurrentUser] = useState('');
 
   useEffect(() => {
     docFoldersApi.getAll().then(r => setFolders(r.data)).catch(() => {});
+    authApi.me().then(r => setCurrentUser(r.data.username)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -314,6 +317,7 @@ function DocumentsInner() {
         >
           <DocumentDetail
             doc={viewDoc}
+            currentUser={currentUser}
             onEdit={() => { setViewDoc(null); setEditDoc(viewDoc); setShowForm(true); }}
           />
         </Modal>
@@ -322,7 +326,7 @@ function DocumentsInner() {
   );
 }
 
-function DocumentDetail({ doc, onEdit }: { doc: Document; onEdit: () => void }) {
+function DocumentDetail({ doc, currentUser, onEdit }: { doc: Document; currentUser: string; onEdit: () => void }) {
   return (
     <div className="space-y-5">
       {/* Meta row */}
@@ -384,7 +388,8 @@ function DocumentDetail({ doc, onEdit }: { doc: Document; onEdit: () => void }) 
             [&_table]:border-collapse [&_table]:w-full [&_table]:my-3 [&_table]:text-sm
             [&_td]:border [&_td]:border-slate-300 [&_td]:px-2.5 [&_td]:py-1.5 [&_td]:align-top
             [&_th]:border [&_th]:border-slate-300 [&_th]:px-2.5 [&_th]:py-1.5 [&_th]:bg-slate-100 [&_th]:font-semibold [&_th]:text-left
-            [&_tr:hover_td]:bg-white"
+            [&_tr:hover_td]:bg-white
+            [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-2"
           dangerouslySetInnerHTML={{ __html: doc.content }}
         />
       ) : (
@@ -421,6 +426,9 @@ function DocumentDetail({ doc, onEdit }: { doc: Document; onEdit: () => void }) 
           </ul>
         </div>
       )}
+
+      {/* Comments */}
+      {currentUser && <DocumentComments docId={doc.id} currentUser={currentUser} />}
     </div>
   );
 }
