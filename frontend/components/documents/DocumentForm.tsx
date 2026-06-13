@@ -5,6 +5,8 @@ import { documentsApi } from '@/lib/api';
 import RichEditor from './RichEditor';
 import SequenceDiagramEditor from './SequenceDiagramEditor';
 import FlowchartEditor from './FlowchartEditor';
+import MindMapEditor from './MindMapEditor';
+import ERDiagramEditor from './ERDiagramEditor';
 
 interface Props {
   initial?: Document;
@@ -41,6 +43,16 @@ const DOC_TYPE_ICONS: Record<DocType, React.ReactNode> = {
   flowchart: (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+    </svg>
+  ),
+  mindmap: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+    </svg>
+  ),
+  erdiagram: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
     </svg>
   ),
 };
@@ -151,7 +163,7 @@ export default function DocumentForm({ initial, defaultFolderId, onSuccess, onCa
       {/* Doc Type selector */}
       <div>
         <label className={labelCls}>Document Type</label>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
           {DOC_TYPES.map(dt => {
             const active = form.docType === dt.value;
             return (
@@ -181,15 +193,16 @@ export default function DocumentForm({ initial, defaultFolderId, onSuccess, onCa
       {/* Content editor — switches by docType */}
       <div>
         <label className={labelCls}>
-          {form.docType === 'general' ? 'Content / Details' : form.docType === 'sequence' ? 'Sequence Diagram' : 'Flowchart'}
+          {form.docType === 'general'   ? 'Content / Details'  :
+           form.docType === 'sequence'  ? 'Sequence Diagram'   :
+           form.docType === 'flowchart' ? 'Flowchart'          :
+           form.docType === 'mindmap'   ? 'Mind Map'           : 'ER Diagram'}
         </label>
-        {form.docType === 'sequence' && (
-          <SequenceDiagramEditor value={form.content} onChange={val => set('content', val)} />
-        )}
-        {form.docType === 'flowchart' && (
-          <FlowchartEditor value={form.content} onChange={val => set('content', val)} />
-        )}
-        {form.docType === 'general' && (
+        {form.docType === 'sequence'  && <SequenceDiagramEditor value={form.content} onChange={val => set('content', val)} />}
+        {form.docType === 'flowchart' && <FlowchartEditor       value={form.content} onChange={val => set('content', val)} />}
+        {form.docType === 'mindmap'   && <MindMapEditor         value={form.content} onChange={val => set('content', val)} />}
+        {form.docType === 'erdiagram' && <ERDiagramEditor       value={form.content} onChange={val => set('content', val)} />}
+        {form.docType === 'general'   && (
           <RichEditor value={form.content} onChange={val => set('content', val)}
             placeholder="Write document details here..." />
         )}

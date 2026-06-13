@@ -7,6 +7,8 @@ import Modal from '@/components/ui/Modal';
 import DocumentForm from '@/components/documents/DocumentForm';
 import SequenceDiagramEditor from '@/components/documents/SequenceDiagramEditor';
 import FlowchartEditor from '@/components/documents/FlowchartEditor';
+import MindMapEditor from '@/components/documents/MindMapEditor';
+import ERDiagramEditor from '@/components/documents/ERDiagramEditor';
 import { Document, DocumentAttachment, DOCUMENT_CATEGORIES, CATEGORY_COLORS, DOC_TYPES } from '@/types/document';
 import { documentsApi, docFoldersApi, DocFolder } from '@/lib/api';
 
@@ -177,7 +179,10 @@ function DocumentsInner() {
                 {/* Card header */}
                 <div className="px-5 pt-5 pb-3 flex items-start gap-3">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    doc.docType === 'sequence' ? 'bg-violet-50' : doc.docType === 'flowchart' ? 'bg-amber-50' : 'bg-indigo-50'
+                    doc.docType === 'sequence'  ? 'bg-violet-50' :
+                    doc.docType === 'flowchart' ? 'bg-amber-50'  :
+                    doc.docType === 'mindmap'   ? 'bg-emerald-50':
+                    doc.docType === 'erdiagram' ? 'bg-cyan-50'   : 'bg-indigo-50'
                   }`}>
                     {doc.docType === 'sequence' ? (
                       <svg className="w-5 h-5 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -186,6 +191,14 @@ function DocumentsInner() {
                     ) : doc.docType === 'flowchart' ? (
                       <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                      </svg>
+                    ) : doc.docType === 'mindmap' ? (
+                      <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                      </svg>
+                    ) : doc.docType === 'erdiagram' ? (
+                      <svg className="w-5 h-5 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
                       </svg>
                     ) : (
                       <svg className="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -201,8 +214,10 @@ function DocumentsInner() {
                       </span>
                       {doc.docType && doc.docType !== 'general' && (
                         <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                          doc.docType === 'sequence'  ? 'bg-violet-50 text-violet-600' :
-                          doc.docType === 'flowchart' ? 'bg-amber-50 text-amber-600' : ''
+                          doc.docType === 'sequence'  ? 'bg-violet-50 text-violet-600'  :
+                          doc.docType === 'flowchart' ? 'bg-amber-50 text-amber-600'    :
+                          doc.docType === 'mindmap'   ? 'bg-emerald-50 text-emerald-600':
+                          doc.docType === 'erdiagram' ? 'bg-cyan-50 text-cyan-600'      : ''
                         }`}>
                           {DOC_TYPES.find(d => d.value === doc.docType)?.label}
                         </span>
@@ -350,6 +365,10 @@ function DocumentDetail({ doc, onEdit }: { doc: Document; onEdit: () => void }) 
         <SequenceDiagramEditor value={doc.content ?? ''} readOnly />
       ) : doc.docType === 'flowchart' ? (
         <FlowchartEditor value={doc.content ?? ''} readOnly />
+      ) : doc.docType === 'mindmap' ? (
+        <MindMapEditor value={doc.content ?? ''} readOnly />
+      ) : doc.docType === 'erdiagram' ? (
+        <ERDiagramEditor value={doc.content ?? ''} readOnly />
       ) : doc.content ? (
         <div
           className="rounded-xl border border-slate-100 bg-slate-50/50 px-5 py-4 text-sm text-slate-700 leading-relaxed
