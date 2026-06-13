@@ -20,6 +20,9 @@ export class Document {
   @Column({ default: 'general' })
   docType: string;
 
+  @Column({ type: 'int', nullable: true })
+  folderId: number | null;
+
   @Column()
   createdBy: string;
 

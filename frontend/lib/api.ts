@@ -105,9 +105,9 @@ export const commentReactionsApi = {
 export const documentsApi = {
   getAll: () => api.get('/documents'),
   getOne: (id: number) => api.get(`/documents/${id}`),
-  create: (data: { title: string; category: string; content?: string }) =>
+  create: (data: { title: string; category: string; content?: string; docType?: string; folderId?: number | null }) =>
     api.post('/documents', data),
-  update: (id: number, data: { title?: string; category?: string; content?: string }) =>
+  update: (id: number, data: { title?: string; category?: string; content?: string; docType?: string; folderId?: number | null }) =>
     api.put(`/documents/${id}`, data),
   remove: (id: number) => api.delete(`/documents/${id}`),
   uploadAttachment: (documentId: number, file: File) => {
@@ -121,6 +121,20 @@ export const documentsApi = {
     api.delete(`/documents/${documentId}/attachments/${id}`),
   downloadUrl: (documentId: number, id: number) =>
     `${api.defaults.baseURL}/documents/${documentId}/attachments/${id}/download`,
+};
+
+export interface DocFolder {
+  id: number;
+  name: string;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export const docFoldersApi = {
+  getAll: () => api.get<DocFolder[]>('/document-folders'),
+  create: (name: string) => api.post<DocFolder>('/document-folders', { name }),
+  rename: (id: number, name: string) => api.patch<DocFolder>(`/document-folders/${id}`, { name }),
+  remove: (id: number) => api.delete(`/document-folders/${id}`),
 };
 
 export interface AppNotification {

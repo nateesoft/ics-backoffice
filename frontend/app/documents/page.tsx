@@ -1,12 +1,14 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Modal from '@/components/ui/Modal';
 import DocumentForm from '@/components/documents/DocumentForm';
 import SequenceDiagramEditor from '@/components/documents/SequenceDiagramEditor';
 import FlowchartEditor from '@/components/documents/FlowchartEditor';
 import { Document, DocumentAttachment, DOCUMENT_CATEGORIES, CATEGORY_COLORS, DOC_TYPES } from '@/types/document';
-import { documentsApi } from '@/lib/api';
+import { documentsApi, docFoldersApi, DocFolder } from '@/lib/api';
 
 function stripHtml(html: string) {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -34,13 +36,35 @@ function formatDate(iso: string) {
 }
 
 export default function DocumentsPage() {
+  return (
+    <Suspense>
+      <DocumentsInner />
+    </Suspense>
+  );
+}
+
+function DocumentsInner() {
+  const searchParams = useSearchParams();
+  const folderIdParam = searchParams.get('folderId');
+  const activeFolderId = folderIdParam ? parseInt(folderIdParam, 10) : null;
+
   const [docs, setDocs] = useState<Document[]>([]);
+  const [folders, setFolders] = useState<DocFolder[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editDoc, setEditDoc] = useState<Document | null>(null);
   const [viewDoc, setViewDoc] = useState<Document | null>(null);
   const [filterCategory, setFilterCategory] = useState('');
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    docFoldersApi.getAll().then(r => setFolders(r.data)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    setFilterCategory('');
+    setSearch('');
+  }, [activeFolderId]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -69,7 +93,10 @@ export default function DocumentsPage() {
     }
   }
 
+  const activeFolder = activeFolderId !== null ? folders.find(f => f.id === activeFolderId) : null;
+
   const filtered = docs.filter(d => {
+    if (activeFolderId !== null ? d.folderId !== activeFolderId : d.folderId !== null) return false;
     if (filterCategory && d.category !== filterCategory) return false;
     if (search && !d.title.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
@@ -83,7 +110,21 @@ export default function DocumentsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Documents</h1>
+            {activeFolder ? (
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <Link href="/documents" className="text-sm text-slate-400 hover:text-indigo-500 transition">Documents</Link>
+                <svg className="w-3.5 h-3.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <span className="text-sm font-medium text-slate-600 flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                  </svg>
+                  {activeFolder.name}
+                </span>
+              </div>
+            ) : null}
+            <h1 className="text-2xl font-bold text-slate-900">{activeFolder?.name ?? 'Documents'}</h1>
             <p className="text-slate-500 text-sm mt-0.5">{filtered.length} document{filtered.length !== 1 ? 's' : ''}</p>
           </div>
           <button
@@ -242,6 +283,7 @@ export default function DocumentsPage() {
         >
           <DocumentForm
             initial={editDoc || undefined}
+            defaultFolderId={editDoc ? undefined : activeFolderId}
             onSuccess={handleFormSuccess}
             onCancel={() => { setShowForm(false); setEditDoc(null); }}
           />

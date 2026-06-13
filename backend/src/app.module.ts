@@ -13,6 +13,8 @@ import { CommentAttachmentsModule } from './comment-attachments/comment-attachme
 import { CommentReactionsModule } from './comment-reactions/comment-reactions.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ChatModule } from './chat/chat.module';
+import { DocumentFoldersModule } from './document-folders/document-folders.module';
+import { DocumentFolder } from './entities/document-folder.entity';
 import { User } from './entities/user.entity';
 import { Issue } from './entities/issue.entity';
 import { IssueAttachment } from './entities/attachment.entity';
@@ -34,8 +36,9 @@ import { CommentReaction } from './entities/comment-reaction.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage],
+        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage],
         synchronize: true,
+        timezone: '+07:00',
       }),
       inject: [ConfigService],
     }),
@@ -53,6 +56,7 @@ import { CommentReaction } from './entities/comment-reaction.entity';
     CommentReactionsModule,
     NotificationsModule,
     ChatModule,
+    DocumentFoldersModule,
   ],
 })
 export class AppModule {}

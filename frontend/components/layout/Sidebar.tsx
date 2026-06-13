@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { authApi, usersApi, avatarSrc, OnlineUser } from '@/lib/api';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { authApi, usersApi, docFoldersApi, avatarSrc, OnlineUser, DocFolder } from '@/lib/api';
 import { useChatContext } from '@/components/chat/ChatContext';
 
 function TeamAvatar({ user, size }: { user: OnlineUser; size: number }) {
@@ -85,8 +85,75 @@ const menuItems = [
 export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [teamUsers, setTeamUsers] = useState<OnlineUser[]>([]);
+
+  const [docFolders, setDocFolders] = useState<DocFolder[]>([]);
+  const [docsExpanded, setDocsExpanded] = useState(false);
+  const [addingFolder, setAddingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [editingFolder, setEditingFolder] = useState<number | null>(null);
+  const [editFolderName, setEditFolderName] = useState('');
+  const folderInputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
+
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeFolderId = searchParams.get('folderId');
+
+  useEffect(() => {
+    docFoldersApi.getAll().then(r => setDocFolders(r.data)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (pathname.startsWith('/documents')) setDocsExpanded(true);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (addingFolder) setTimeout(() => folderInputRef.current?.focus(), 50);
+  }, [addingFolder]);
+
+  useEffect(() => {
+    if (editingFolder !== null) setTimeout(() => editInputRef.current?.select(), 50);
+  }, [editingFolder]);
+
+  async function handleAddFolder() {
+    const name = newFolderName.trim();
+    setNewFolderName('');
+    setAddingFolder(false);
+    if (!name) return;
+    try {
+      const res = await docFoldersApi.create(name);
+      setDocFolders(prev => [...prev, res.data]);
+    } catch {}
+  }
+
+  async function handleRemoveFolder(id: number) {
+    setDocFolders(prev => prev.filter(f => f.id !== id));
+    try {
+      await docFoldersApi.remove(id);
+    } catch {
+      docFoldersApi.getAll().then(r => setDocFolders(r.data)).catch(() => {});
+    }
+  }
+
+  function handleStartEdit(folder: DocFolder) {
+    setEditingFolder(folder.id);
+    setEditFolderName(folder.name);
+  }
+
+  async function handleSaveEdit() {
+    const name = editFolderName.trim();
+    const id = editingFolder;
+    setEditingFolder(null);
+    setEditFolderName('');
+    if (!name || id === null) return;
+    setDocFolders(prev => prev.map(f => f.id === id ? { ...f, name } : f));
+    try {
+      await docFoldersApi.rename(id, name);
+    } catch {
+      docFoldersApi.getAll().then(r => setDocFolders(r.data)).catch(() => {});
+    }
+  }
 
   const fetchTeam = useCallback(async () => {
     try {
@@ -135,8 +202,173 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
       </div>
 
       {/* Menu */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {menuItems.map(item => {
+          if (item.href === '/documents') {
+            const isDocsActive = pathname.startsWith('/documents');
+            return (
+              <div key={item.href}>
+                {/* Documents row */}
+                <div className={`flex items-center rounded-lg transition ${isDocsActive && !collapsed ? 'bg-indigo-600' : ''}`}>
+                  <Link
+                    href="/documents"
+                    onClick={onMobileClose}
+                    className={`flex items-center gap-3 px-3 py-2.5 flex-1 text-sm font-medium rounded-lg transition ${
+                      isDocsActive
+                        ? collapsed
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-white'
+                        : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                    }`}
+                  >
+                    {item.icon}
+                    {!collapsed && <span className="flex-1">{item.label}</span>}
+                  </Link>
+
+                  {!collapsed && (
+                    <div className="flex items-center pr-1.5 gap-0.5">
+                      {/* Collapse chevron — only when there are folders */}
+                      {docFolders.length > 0 && (
+                        <button
+                          onClick={() => setDocsExpanded(v => !v)}
+                          title={docsExpanded ? 'Collapse' : 'Expand'}
+                          className={`p-1 rounded transition ${
+                            isDocsActive
+                              ? 'text-indigo-200 hover:bg-indigo-500 hover:text-white'
+                              : 'text-slate-500 hover:bg-slate-700 hover:text-white'
+                          }`}
+                        >
+                          <svg
+                            className={`w-3 h-3 transition-transform duration-200 ${docsExpanded ? 'rotate-90' : ''}`}
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      )}
+                      {/* Add folder "+" */}
+                      <button
+                        onClick={() => { setAddingFolder(true); setDocsExpanded(true); }}
+                        title="Add folder"
+                        className={`p-1 rounded transition ${
+                          isDocsActive
+                            ? 'text-indigo-200 hover:bg-indigo-500 hover:text-white'
+                            : 'text-slate-500 hover:bg-slate-700 hover:text-white'
+                        }`}
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sub-menu folders */}
+                {!collapsed && docsExpanded && (
+                  <div className="mt-0.5 ml-4 pl-3 border-l border-slate-700/70 space-y-0.5 pb-0.5">
+                    {docFolders.map(folder => {
+                      const isFolderActive = pathname.startsWith('/documents') && activeFolderId === String(folder.id);
+                      return (
+                        <div key={folder.id} className="flex items-center group/folder">
+                          {editingFolder === folder.id ? (
+                            <div className="flex items-center gap-1 flex-1 py-0.5">
+                              <svg className="w-3.5 h-3.5 flex-shrink-0 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                              </svg>
+                              <input
+                                ref={editInputRef}
+                                type="text"
+                                value={editFolderName}
+                                onChange={e => setEditFolderName(e.target.value)}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') handleSaveEdit();
+                                  if (e.key === 'Escape') { setEditingFolder(null); }
+                                }}
+                                onBlur={() => setTimeout(handleSaveEdit, 120)}
+                                className="flex-1 text-xs bg-slate-800 border border-slate-600 rounded px-2 py-0.5 text-white focus:outline-none focus:border-indigo-500 min-w-0"
+                              />
+                            </div>
+                          ) : (
+                            <>
+                              <Link
+                                href={`/documents?folderId=${folder.id}`}
+                                onClick={onMobileClose}
+                                className={`flex items-center gap-2 flex-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition min-w-0 ${
+                                  isFolderActive
+                                    ? 'bg-indigo-500/25 text-indigo-300'
+                                    : 'text-slate-400 hover:bg-slate-700/60 hover:text-slate-200'
+                                }`}
+                              >
+                                <svg className={`w-3.5 h-3.5 flex-shrink-0 ${isFolderActive ? 'text-indigo-400' : 'text-slate-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                                </svg>
+                                <span className="truncate">{folder.name}</span>
+                              </Link>
+                              <div className="flex items-center gap-0.5 mr-0.5 opacity-0 group-hover/folder:opacity-100 transition">
+                                {/* Rename */}
+                                <button
+                                  onClick={() => handleStartEdit(folder)}
+                                  title="Rename"
+                                  className="p-0.5 text-slate-600 hover:text-slate-300 rounded transition"
+                                >
+                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                </button>
+                                {/* Delete */}
+                                <button
+                                  onClick={() => handleRemoveFolder(folder.id)}
+                                  title="Delete folder"
+                                  className="p-0.5 text-slate-600 hover:text-red-400 rounded transition"
+                                >
+                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Inline "add folder" input */}
+                    {addingFolder && (
+                      <div className="flex items-center gap-1 py-0.5">
+                        <svg className="w-3.5 h-3.5 flex-shrink-0 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                        </svg>
+                        <input
+                          ref={folderInputRef}
+                          type="text"
+                          value={newFolderName}
+                          onChange={e => setNewFolderName(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleAddFolder();
+                            if (e.key === 'Escape') { setAddingFolder(false); setNewFolderName(''); }
+                          }}
+                          onBlur={() => setTimeout(handleAddFolder, 120)}
+                          placeholder="ชื่อ folder..."
+                          className="flex-1 text-xs bg-slate-800 border border-slate-600 rounded px-2 py-0.5 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 min-w-0"
+                        />
+                        <button
+                          onMouseDown={e => { e.preventDefault(); handleAddFolder(); }}
+                          title="Confirm"
+                          className="p-0.5 text-indigo-400 hover:text-indigo-300 flex-shrink-0"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           const active = pathname === item.href;
           return (
             <Link

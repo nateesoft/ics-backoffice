@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import { ChatProvider } from '@/components/chat/ChatContext';
@@ -369,7 +369,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <ChatProvider currentUserId={user.id}>
     <div className="flex h-screen overflow-hidden bg-slate-50">
-      <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
+      <Suspense fallback={<div className="hidden md:flex flex-shrink-0 w-64 bg-slate-900" />}>
+        <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
+      </Suspense>
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
         <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between flex-shrink-0">

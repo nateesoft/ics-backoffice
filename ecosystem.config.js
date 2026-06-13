@@ -13,6 +13,7 @@ module.exports = {
       env_production: {
         NODE_ENV: 'production',
         PORT: 3001,
+        TZ: 'Asia/Bangkok',
       },
     },
     {
@@ -27,6 +28,7 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 9191,
         HOSTNAME: '0.0.0.0',
+        TZ: 'Asia/Bangkok',
       },
     },
   ],

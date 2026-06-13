@@ -29,6 +29,8 @@ export class DocumentsService {
       title: dto.title,
       category: dto.category as DocumentCategory,
       content: dto.content,
+      docType: dto.docType ?? 'general',
+      folderId: dto.folderId ?? null,
       createdBy,
     });
   }

@@ -8,6 +8,7 @@ import FlowchartEditor from './FlowchartEditor';
 
 interface Props {
   initial?: Document;
+  defaultFolderId?: number | null;
   onSuccess: (doc: Document) => void;
   onCancel: () => void;
 }
@@ -44,12 +45,13 @@ const DOC_TYPE_ICONS: Record<DocType, React.ReactNode> = {
   ),
 };
 
-export default function DocumentForm({ initial, onSuccess, onCancel }: Props) {
+export default function DocumentForm({ initial, defaultFolderId, onSuccess, onCancel }: Props) {
   const [form, setForm] = useState({
     title:    initial?.title    ?? '',
     category: initial?.category ?? 'Other',
     content:  initial?.content  ?? '',
     docType:  (initial?.docType ?? 'general') as DocType,
+    folderId: initial !== undefined ? (initial.folderId ?? null) : (defaultFolderId ?? null),
   });
   const [attachments, setAttachments] = useState<DocumentAttachment[]>(initial?.attachments ?? []);
   const [uploading, setUploading]     = useState(false);

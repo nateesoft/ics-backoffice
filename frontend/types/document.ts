@@ -42,6 +42,7 @@ export interface Document {
   category: DocumentCategory;
   docType: DocType;
   content?: string;
+  folderId: number | null;
   createdBy: string;
   attachments: DocumentAttachment[];
   createdAt: string;
