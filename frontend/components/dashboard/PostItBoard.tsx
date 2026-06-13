@@ -224,7 +224,7 @@ function AddNoteButton({ onCreate }: { onCreate: (color: string) => void }) {
   }, [open]);
 
   return (
-    <div ref={ref} className="relative flex-shrink-0 self-start mt-3">
+    <div ref={ref} className="relative flex-shrink-0 self-start mt-3 z-50">
       <button
         onClick={() => setOpen(v => !v)}
         className="w-14 h-14 rounded-full bg-white border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 flex items-center justify-center text-slate-400 hover:text-indigo-500 transition shadow-sm hover:shadow-md"
@@ -236,14 +236,14 @@ function AddNoteButton({ onCreate }: { onCreate: (color: string) => void }) {
       </button>
 
       {open && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-20 bg-white rounded-2xl border border-slate-200 shadow-xl p-3">
-          <p className="text-xs text-slate-400 font-medium text-center mb-2">Pick a color</p>
-          <div className="grid grid-cols-3 gap-2">
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-20 bg-white rounded-2xl border border-slate-200 shadow-xl p-4 min-w-max">
+          <p className="text-xs text-slate-400 font-medium text-center mb-3">Pick a color</p>
+          <div className="grid grid-cols-3 gap-3">
             {COLOR_KEYS.map(c => (
               <button
                 key={c}
                 onClick={() => { setOpen(false); onCreate(c); }}
-                className={`w-10 h-10 rounded-xl ${COLORS[c].bg} border-2 border-white shadow-md hover:scale-110 transition`}
+                className={`w-10 h-10 rounded-xl ${COLORS[c].bg} border-2 border-white shadow-sm hover:scale-110 hover:shadow-md transition`}
                 title={c}
               />
             ))}
