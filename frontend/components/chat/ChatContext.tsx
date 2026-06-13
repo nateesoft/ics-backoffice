@@ -62,7 +62,7 @@ export function ChatProvider({ children, currentUserId }: { children: React.Reac
     const socket = io(wsUrl, {
       path: '/ics-backoffice/socket.io',
       withCredentials: true,
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
     });
     socketRef.current = socket;
 

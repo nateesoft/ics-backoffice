@@ -5,6 +5,7 @@ import Sidebar from './Sidebar';
 import { ChatProvider } from '@/components/chat/ChatContext';
 import ChatWindow from '@/components/chat/ChatWindow';
 import { authApi, avatarSrc, notificationsApi, AppNotification } from '@/lib/api';
+import { usePushNotification } from '@/hooks/usePushNotification';
 
 const POLL_INTERVAL = 30_000;
 
@@ -286,6 +287,56 @@ function UnauthorizedModal() {
   );
 }
 
+function PushBellButton() {
+  const { state, subscribe, unsubscribe } = usePushNotification();
+
+  if (state === 'unsupported') return null;
+
+  if (state === 'loading') {
+    return (
+      <div className="w-8 h-8 flex items-center justify-center">
+        <div className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-indigo-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (state === 'denied') {
+    return (
+      <div title="Notifications blocked — please allow in browser settings" className="p-2 text-slate-300 cursor-not-allowed">
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+        </svg>
+      </div>
+    );
+  }
+
+  if (state === 'subscribed') {
+    return (
+      <button
+        onClick={unsubscribe}
+        title="Notifications enabled — click to disable"
+        className="p-2 rounded-lg hover:bg-slate-100 transition text-indigo-500"
+      >
+        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
+        </svg>
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={subscribe}
+      title="Enable push notifications"
+      className="p-2 rounded-lg hover:bg-slate-100 transition text-slate-400 hover:text-indigo-500"
+    >
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+      </svg>
+    </button>
+  );
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -382,6 +433,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
           <div className="md:hidden font-bold text-slate-800 text-sm">ICS Backoffice</div>
           <div className="flex items-center gap-3 ml-auto">
+            <PushBellButton />
             {user && (
               <div ref={dropdownRef} className="relative">
                 <button

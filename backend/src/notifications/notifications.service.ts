@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification } from '../entities/notification.entity';
 import { User } from '../entities/user.entity';
+import { PushSubscriptionsService } from '../push-subscriptions/push-subscriptions.service';
 
 const MENTION_RE = /data-mention="([^"]+)"/g;
 
@@ -11,6 +12,7 @@ export class NotificationsService {
   constructor(
     @InjectRepository(Notification) private repo: Repository<Notification>,
     @InjectRepository(User) private userRepo: Repository<User>,
+    private pushSvc: PushSubscriptionsService,
   ) {}
 
   async createFromComment(
@@ -38,6 +40,17 @@ export class NotificationsService {
 
     await this.repo.save(
       recipients.map(r => ({ recipientUsername: r, senderUsername, issueId, commentId, isRead: false })),
+    );
+
+    // Send Web Push to each recipient
+    await Promise.allSettled(
+      recipients.map(r =>
+        this.pushSvc.sendToUser(r, {
+          title: `@${senderUsername} mentioned you`,
+          body: `Issue #${issueId} — tap to view`,
+          url: `/ics-backoffice/issues?issue=${issueId}`,
+        }),
+      ),
     );
   }
 

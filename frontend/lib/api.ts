@@ -169,4 +169,11 @@ export const chatApi = {
     api.get<Record<number, number>>('/chat/unread'),
 };
 
+export const pushApi = {
+  subscribe: (subscription: { endpoint: string; p256dh: string; auth: string }) =>
+    api.post('/push-subscriptions/subscribe', subscription),
+  unsubscribe: (endpoint: string) =>
+    api.delete('/push-subscriptions/unsubscribe', { data: { endpoint } }),
+};
+
 export default api;

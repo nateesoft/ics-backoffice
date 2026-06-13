@@ -1,0 +1,19 @@
+{
+  "name": "ICS Backoffice",
+  "short_name": "ICS",
+  "description": "Bug & Issue tracking system",
+  "start_url": "/ics-backoffice",
+  "scope": "/ics-backoffice",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/ics-backoffice/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
