@@ -261,7 +261,10 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
 function UnauthorizedModal() {
   const router = useRouter();
   function handleLogin() {
-    router.push('/login');
+    const full = window.location.pathname + window.location.search;
+    const base = process.env.NEXT_PUBLIC_BASE_PATH ?? '/ics-backoffice';
+    const current = full.startsWith(base) ? full.slice(base.length) || '/' : full;
+    router.push(`/login?redirect=${encodeURIComponent(current)}`);
   }
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -360,8 +363,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         // session หมดอายุขณะใช้งานอยู่ → แสดง modal
         setShowUnauthorized(true);
       } else {
-        // ยังไม่เคย login → redirect เงียบ
-        router.push('/login');
+        // ยังไม่เคย login → redirect เงียบ พร้อมเก็บ path ปัจจุบัน
+        // ตัด basePath ออกก่อน เพราะ router.push จะเติม basePath ให้อัตโนมัติ
+        const full = window.location.pathname + window.location.search;
+        const base = process.env.NEXT_PUBLIC_BASE_PATH ?? '/ics-backoffice';
+        const current = full.startsWith(base) ? full.slice(base.length) || '/' : full;
+        router.push(`/login?redirect=${encodeURIComponent(current)}`);
       }
     }
     window.addEventListener('auth:unauthorized', handler);
