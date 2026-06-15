@@ -45,7 +45,7 @@ export class AuthController {
   async me(@Req() req: Request & { user: any }) {
     const user = await this.authService.getUserById(req.user.id);
     if (!user) throw new UnauthorizedException();
-    return { id: user.id, username: user.username, avatarFilename: user.avatarFilename };
+    return { id: user.id, username: user.username, role: user.role, avatarFilename: user.avatarFilename };
   }
 
   @Post('avatar')

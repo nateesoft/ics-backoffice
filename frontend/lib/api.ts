@@ -9,6 +9,9 @@ api.interceptors.response.use(
   res => res,
   err => {
     if (err?.response?.status === 401 && typeof window !== 'undefined') {
+      if (err?.config?.url?.includes('/auth/login')) {
+        return Promise.reject(err);
+      }
       window.dispatchEvent(new Event('auth:unauthorized'));
       return new Promise(() => {}); // swallow — ป้องกัน error ไปถึง Next.js overlay
     }
@@ -39,6 +42,7 @@ export function avatarSrc(userId: number): string {
 export interface OnlineUser {
   id: number;
   username: string;
+  role: string;
   isOnline: boolean;
   avatarFilename: string | null;
 }

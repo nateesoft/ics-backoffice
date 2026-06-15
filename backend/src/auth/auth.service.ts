@@ -38,7 +38,7 @@ export class AuthService implements OnModuleInit {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
     const token = this.jwtService.sign({ sub: user.id, username: user.username });
-    return { token, user: { id: user.id, username: user.username, avatarFilename: user.avatarFilename } };
+    return { token, user: { id: user.id, username: user.username, role: user.role, avatarFilename: user.avatarFilename } };
   }
 
   async getUserById(userId: number): Promise<User | null> {
@@ -74,6 +74,7 @@ export class AuthService implements OnModuleInit {
     return users.map(u => ({
       id: u.id,
       username: u.username,
+      role: u.role,
       isOnline: u.lastSeenAt != null && u.lastSeenAt > onlineThreshold,
       avatarFilename: u.avatarFilename,
     }));
