@@ -28,14 +28,15 @@ export interface DocumentAttachment {
   createdAt: string;
 }
 
-export type DocType = 'general' | 'sequence' | 'flowchart' | 'mindmap' | 'erdiagram';
+export type DocType = 'general' | 'sequence' | 'flowchart' | 'mindmap' | 'erdiagram' | 'spreadsheet';
 
 export const DOC_TYPES: { value: DocType; label: string; desc: string }[] = [
-  { value: 'general',   label: 'General',          desc: 'Rich-text document' },
-  { value: 'sequence',  label: 'Sequence Diagram',  desc: 'Actor → message flow' },
-  { value: 'flowchart', label: 'Flowchart',          desc: 'Drag-and-drop flow' },
-  { value: 'mindmap',   label: 'Mind Map',           desc: 'Simple mind map' },
-  { value: 'erdiagram', label: 'ER Diagram',         desc: 'Entity-relationship' },
+  { value: 'general',     label: 'General',          desc: 'Rich-text document' },
+  { value: 'sequence',    label: 'Sequence Diagram',  desc: 'Actor → message flow' },
+  { value: 'flowchart',   label: 'Flowchart',         desc: 'Drag-and-drop flow' },
+  { value: 'mindmap',     label: 'Mind Map',          desc: 'Simple mind map' },
+  { value: 'erdiagram',   label: 'ER Diagram',        desc: 'Entity-relationship' },
+  { value: 'spreadsheet', label: 'Spreadsheet',       desc: 'Dynamic table / Excel-like' },
 ];
 
 export interface Document {

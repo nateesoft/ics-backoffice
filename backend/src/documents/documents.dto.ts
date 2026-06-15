@@ -2,7 +2,7 @@ import { IsString, IsNotEmpty, IsOptional, IsIn, IsInt, ValidateIf } from 'class
 import { Type } from 'class-transformer';
 
 const CATEGORIES = ['Database', 'API Endpoint', 'Service', 'Infrastructure', 'Security', 'Other'];
-const DOC_TYPES = ['general', 'sequence', 'flowchart', 'mindmap', 'erdiagram'];
+const DOC_TYPES = ['general', 'sequence', 'flowchart', 'mindmap', 'erdiagram', 'spreadsheet'];
 
 export class CreateDocumentDto {
   @IsString() @IsNotEmpty() title: string;

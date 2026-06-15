@@ -9,6 +9,7 @@ import SequenceDiagramEditor from '@/components/documents/SequenceDiagramEditor'
 import FlowchartEditor from '@/components/documents/FlowchartEditor';
 import MindMapEditor from '@/components/documents/MindMapEditor';
 import ERDiagramEditor from '@/components/documents/ERDiagramEditor';
+import SpreadsheetEditor from '@/components/documents/SpreadsheetEditor';
 import { Document, DocumentAttachment, DOCUMENT_CATEGORIES, CATEGORY_COLORS, DOC_TYPES } from '@/types/document';
 import { documentsApi, docFoldersApi, authApi, DocFolder } from '@/lib/api';
 import DocumentComments from '@/components/documents/DocumentComments';
@@ -182,10 +183,11 @@ function DocumentsInner() {
                 {/* Card header */}
                 <div className="px-5 pt-5 pb-3 flex items-start gap-3">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    doc.docType === 'sequence'  ? 'bg-violet-50' :
-                    doc.docType === 'flowchart' ? 'bg-amber-50'  :
-                    doc.docType === 'mindmap'   ? 'bg-emerald-50':
-                    doc.docType === 'erdiagram' ? 'bg-cyan-50'   : 'bg-indigo-50'
+                    doc.docType === 'sequence'    ? 'bg-violet-50'  :
+                    doc.docType === 'flowchart'   ? 'bg-amber-50'   :
+                    doc.docType === 'mindmap'     ? 'bg-emerald-50' :
+                    doc.docType === 'erdiagram'   ? 'bg-cyan-50'    :
+                    doc.docType === 'spreadsheet' ? 'bg-green-50'   : 'bg-indigo-50'
                   }`}>
                     {doc.docType === 'sequence' ? (
                       <svg className="w-5 h-5 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -203,6 +205,10 @@ function DocumentsInner() {
                       <svg className="w-5 h-5 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
                       </svg>
+                    ) : doc.docType === 'spreadsheet' ? (
+                      <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M10 3v18M3 6a3 3 0 013-3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6z" />
+                      </svg>
                     ) : (
                       <svg className="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -217,10 +223,11 @@ function DocumentsInner() {
                       </span>
                       {doc.docType && doc.docType !== 'general' && (
                         <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                          doc.docType === 'sequence'  ? 'bg-violet-50 text-violet-600'  :
-                          doc.docType === 'flowchart' ? 'bg-amber-50 text-amber-600'    :
-                          doc.docType === 'mindmap'   ? 'bg-emerald-50 text-emerald-600':
-                          doc.docType === 'erdiagram' ? 'bg-cyan-50 text-cyan-600'      : ''
+                          doc.docType === 'sequence'    ? 'bg-violet-50 text-violet-600'   :
+                          doc.docType === 'flowchart'   ? 'bg-amber-50 text-amber-600'     :
+                          doc.docType === 'mindmap'     ? 'bg-emerald-50 text-emerald-600' :
+                          doc.docType === 'erdiagram'   ? 'bg-cyan-50 text-cyan-600'       :
+                          doc.docType === 'spreadsheet' ? 'bg-green-50 text-green-600'     : ''
                         }`}>
                           {DOC_TYPES.find(d => d.value === doc.docType)?.label}
                         </span>
@@ -373,6 +380,8 @@ function DocumentDetail({ doc, currentUser, onEdit }: { doc: Document; currentUs
         <MindMapEditor value={doc.content ?? ''} readOnly />
       ) : doc.docType === 'erdiagram' ? (
         <ERDiagramEditor value={doc.content ?? ''} readOnly />
+      ) : doc.docType === 'spreadsheet' ? (
+        <SpreadsheetEditor value={doc.content ?? ''} readOnly />
       ) : doc.content ? (
         <div
           className="rounded-xl border border-slate-100 bg-slate-50/50 px-5 py-4 text-sm text-slate-700 leading-relaxed

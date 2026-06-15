@@ -7,6 +7,7 @@ import SequenceDiagramEditor from './SequenceDiagramEditor';
 import FlowchartEditor from './FlowchartEditor';
 import MindMapEditor from './MindMapEditor';
 import ERDiagramEditor from './ERDiagramEditor';
+import SpreadsheetEditor from './SpreadsheetEditor';
 
 interface Props {
   initial?: Document;
@@ -53,6 +54,11 @@ const DOC_TYPE_ICONS: Record<DocType, React.ReactNode> = {
   erdiagram: (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+    </svg>
+  ),
+  spreadsheet: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M10 3v18M3 6a3 3 0 013-3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6z" />
     </svg>
   ),
 };
@@ -163,7 +169,7 @@ export default function DocumentForm({ initial, defaultFolderId, onSuccess, onCa
       {/* Doc Type selector */}
       <div>
         <label className={labelCls}>Document Type</label>
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
           {DOC_TYPES.map(dt => {
             const active = form.docType === dt.value;
             return (
@@ -193,15 +199,17 @@ export default function DocumentForm({ initial, defaultFolderId, onSuccess, onCa
       {/* Content editor — switches by docType */}
       <div>
         <label className={labelCls}>
-          {form.docType === 'general'   ? 'Content / Details'  :
-           form.docType === 'sequence'  ? 'Sequence Diagram'   :
-           form.docType === 'flowchart' ? 'Flowchart'          :
-           form.docType === 'mindmap'   ? 'Mind Map'           : 'ER Diagram'}
+          {form.docType === 'general'     ? 'Content / Details'  :
+           form.docType === 'sequence'    ? 'Sequence Diagram'   :
+           form.docType === 'flowchart'   ? 'Flowchart'          :
+           form.docType === 'mindmap'     ? 'Mind Map'           :
+           form.docType === 'spreadsheet' ? 'Spreadsheet'        : 'ER Diagram'}
         </label>
-        {form.docType === 'sequence'  && <SequenceDiagramEditor value={form.content} onChange={val => set('content', val)} />}
-        {form.docType === 'flowchart' && <FlowchartEditor       value={form.content} onChange={val => set('content', val)} />}
-        {form.docType === 'mindmap'   && <MindMapEditor         value={form.content} onChange={val => set('content', val)} />}
-        {form.docType === 'erdiagram' && <ERDiagramEditor       value={form.content} onChange={val => set('content', val)} />}
+        {form.docType === 'sequence'    && <SequenceDiagramEditor value={form.content} onChange={val => set('content', val)} />}
+        {form.docType === 'flowchart'   && <FlowchartEditor       value={form.content} onChange={val => set('content', val)} />}
+        {form.docType === 'mindmap'     && <MindMapEditor         value={form.content} onChange={val => set('content', val)} />}
+        {form.docType === 'erdiagram'   && <ERDiagramEditor       value={form.content} onChange={val => set('content', val)} />}
+        {form.docType === 'spreadsheet' && <SpreadsheetEditor     value={form.content} onChange={val => set('content', val)} />}
         {form.docType === 'general'   && (
           <RichEditor
             value={form.content}
