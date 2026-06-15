@@ -54,6 +54,15 @@ const menuItems = [
     ),
   },
   {
+    href: '/planning',
+    label: 'Project Planning',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h10M4 14h13M4 18h7" />
+      </svg>
+    ),
+  },
+  {
     href: '/reports',
     label: 'Reports',
     icon: (

@@ -205,4 +205,40 @@ export const pushApi = {
     api.delete('/push-subscriptions/unsubscribe', { data: { endpoint } }),
 };
 
+export interface ProjectPhase {
+  id: number;
+  projectId: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  color: string;
+  createdAt: string;
+}
+
+export interface ProjectPlan {
+  id: number;
+  name: string;
+  description: string | null;
+  startDate: string;
+  endDate: string;
+  color: string;
+  createdAt: string;
+  phases: ProjectPhase[];
+}
+
+export const projectPlansApi = {
+  getAll: () => api.get<ProjectPlan[]>('/project-plans'),
+  create: (data: { name: string; description?: string; startDate: string; endDate: string; color: string }) =>
+    api.post<ProjectPlan>('/project-plans', data),
+  update: (id: number, data: Partial<{ name: string; description: string; startDate: string; endDate: string; color: string }>) =>
+    api.put<ProjectPlan>(`/project-plans/${id}`, data),
+  remove: (id: number) => api.delete(`/project-plans/${id}`),
+  addPhase: (projectId: number, data: { name: string; startDate: string; endDate: string; color?: string }) =>
+    api.post<ProjectPhase>(`/project-plans/${projectId}/phases`, data),
+  updatePhase: (projectId: number, phaseId: number, data: Partial<{ name: string; startDate: string; endDate: string; color: string }>) =>
+    api.put<ProjectPhase>(`/project-plans/${projectId}/phases/${phaseId}`, data),
+  removePhase: (projectId: number, phaseId: number) =>
+    api.delete(`/project-plans/${projectId}/phases/${phaseId}`),
+};
+
 export default api;

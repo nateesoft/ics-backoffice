@@ -25,3 +25,82 @@ body {
   background: #cbd5e1;
   border-radius: 2px;
 }
+
+/* react-calendar dark theme */
+.calendar-dark .react-calendar {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  color: #e2e8f0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5), 0 8px 10px -6px rgba(0,0,0,0.4);
+  width: 276px;
+  padding: 8px;
+}
+.calendar-dark .react-calendar__navigation {
+  background: transparent;
+  margin-bottom: 4px;
+}
+.calendar-dark .react-calendar__navigation button {
+  color: #e2e8f0;
+  background: none;
+  min-width: 36px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+}
+.calendar-dark .react-calendar__navigation button:enabled:hover,
+.calendar-dark .react-calendar__navigation button:enabled:focus {
+  background: #334155;
+}
+.calendar-dark .react-calendar__navigation button:disabled {
+  color: #475569;
+  background: none;
+}
+.calendar-dark .react-calendar__month-view__weekdays {
+  text-align: center;
+}
+.calendar-dark .react-calendar__month-view__weekdays__weekday {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 0;
+}
+.calendar-dark .react-calendar__month-view__weekdays__weekday abbr {
+  text-decoration: none;
+}
+.calendar-dark .react-calendar__tile {
+  color: #cbd5e1;
+  background: none;
+  border-radius: 6px;
+  padding: 7px 4px;
+  font-size: 13px;
+  transition: background 0.1s, color 0.1s;
+  text-align: center;
+}
+.calendar-dark .react-calendar__tile:enabled:hover {
+  background: #334155;
+  color: #f1f5f9;
+}
+.calendar-dark .react-calendar__tile--now {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  font-weight: 700;
+}
+.calendar-dark .react-calendar__tile--now:enabled:hover {
+  background: rgba(99, 102, 241, 0.3);
+}
+.calendar-dark .react-calendar__tile--active,
+.calendar-dark .react-calendar__tile--active:enabled:hover {
+  background: #6366f1 !important;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+.calendar-dark .react-calendar__tile:disabled {
+  color: #334155;
+  background: none;
+  cursor: not-allowed;
+}
+.calendar-dark .react-calendar__month-view__days__day--neighboringMonth {
+  color: #334155;
+}
