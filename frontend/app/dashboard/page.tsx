@@ -479,6 +479,7 @@ export default function DashboardPage() {
   const [showForm, setShowForm] = useState(false);
   const [editIssue, setEditIssue] = useState<Issue | null>(null);
   const [viewIssue, setViewIssue] = useState<Issue | null>(null);
+  const [cloneIssue, setCloneIssue] = useState<Issue | null>(null);
   const [defaultDate, setDefaultDate] = useState('');
   const [defaultStatus, setDefaultStatus] = useState('New');
   const [currentUser, setCurrentUser] = useState('');
@@ -539,6 +540,13 @@ export default function DashboardPage() {
   function openEdit(issue: Issue) {
     setViewIssue(null);
     setEditIssue(issue);
+    setShowForm(true);
+  }
+
+  function openClone(issue: Issue) {
+    setViewIssue(null);
+    setEditIssue(null);
+    setCloneIssue(issue);
     setShowForm(true);
   }
 
@@ -714,17 +722,28 @@ export default function DashboardPage() {
             ) : undefined
           }
         >
-          <IssueDetail issue={viewIssue} currentUser={currentUser} />
+          <IssueDetail issue={viewIssue} currentUser={currentUser} onClone={openClone} />
         </Modal>
       )}
 
       {showForm && (
-        <Modal title={editIssue ? 'Edit Issue' : 'New Issue'} onClose={() => setShowForm(false)} size="xl">
+        <Modal
+          title={editIssue ? 'Edit Issue' : cloneIssue ? `Clone Issue #${cloneIssue.id} — ${cloneIssue.projectName}` : 'New Issue'}
+          onClose={() => { setShowForm(false); setCloneIssue(null); }}
+          size="xl"
+        >
           <IssueForm
-            initial={editIssue ?? { taskStatus: defaultStatus as TaskStatus }}
-            defaultDate={defaultDate}
-            onSuccess={() => { setShowForm(false); load(); }}
-            onCancel={() => setShowForm(false)}
+            initial={editIssue || (cloneIssue ? {
+              ...cloneIssue,
+              id: undefined as any,
+              taskStatus: 'New' as any,
+              deploymentStatus: 'Wait Approve' as any,
+              issueCreateDate: new Date().toISOString().split('T')[0],
+              isCancelled: undefined as any,
+            } : { taskStatus: defaultStatus as TaskStatus })}
+            defaultDate={cloneIssue ? undefined : defaultDate}
+            onSuccess={() => { setShowForm(false); setCloneIssue(null); load(); }}
+            onCancel={() => { setShowForm(false); setCloneIssue(null); }}
           />
         </Modal>
       )}

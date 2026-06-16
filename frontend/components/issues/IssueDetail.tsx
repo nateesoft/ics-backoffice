@@ -250,7 +250,7 @@ function IssueHistory({ issueId }: { issueId: number }) {
   );
 }
 
-export default function IssueDetail({ issue, currentUser }: { issue: Issue; currentUser: string }) {
+export default function IssueDetail({ issue, currentUser, onClone }: { issue: Issue; currentUser: string; onClone?: (issue: Issue) => void }) {
   const [copied, setCopied] = useState(false);
 
   function handleShare() {
@@ -296,7 +296,16 @@ export default function IssueDetail({ issue, currentUser }: { issue: Issue; curr
 
   return (
     <div>
-      <div className="flex justify-end mb-3">
+      <div className="flex justify-end gap-2 mb-3">
+        {onClone && (
+          <button
+            onClick={() => onClone(issue)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition bg-emerald-50 hover:bg-emerald-100 text-emerald-600"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            Clone Issue
+          </button>
+        )}
         <button
           onClick={handleShare}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${copied ? 'bg-green-50 text-green-600' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}

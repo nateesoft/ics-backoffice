@@ -22,6 +22,7 @@ export default function IssuesPage() {
   const [search, setSearch] = useState('');
   const [currentUser, setCurrentUser] = useState('');
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [cloneIssue, setCloneIssue] = useState<Issue | null>(null);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const initialIssueIdRef = useRef<number | null>(null);
 
@@ -97,6 +98,12 @@ export default function IssuesPage() {
     document.body.removeChild(ta);
   }
 
+  function handleClone(issue: Issue) {
+    setEditIssue(null);
+    setCloneIssue(issue);
+    setShowForm(true);
+  }
+
   async function handleCancel(id: number) {
     if (!confirm('Cancel this issue?')) return;
     await issuesApi.cancel(id);
@@ -131,7 +138,7 @@ export default function IssuesPage() {
             <p className="text-slate-500 text-sm mt-0.5">{filtered.length} issues found</p>
           </div>
           <button
-            onClick={() => { setEditIssue(null); setShowForm(true); }}
+            onClick={() => { setEditIssue(null); setCloneIssue(null); setShowForm(true); }}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition self-start"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
@@ -270,6 +277,13 @@ export default function IssuesPage() {
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
                             )}
                           </button>
+                          <button
+                            onClick={() => handleClone(issue)}
+                            className="p-1.5 hover:bg-emerald-50 rounded-lg transition text-emerald-500"
+                            title="Clone Issue"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                          </button>
                           {!issue.isCancelled && (
                             <>
                               <button
@@ -300,18 +314,33 @@ export default function IssuesPage() {
       </div>
 
       {showForm && (
-        <Modal title={editIssue ? 'Edit Issue' : 'New Issue'} onClose={() => setShowForm(false)} size="xl">
+        <Modal
+          title={editIssue ? 'Edit Issue' : cloneIssue ? `Clone Issue #${cloneIssue.id} — ${cloneIssue.projectName}` : 'New Issue'}
+          onClose={() => { setShowForm(false); setCloneIssue(null); }}
+          size="xl"
+        >
           <IssueForm
-            initial={editIssue || undefined}
-            onSuccess={() => { setShowForm(false); load(); }}
-            onCancel={() => setShowForm(false)}
+            initial={editIssue || (cloneIssue ? {
+              ...cloneIssue,
+              id: undefined as any,
+              taskStatus: 'New' as any,
+              deploymentStatus: 'Wait Approve' as any,
+              issueCreateDate: new Date().toISOString().split('T')[0],
+              isCancelled: undefined as any,
+            } : undefined)}
+            onSuccess={() => { setShowForm(false); setCloneIssue(null); load(); }}
+            onCancel={() => { setShowForm(false); setCloneIssue(null); }}
           />
         </Modal>
       )}
 
       {viewIssue && (
         <Modal title={`Issue #${viewIssue.id} — ${viewIssue.projectName}`} onClose={closeIssue} size="xl">
-          <IssueDetail issue={viewIssue} currentUser={currentUser} />
+          <IssueDetail
+            issue={viewIssue}
+            currentUser={currentUser}
+            onClone={(issue) => { closeIssue(); handleClone(issue); }}
+          />
         </Modal>
       )}
     </DashboardLayout>
