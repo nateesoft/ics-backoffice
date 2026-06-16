@@ -466,8 +466,22 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         </div>
       )}
 
-      {/* Logout */}
-      <div className="px-3 py-4 border-t border-slate-700">
+      {/* Profile & Logout */}
+      <div className="px-3 py-4 border-t border-slate-700 space-y-1">
+        <Link
+          href="/profile"
+          onClick={onMobileClose}
+          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition text-sm font-medium ${
+            pathname === '/profile'
+              ? 'bg-indigo-600 text-white'
+              : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+          }`}
+        >
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          {!collapsed && <span>Profile</span>}
+        </Link>
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition text-sm font-medium"

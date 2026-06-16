@@ -18,6 +18,7 @@ import { PushSubscriptionsModule } from './push-subscriptions/push-subscriptions
 import { DocImagesModule } from './doc-images/doc-images.module';
 import { DocumentCommentsModule } from './document-comments/document-comments.module';
 import { ProjectPlansModule } from './project-plans/project-plans.module';
+import { LineNotifyModule } from './line-notify/line-notify.module';
 import { ProjectPlan } from './entities/project-plan.entity';
 import { ProjectPhase } from './entities/project-phase.entity';
 import { DocumentComment } from './entities/document-comment.entity';
@@ -70,6 +71,7 @@ import { CommentReaction } from './entities/comment-reaction.entity';
     DocImagesModule,
     DocumentCommentsModule,
     ProjectPlansModule,
+    LineNotifyModule,
   ],
 })
 export class AppModule {}

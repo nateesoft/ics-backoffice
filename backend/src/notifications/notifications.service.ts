@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Notification } from '../entities/notification.entity';
 import { User } from '../entities/user.entity';
 import { PushSubscriptionsService } from '../push-subscriptions/push-subscriptions.service';
+import { LineNotifyService } from '../line-notify/line-notify.service';
 
 const MENTION_RE = /data-mention="([^"]+)"/g;
 
@@ -13,6 +14,7 @@ export class NotificationsService {
     @InjectRepository(Notification) private repo: Repository<Notification>,
     @InjectRepository(User) private userRepo: Repository<User>,
     private pushSvc: PushSubscriptionsService,
+    private lineSvc: LineNotifyService,
   ) {}
 
   async createFromComment(
@@ -42,14 +44,75 @@ export class NotificationsService {
       recipients.map(r => ({ recipientUsername: r, senderUsername, issueId, commentId, isRead: false })),
     );
 
-    // Send Web Push to each recipient
+    const lineMsg = `💬 @${senderUsername} mention คุณใน Issue #${issueId}\nดูที่: /ics-backoffice/issues?issue=${issueId}`;
+
     await Promise.allSettled(
       recipients.map(r =>
-        this.pushSvc.sendToUser(r, {
-          title: `@${senderUsername} mentioned you`,
-          body: `Issue #${issueId} — tap to view`,
-          url: `/ics-backoffice/issues?issue=${issueId}`,
-        }),
+        Promise.all([
+          this.pushSvc.sendToUser(r, {
+            title: `@${senderUsername} mentioned you`,
+            body: `Issue #${issueId} — tap to view`,
+            url: `/ics-backoffice/issues?issue=${issueId}`,
+          }),
+          this.lineSvc.sendToUsername(r, lineMsg),
+        ]),
+      ),
+    );
+  }
+
+  async notifyIssueAssign(
+    issueId: number,
+    projectName: string,
+    recipient: string,
+    assignedBy: string,
+    role: 'developer' | 'tester',
+  ) {
+    if (recipient === assignedBy) return;
+
+    await this.repo.save({ recipientUsername: recipient, senderUsername: assignedBy, issueId, isRead: false });
+
+    const emoji = role === 'developer' ? '🔧' : '🧪';
+    const roleLabel = role === 'developer' ? 'Developer' : 'Tester';
+
+    await Promise.allSettled([
+      this.pushSvc.sendToUser(recipient, {
+        title: `${emoji} ได้รับมอบหมายเป็น ${roleLabel}`,
+        body: `Issue #${issueId}: ${projectName}`,
+        url: `/ics-backoffice/issues?issue=${issueId}`,
+      }),
+      this.lineSvc.sendToUsername(
+        recipient,
+        `${emoji} คุณได้รับมอบหมายเป็น ${roleLabel}\n📋 Issue #${issueId}: ${projectName}\n👤 มอบหมายโดย: ${assignedBy}`,
+      ),
+    ]);
+  }
+
+  async notifyIssueStatusChange(
+    issueId: number,
+    projectName: string,
+    type: 'taskStatus' | 'deploymentStatus',
+    oldStatus: string,
+    newStatus: string,
+    changedBy: string,
+    recipients: string[],
+  ) {
+    const filtered = recipients.filter(r => r && r !== changedBy);
+    if (filtered.length === 0) return;
+
+    const emoji = type === 'deploymentStatus' ? '🚀' : '📋';
+    const label = type === 'deploymentStatus' ? 'Deployment Status' : 'Task Status';
+    const lineMsg = `${emoji} ${label} เปลี่ยนแปลง\n📋 Issue #${issueId}: ${projectName}\n${oldStatus} → ${newStatus}\n👤 โดย: ${changedBy}`;
+
+    await Promise.allSettled(
+      filtered.map(r =>
+        Promise.all([
+          this.pushSvc.sendToUser(r, {
+            title: `${emoji} Issue #${issueId} ${label}`,
+            body: `${oldStatus} → ${newStatus}`,
+            url: `/ics-backoffice/issues?issue=${issueId}`,
+          }),
+          this.lineSvc.sendToUsername(r, lineMsg),
+        ]),
       ),
     );
   }

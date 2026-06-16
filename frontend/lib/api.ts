@@ -241,4 +241,10 @@ export const projectPlansApi = {
     api.delete(`/project-plans/${projectId}/phases/${phaseId}`),
 };
 
+export const lineNotifyApi = {
+  getStatus: () => api.get<{ linked: boolean; expiresAt: string | null }>('/line-notify/status'),
+  generateToken: () => api.post<{ token: string; expiresAt: string }>('/line-notify/generate-token'),
+  unlink: () => api.delete('/line-notify/unlink'),
+};
+
 export default api;

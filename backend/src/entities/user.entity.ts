@@ -22,4 +22,13 @@ export class User {
 
   @Column({ type: 'timestamp', nullable: true, default: null })
   lastSeenAt: Date | null;
+
+  @Column({ type: 'varchar', nullable: true, default: null })
+  lineUserId: string | null;
+
+  @Column({ type: 'varchar', nullable: true, default: null })
+  lineRegToken: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true, default: null })
+  lineRegTokenExpiry: Date | null;
 }

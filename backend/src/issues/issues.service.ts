@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Issue, TaskStatus } from '../entities/issue.entity';
 import { IssueHistory } from '../entities/issue-history.entity';
 import { CreateIssueDto, UpdateIssueDto } from './issues.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const TRACKED_FIELDS: Record<string, string> = {
   projectName: 'Project Name',
@@ -36,6 +37,7 @@ export class IssuesService {
   constructor(
     @InjectRepository(Issue) private repo: Repository<Issue>,
     @InjectRepository(IssueHistory) private historyRepo: Repository<IssueHistory>,
+    private notifSvc: NotificationsService,
   ) {}
 
   findAll(username: string) {
@@ -59,6 +61,11 @@ export class IssuesService {
   async update(id: number, dto: UpdateIssueDto, changedBy: string) {
     const issue = await this.findOne(id);
 
+    const oldDeveloper = issue.developer;
+    const oldTester = issue.tester;
+    const oldTaskStatus = issue.taskStatus;
+    const oldDeploymentStatus = issue.deploymentStatus;
+
     const historyRecords: Partial<IssueHistory>[] = [];
     for (const field of Object.keys(TRACKED_FIELDS)) {
       const oldVal = toStr((issue as any)[field]);
@@ -81,7 +88,36 @@ export class IssuesService {
       await this.historyRepo.save(historyRecords);
     }
 
+    // LINE + Web Push notifications (fire-and-forget so update response is not delayed)
+    this.triggerNotifications(id, issue, dto, oldDeveloper, oldTester, oldTaskStatus, oldDeploymentStatus, changedBy).catch(() => {});
+
     return issue;
+  }
+
+  private async triggerNotifications(
+    id: number,
+    issue: Issue,
+    dto: UpdateIssueDto,
+    oldDeveloper: string,
+    oldTester: string,
+    oldTaskStatus: string,
+    oldDeploymentStatus: string,
+    changedBy: string,
+  ) {
+    if (dto.developer !== undefined && dto.developer !== oldDeveloper && dto.developer) {
+      await this.notifSvc.notifyIssueAssign(id, issue.projectName, dto.developer, changedBy, 'developer');
+    }
+    if (dto.tester !== undefined && dto.tester !== oldTester && dto.tester) {
+      await this.notifSvc.notifyIssueAssign(id, issue.projectName, dto.tester, changedBy, 'tester');
+    }
+    if (dto.taskStatus !== undefined && dto.taskStatus !== oldTaskStatus) {
+      const recipients = [issue.developer, issue.tester].filter(Boolean) as string[];
+      await this.notifSvc.notifyIssueStatusChange(id, issue.projectName, 'taskStatus', oldTaskStatus, dto.taskStatus, changedBy, recipients);
+    }
+    if (dto.deploymentStatus !== undefined && dto.deploymentStatus !== oldDeploymentStatus) {
+      const recipients = [issue.developer, issue.tester, issue.issuer].filter(Boolean) as string[];
+      await this.notifSvc.notifyIssueStatusChange(id, issue.projectName, 'deploymentStatus', oldDeploymentStatus, dto.deploymentStatus, changedBy, recipients);
+    }
   }
 
   async cancel(id: number, changedBy: string) {
