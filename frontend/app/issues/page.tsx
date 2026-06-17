@@ -26,6 +26,18 @@ export default function IssuesPage() {
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const initialIssueIdRef = useRef<number | null>(null);
 
+  function currentMonthRange() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    return { from: `${y}-${m}-01`, to: `${y}-${m}-${String(lastDay).padStart(2, '0')}` };
+  }
+
+  const defaultDateRange = currentMonthRange();
+  const [dateFrom, setDateFrom] = useState(defaultDateRange.from);
+  const [dateTo, setDateTo] = useState(defaultDateRange.to);
+
   const hasActiveFilters = filterStatus || filterPriority || filterCodeType || filterDeployment || filterTag || !showCancelled || search;
 
   function clearFilters() {
@@ -36,6 +48,9 @@ export default function IssuesPage() {
     setFilterTag('');
     setShowCancelled(true);
     setSearch('');
+    const range = currentMonthRange();
+    setDateFrom(range.from);
+    setDateTo(range.to);
   }
 
   const load = useCallback(async () => {
@@ -124,6 +139,8 @@ export default function IssuesPage() {
         || (i.issuer ?? '').toLowerCase().includes(q);
       if (!match) return false;
     }
+    if (dateFrom && i.issueCreateDate < dateFrom) return false;
+    if (dateTo && i.issueCreateDate > dateTo) return false;
     return true;
   });
 
@@ -148,8 +165,25 @@ export default function IssuesPage() {
 
         {/* Filters */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
-          {/* Row 1: Search + main filters */}
+          {/* Row 1: Date range + Search + main filters */}
           <div className="flex flex-wrap gap-3">
+            {/* Date range */}
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5">
+              <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={e => setDateFrom(e.target.value)}
+                className="text-sm bg-transparent focus:outline-none text-slate-700 w-32"
+              />
+              <span className="text-slate-400 text-xs font-medium">–</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={e => setDateTo(e.target.value)}
+                className="text-sm bg-transparent focus:outline-none text-slate-700 w-32"
+              />
+            </div>
             <div className="relative flex-1 min-w-48">
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               <input

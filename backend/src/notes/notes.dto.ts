@@ -19,3 +19,13 @@ export class UpdateNoteDto {
   @IsOptional()
   color?: string;
 }
+
+export class ToggleReactionDto {
+  @IsString()
+  emoji: string;
+}
+
+export class CreateReplyDto {
+  @IsString()
+  content: string;
+}

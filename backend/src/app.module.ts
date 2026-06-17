@@ -37,6 +37,8 @@ import { IssueHistory } from './entities/issue-history.entity';
 import { Notification } from './entities/notification.entity';
 import { ChatMessage } from './entities/chat-message.entity';
 import { CommentReaction } from './entities/comment-reaction.entity';
+import { NoteReaction } from './entities/note-reaction.entity';
+import { NoteReply } from './entities/note-reply.entity';
 
 @Module({
   imports: [
@@ -46,7 +48,7 @@ import { CommentReaction } from './entities/comment-reaction.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase],
+        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply],
         synchronize: true,
         timezone: '+07:00',
       }),

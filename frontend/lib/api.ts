@@ -80,6 +80,10 @@ export const notesApi = {
   update: (id: number, data: { content?: string; color?: string }) => api.put(`/notes/${id}`, data),
   remove: (id: number) => api.delete(`/notes/${id}`),
   reorder: (ids: number[]) => api.patch('/notes/reorder', { ids }),
+  toggleReaction: (id: number, emoji: string) => api.post(`/notes/${id}/reactions/toggle`, { emoji }),
+  getReplies: (id: number) => api.get(`/notes/${id}/replies`),
+  addReply: (id: number, content: string) => api.post(`/notes/${id}/replies`, { content }),
+  deleteReply: (id: number, replyId: number) => api.delete(`/notes/${id}/replies/${replyId}`),
 };
 
 export const commentsApi = {
