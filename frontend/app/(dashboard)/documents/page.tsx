@@ -2,7 +2,6 @@
 import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import Modal from '@/components/ui/Modal';
 import DocumentForm from '@/components/documents/DocumentForm';
 import SequenceDiagramEditor from '@/components/documents/SequenceDiagramEditor';
@@ -111,7 +110,7 @@ function DocumentsInner() {
   const selectCls = "px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400";
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-5">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -329,7 +328,7 @@ function DocumentsInner() {
           />
         </Modal>
       )}
-    </DashboardLayout>
+    </>
   );
 }
 

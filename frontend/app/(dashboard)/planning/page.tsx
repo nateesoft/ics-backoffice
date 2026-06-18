@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import { projectPlansApi, ProjectPlan, ProjectPhase } from '@/lib/api';
 import DatePickerInput from '@/components/ui/DatePickerInput';
 
@@ -298,7 +297,7 @@ export default function PlanningPage() {
   const canSave = form.name.trim() && form.startDate && form.endDate && form.endDate >= form.startDate;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col h-full min-h-0">
         {/* Header */}
         <div className="flex items-center justify-between mb-5 flex-shrink-0">
@@ -638,6 +637,6 @@ export default function PlanningPage() {
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
 }

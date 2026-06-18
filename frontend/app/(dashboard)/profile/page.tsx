@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import { authApi, lineNotifyApi, avatarSrc } from '@/lib/api';
 
 const LINE_OA_ID = process.env.NEXT_PUBLIC_LINE_OA_ID ?? '';
@@ -87,16 +86,16 @@ export default function ProfilePage() {
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="max-w-2xl mx-auto p-6 space-y-6">
-        <h1 className="text-xl font-bold text-white">Profile & Settings</h1>
+        <h1 className="text-xl font-bold text-black">Profile & Settings</h1>
 
         {/* User Info */}
         <div className="bg-slate-800 rounded-xl p-5 flex items-center gap-4">
           <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 bg-slate-700 flex items-center justify-center">
             {user?.avatarFilename && !imgError ? (
               <img
-                src={`${avatarSrc(user.id)}`}
+                src={`${avatarSrc(user.id)}?v=${encodeURIComponent(user.avatarFilename)}`}
                 alt={user.username}
                 className="w-full h-full object-cover"
                 onError={() => setImgError(true)}
@@ -109,7 +108,7 @@ export default function ProfilePage() {
           </div>
           <div>
             <div className="text-white font-semibold text-lg">{user?.username ?? '...'}</div>
-            <div className="text-slate-400 text-sm capitalize">{user?.role}</div>
+            <div className="text-slate-300 text-sm capitalize">{user?.role}</div>
           </div>
         </div>
 
@@ -129,7 +128,7 @@ export default function ProfilePage() {
 
           {lineLinked ? (
             <div className="space-y-3">
-              <p className="text-slate-400 text-sm">
+              <p className="text-slate-300 text-sm">
                 บัญชีของคุณเชื่อมต่อกับ LINE แล้ว คุณจะได้รับแจ้งเตือนเมื่อมีการ @mention, มอบหมาย Issue หรือสถานะเปลี่ยนแปลง
               </p>
               <button
@@ -142,7 +141,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-slate-400 text-sm">
+              <p className="text-slate-300 text-sm">
                 เชื่อมต่อบัญชีกับ LINE เพื่อรับแจ้งเตือนเมื่อมีการ @mention, มอบหมาย Issue หรือสถานะเปลี่ยนแปลง
               </p>
 
@@ -196,7 +195,7 @@ export default function ProfilePage() {
                         {copied ? 'คัดลอกแล้ว!' : 'คัดลอก'}
                       </button>
                     </div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-slate-400">
                       <CountdownTimer expiresAt={regExpiry} />
                     </div>
                   </div>
@@ -210,7 +209,7 @@ export default function ProfilePage() {
                     <span className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center text-xs text-white flex-shrink-0">3</span>
                     ส่งรหัสใน LINE
                   </div>
-                  <p className="text-slate-400 text-sm ml-7">
+                  <p className="text-slate-300 text-sm ml-7">
                     เปิดแชทกับ LINE OA แล้วพิมพ์รหัส <span className="font-mono text-white">{regToken}</span> แล้วส่ง
                     ระบบจะเชื่อมต่อบัญชีของคุณโดยอัตโนมัติ
                   </p>
@@ -221,9 +220,9 @@ export default function ProfilePage() {
         </div>
 
         {/* Notification types info */}
-        <div className="bg-slate-800/50 rounded-xl p-5">
+        <div className="bg-slate-800 rounded-xl p-5">
           <h3 className="text-slate-300 text-sm font-medium mb-3">การแจ้งเตือนที่จะได้รับผ่าน LINE</h3>
-          <ul className="space-y-1.5 text-sm text-slate-400">
+          <ul className="space-y-1.5 text-sm text-slate-300">
             <li className="flex items-start gap-2"><span>💬</span> เมื่อมีคนกล่าวถึงคุณ (@mention) ในคอมเมนต์</li>
             <li className="flex items-start gap-2"><span>🔧</span> เมื่อได้รับมอบหมายเป็น Developer ใน Issue</li>
             <li className="flex items-start gap-2"><span>🧪</span> เมื่อได้รับมอบหมายเป็น Tester ใน Issue</li>
@@ -232,6 +231,6 @@ export default function ProfilePage() {
           </ul>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

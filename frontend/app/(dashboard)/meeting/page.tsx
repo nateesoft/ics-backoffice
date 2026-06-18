@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import { authApi } from '@/lib/api';
 import dynamic from 'next/dynamic';
 
@@ -61,8 +60,7 @@ function MeetingPageContent() {
         />
       )}
 
-      <DashboardLayout>
-        <div className="min-h-full flex flex-col items-center justify-center py-12 px-4">
+      <div className="min-h-full flex flex-col items-center justify-center py-12 px-4">
           <div className="w-full max-w-md space-y-5">
             {/* Title */}
             <div className="text-center mb-2">
@@ -156,7 +154,6 @@ function MeetingPageContent() {
             </div>
           </div>
         </div>
-      </DashboardLayout>
     </>
   );
 }

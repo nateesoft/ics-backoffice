@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import Modal from '@/components/ui/Modal';
 import IssueForm from '@/components/issues/IssueForm';
 import IssueDetail from '@/components/issues/IssueDetail';
@@ -147,7 +146,7 @@ export default function IssuesPage() {
   const selectCls = "px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400";
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -377,7 +376,7 @@ export default function IssuesPage() {
           />
         </Modal>
       )}
-    </DashboardLayout>
+    </>
   );
 }
 

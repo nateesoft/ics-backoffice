@@ -9,9 +9,9 @@ import { usePushNotification } from '@/hooks/usePushNotification';
 
 const POLL_INTERVAL = 30_000;
 
-function UserAvatar({ user, size, avatarKey }: { user: any; size: number; avatarKey?: number }) {
+function UserAvatar({ user, size }: { user: any; size: number }) {
   const [imgError, setImgError] = useState(false);
-  useEffect(() => { setImgError(false); }, [user?.avatarFilename, avatarKey]);
+  useEffect(() => { setImgError(false); }, [user?.avatarFilename]);
   const px = size * 4;
   const base = `rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center font-semibold`;
   const style = { width: px, height: px };
@@ -19,7 +19,7 @@ function UserAvatar({ user, size, avatarKey }: { user: any; size: number; avatar
     return (
       <div className={base} style={style}>
         <img
-          src={`${avatarSrc(user.id)}?v=${avatarKey ?? 0}`}
+          src={`${avatarSrc(user.id)}?v=${encodeURIComponent(user.avatarFilename)}`}
           alt={user.username}
           className="w-full h-full object-cover"
           onError={() => setImgError(true)}
@@ -348,7 +348,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [showUnauthorized, setShowUnauthorized] = useState(false);
-  const [avatarKey, setAvatarKey] = useState(0);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -449,7 +448,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 >
                   {/* Avatar with notification badge */}
                   <div className="relative">
-                    <UserAvatar user={user} size={8} avatarKey={avatarKey} />
+                    <UserAvatar user={user} size={8} />
                     {unreadCount > 0 && (
                       <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none pointer-events-none">
                         {unreadCount > 99 ? '99+' : unreadCount}
@@ -464,7 +463,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="absolute right-0 top-full mt-1.5 w-72 bg-white rounded-xl border border-slate-200 shadow-lg py-1 z-40">
                     {/* User info */}
                     <div className="px-3 py-3 border-b border-slate-100 flex items-center gap-3">
-                      <UserAvatar user={user} size={10} avatarKey={avatarKey} />
+                      <UserAvatar user={user} size={10} />
                       <div>
                         <p className="text-xs text-slate-400">Signed in as</p>
                         <p className="text-sm font-semibold text-slate-700">{user.username}</p>
@@ -556,7 +555,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           onClose={() => setShowAvatarModal(false)}
           onUpdated={(avatarFilename) => {
             setUser((u: any) => ({ ...u, avatarFilename }));
-            setAvatarKey(k => k + 1);
           }}
         />
       )}

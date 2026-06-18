@@ -12,7 +12,6 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import Modal from '@/components/ui/Modal';
 import IssueForm from '@/components/issues/IssueForm';
 import IssueDetail from '@/components/issues/IssueDetail';
@@ -575,7 +574,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-5">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -781,6 +780,6 @@ export default function DashboardPage() {
           />
         </Modal>
       )}
-    </DashboardLayout>
+    </>
   );
 }

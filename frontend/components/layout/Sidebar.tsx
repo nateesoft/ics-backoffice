@@ -11,7 +11,7 @@ function TeamAvatar({ user, size }: { user: OnlineUser; size: number }) {
   if (user.avatarFilename && !imgError) {
     return (
       <img
-        src={`${avatarSrc(user.id)}`}
+        src={`${avatarSrc(user.id)}?v=${encodeURIComponent(user.avatarFilename!)}`}
         alt={user.username}
         className="rounded-full object-cover"
         style={{ width: px, height: px }}

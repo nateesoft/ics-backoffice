@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Issue, TASK_STATUSES, PRIORITIES, STATUS_COLORS, PRIORITY_COLORS } from '@/types/issue';
 import { issuesApi } from '@/lib/api';
 
@@ -26,7 +25,7 @@ export default function ReportsPage() {
   const recentIssues = [...issues].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Reports</h1>
@@ -138,6 +137,6 @@ export default function ReportsPage() {
           </>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

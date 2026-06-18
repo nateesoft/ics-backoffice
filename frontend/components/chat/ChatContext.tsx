@@ -75,6 +75,7 @@ export function ChatProvider({ children, currentUserId }: { children: React.Reac
         if (idx >= 0) {
           const updated = [...prev];
           const isActive = activeThreadIdRef.current === otherId;
+          if (updated[idx].messages.some(m => m.id === msg.id)) return prev;
           updated[idx] = {
             ...updated[idx],
             messages: [...updated[idx].messages, msg],
