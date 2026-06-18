@@ -6,6 +6,7 @@ import { chatApi, ChatMessage } from '@/lib/api';
 interface ChatThread {
   userId: number;
   username: string;
+  avatarFilename?: string | null;
   messages: ChatMessage[];
   unread: number;
 }
@@ -25,7 +26,7 @@ export interface IncomingCall {
 }
 
 interface ChatContextValue {
-  openThread: (userId: number, username: string) => void;
+  openThread: (userId: number, username: string, avatarFilename?: string | null) => void;
   closeThread: (userId: number) => void;
   sendMessage: (toUserId: number, content: string) => void;
   threads: ChatThread[];
@@ -120,16 +121,16 @@ export function ChatProvider({ children, currentUserId }: { children: React.Reac
   const activeThreadIdRef = useRef<number | null>(null);
   useEffect(() => { activeThreadIdRef.current = activeThreadId; }, [activeThreadId]);
 
-  const openThread = useCallback(async (userId: number, username: string) => {
+  const openThread = useCallback(async (userId: number, username: string, avatarFilename?: string | null) => {
     setActiveThreadId(userId);
     setThreads(prev => {
       if (prev.find(t => t.userId === userId)) return prev;
-      return [...prev, { userId, username, messages: [], unread: 0 }];
+      return [...prev, { userId, username, avatarFilename, messages: [], unread: 0 }];
     });
     try {
       const res = await chatApi.getConversation(userId);
       setThreads(prev => prev.map(t =>
-        t.userId === userId ? { ...t, messages: res.data, unread: 0, username: username || t.username } : t
+        t.userId === userId ? { ...t, messages: res.data, unread: 0, username: username || t.username, avatarFilename: avatarFilename ?? t.avatarFilename } : t
       ));
     } catch {}
     socketRef.current?.emit('mark_read', { fromUserId: userId });

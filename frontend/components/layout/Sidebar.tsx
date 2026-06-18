@@ -414,7 +414,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                   return (
                     <button
                       key={u.id}
-                      onClick={() => openThread(u.id, u.username)}
+                      onClick={() => openThread(u.id, u.username, u.avatarFilename)}
                       className="flex items-center gap-2.5 px-1 py-1 w-full rounded-lg hover:bg-slate-800 transition group"
                     >
                       <div className="relative flex-shrink-0">
@@ -444,7 +444,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                 return (
                   <button
                     key={u.id}
-                    onClick={() => openThread(u.id, u.username)}
+                    onClick={() => openThread(u.id, u.username, u.avatarFilename)}
                     className="relative hover:opacity-80 transition"
                     title={`${u.username} — ${u.isOnline ? 'Online' : 'Offline'}`}
                   >

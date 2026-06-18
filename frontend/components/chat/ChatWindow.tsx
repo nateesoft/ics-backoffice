@@ -1,6 +1,7 @@
 'use client';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useChatContext } from './ChatContext';
+import { avatarSrc } from '@/lib/api';
 import dynamic from 'next/dynamic';
 
 const JitsiCallModal = dynamic(() => import('./JitsiCallModal'), { ssr: false });
@@ -13,6 +14,25 @@ function formatTime(iso: string) {
   return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
 }
 
+function ThreadAvatar({ userId, username, avatarFilename }: { userId: number; username: string; avatarFilename?: string | null }) {
+  const [imgError, setImgError] = useState(false);
+  if (avatarFilename && !imgError) {
+    return (
+      <img
+        src={`${avatarSrc(userId)}?v=${encodeURIComponent(avatarFilename)}`}
+        alt={username}
+        className="w-7 h-7 rounded-full object-cover flex-shrink-0"
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+  return (
+    <div className="w-7 h-7 rounded-full bg-indigo-400 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+      {username[0]?.toUpperCase()}
+    </div>
+  );
+}
+
 function ThreadWindow({
   thread,
   currentUserId,
@@ -20,7 +40,7 @@ function ThreadWindow({
   onFocus,
   index,
 }: {
-  thread: { userId: number; username: string; messages: any[]; unread: number };
+  thread: { userId: number; username: string; avatarFilename?: string | null; messages: any[]; unread: number };
   currentUserId: number;
   isActive: boolean;
   onFocus: () => void;
@@ -58,9 +78,7 @@ function ThreadWindow({
         onClick={() => setMinimized(v => !v)}
       >
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-full bg-indigo-400 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
-            {thread.username[0]?.toUpperCase()}
-          </div>
+          <ThreadAvatar userId={thread.userId} username={thread.username} avatarFilename={thread.avatarFilename} />
           <span className="text-sm font-semibold text-white truncate">{thread.username}</span>
           {thread.unread > 0 && (
             <span className="ml-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
