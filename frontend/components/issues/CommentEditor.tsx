@@ -1,6 +1,6 @@
 'use client';
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { commentAttachmentsApi } from '@/lib/api';
+import { commentAttachmentsApi, uploadsApi } from '@/lib/api';
 
 export interface CommentAttachment {
   id: number;
@@ -69,10 +69,12 @@ export default function CommentEditor({
 }: CommentEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [attachments, setAttachments] = useState<CommentAttachment[]>(initialAttachments);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
+  const [insertingImage, setInsertingImage] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [preview, setPreview] = useState<CommentAttachment | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -203,6 +205,39 @@ export default function CommentEditor({
     </button>
   );
 
+  async function insertImageInline(file: File) {
+    if (!file.type.startsWith('image/')) return;
+    setInsertingImage(true);
+    try {
+      const res = await uploadsApi.uploadImage(file);
+      const url = uploadsApi.imageUrl(res.data.filename);
+      editorRef.current?.focus();
+      document.execCommand('insertHTML', false, `<img src="${url}" style="max-width:100%;border-radius:8px;margin:4px 0;display:block;" />`);
+    } finally {
+      setInsertingImage(false);
+    }
+  }
+
+  async function handleImageFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files?.[0]) {
+      await insertImageInline(e.target.files[0]);
+      e.target.value = '';
+    }
+  }
+
+  async function handleEditorPaste(e: React.ClipboardEvent<HTMLDivElement>) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) await insertImageInline(file);
+        return;
+      }
+    }
+  }
+
   const handleFiles = useCallback(async (files: FileList | File[]) => {
     for (const file of Array.from(files)) {
       if (commentId !== undefined) {
@@ -283,6 +318,15 @@ export default function CommentEditor({
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
             () => execCmd('removeFormat'), 'Clear format'
           )}
+          <div className="w-px h-4 bg-slate-200 mx-0.5" />
+          {tb(
+            insertingImage
+              ? <div className="w-3.5 h-3.5 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin" />
+              : <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+            () => imageInputRef.current?.click(),
+            'Insert image'
+          )}
+          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFileChange} />
           <div className="flex-1" />
           <button
             type="button"
@@ -302,8 +346,9 @@ export default function CommentEditor({
           suppressContentEditableWarning
           onInput={detectMention}
           onKeyDown={handleEditorKeyDown}
+          onPaste={handleEditorPaste}
           data-placeholder={placeholder}
-          className="min-h-[80px] max-h-[250px] overflow-y-auto px-3 py-2.5 text-sm text-slate-800 focus:outline-none leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:bg-slate-100 [&_pre]:rounded [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-xs [&_blockquote]:border-l-4 [&_blockquote]:border-indigo-300 [&_blockquote]:pl-3 [&_blockquote]:text-slate-600 [&_.mention]:text-indigo-600 [&_.mention]:font-semibold [&_.mention]:bg-indigo-50 [&_.mention]:rounded [&_.mention]:px-0.5"
+          className="min-h-[80px] max-h-[250px] overflow-y-auto px-3 py-2.5 text-sm text-slate-800 focus:outline-none leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:bg-slate-100 [&_pre]:rounded [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-xs [&_blockquote]:border-l-4 [&_blockquote]:border-indigo-300 [&_blockquote]:pl-3 [&_blockquote]:text-slate-600 [&_.mention]:text-indigo-600 [&_.mention]:font-semibold [&_.mention]:bg-indigo-50 [&_.mention]:rounded [&_.mention]:px-0.5 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1"
         />
 
         {/* Drop zone */}

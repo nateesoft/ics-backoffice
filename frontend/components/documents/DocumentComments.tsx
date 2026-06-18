@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { docCommentsApi } from '@/lib/api';
+import { docCommentsApi, uploadsApi } from '@/lib/api';
 
 interface DocReaction {
   id: number;
@@ -55,50 +55,125 @@ function groupReactions(reactions: DocReaction[], currentUser: string) {
   return groups;
 }
 
-function CommentInput({ onSubmit, onCancel, placeholder = 'Write a comment...', submitLabel = 'Comment', initialValue = '' }: {
-  onSubmit: (text: string) => Promise<void>;
+function DocCommentInput({ onSubmit, onCancel, placeholder = 'Write a comment...', submitLabel = 'Comment', initialValue = '' }: {
+  onSubmit: (html: string) => Promise<void>;
   onCancel?: () => void;
   placeholder?: string;
   submitLabel?: string;
   initialValue?: string;
 }) {
-  const [text, setText] = useState(initialValue);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
-  const ref = useRef<HTMLTextAreaElement>(null);
+  const [insertingImage, setInsertingImage] = useState(false);
 
   useEffect(() => {
-    if (ref.current) {
-      ref.current.style.height = 'auto';
-      ref.current.style.height = `${ref.current.scrollHeight}px`;
-    }
-  }, [text]);
+    if (editorRef.current) editorRef.current.innerHTML = initialValue;
+    editorRef.current?.focus();
+  }, []);
 
-  useEffect(() => { ref.current?.focus(); }, []);
+  function execCmd(cmd: string, val?: string) {
+    document.execCommand(cmd, false, val);
+    editorRef.current?.focus();
+  }
+
+  async function insertImageInline(file: File) {
+    if (!file.type.startsWith('image/')) return;
+    setInsertingImage(true);
+    try {
+      const res = await uploadsApi.uploadImage(file);
+      const url = uploadsApi.imageUrl(res.data.filename);
+      editorRef.current?.focus();
+      document.execCommand('insertHTML', false, `<img src="${url}" style="max-width:100%;border-radius:8px;margin:4px 0;display:block;" />`);
+    } finally {
+      setInsertingImage(false);
+    }
+  }
+
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files?.[0]) {
+      await insertImageInline(e.target.files[0]);
+      e.target.value = '';
+    }
+  }
+
+  async function handlePaste(e: React.ClipboardEvent<HTMLDivElement>) {
+    for (const item of Array.from(e.clipboardData?.items ?? [])) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) await insertImageInline(file);
+        return;
+      }
+    }
+  }
 
   async function submit() {
-    if (!text.trim()) return;
+    const html = editorRef.current?.innerHTML || '';
+    const text = editorRef.current?.innerText?.trim() || '';
+    if (!text) return;
     setSubmitting(true);
     try {
-      await onSubmit(text.trim());
-      setText('');
+      await onSubmit(html);
+      if (editorRef.current) editorRef.current.innerHTML = '';
     } finally {
       setSubmitting(false);
     }
   }
 
+  const tb = (icon: React.ReactNode, onClick: () => void, title?: string) => (
+    <button
+      type="button"
+      title={title}
+      onMouseDown={e => { e.preventDefault(); onClick(); }}
+      className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-200 text-slate-600 text-sm font-medium transition"
+    >
+      {icon}
+    </button>
+  );
+
   return (
-    <div className="flex-1 space-y-1.5">
-      <textarea
-        ref={ref}
-        value={text}
-        onChange={e => setText(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); }}
-        placeholder={placeholder}
-        rows={2}
-        className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none leading-relaxed text-slate-700 placeholder:text-slate-300"
-      />
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-slate-400">Ctrl+Enter to submit</span>
+    <div className="flex-1">
+      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-indigo-400 transition">
+        {/* Toolbar */}
+        <div className="flex items-center gap-0.5 px-2 py-1 border-b border-slate-100 bg-slate-50 flex-wrap">
+          {tb(<strong className="text-xs">B</strong>, () => execCmd('bold'), 'Bold')}
+          {tb(<em className="text-xs">I</em>, () => execCmd('italic'), 'Italic')}
+          {tb(<u className="text-xs">U</u>, () => execCmd('underline'), 'Underline')}
+          <div className="w-px h-4 bg-slate-200 mx-0.5" />
+          {tb(
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" /></svg>,
+            () => execCmd('insertUnorderedList'), 'Bullet list'
+          )}
+          {tb(
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>,
+            () => execCmd('insertOrderedList'), 'Numbered list'
+          )}
+          <div className="w-px h-4 bg-slate-200 mx-0.5" />
+          {tb(
+            insertingImage
+              ? <div className="w-3.5 h-3.5 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin" />
+              : <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+            () => imageInputRef.current?.click(),
+            'Insert image'
+          )}
+          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+        </div>
+
+        {/* Editor */}
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          onPaste={handlePaste}
+          onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); }}
+          data-placeholder={placeholder}
+          className="min-h-[72px] max-h-[240px] overflow-y-auto px-3 py-2.5 text-sm text-slate-800 focus:outline-none leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1"
+        />
+      </div>
+
+      <div className="flex items-center justify-between mt-1.5">
+        <span className="text-xs text-slate-400">Ctrl+Enter to submit · paste or click 🖼 to insert image</span>
         <div className="flex gap-2">
           {onCancel && (
             <button type="button" onClick={onCancel}
@@ -108,7 +183,7 @@ function CommentInput({ onSubmit, onCancel, placeholder = 'Write a comment...', 
           )}
           <button
             type="button"
-            disabled={submitting || !text.trim()}
+            disabled={submitting || insertingImage}
             onClick={submit}
             className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-xs font-medium transition"
           >
@@ -256,10 +331,10 @@ export default function DocumentComments({ docId, currentUser }: Props) {
   function renderCommentBody(c: DocComment, isReply: boolean) {
     if (editId === c.id) {
       return (
-        <CommentInput
+        <DocCommentInput
           key={`edit-${c.id}`}
           initialValue={c.content}
-          onSubmit={content => handleUpdate(c.id, content)}
+          onSubmit={(content: string) => handleUpdate(c.id, content)}
           onCancel={() => setEditId(null)}
           submitLabel="Save"
         />
@@ -268,9 +343,10 @@ export default function DocumentComments({ docId, currentUser }: Props) {
 
     return (
       <div className="group relative">
-        <div className={`bg-slate-50 rounded-xl px-3 py-2 text-slate-700 whitespace-pre-wrap leading-relaxed ${isReply ? 'text-xs' : 'text-sm'}`}>
-          {c.content}
-        </div>
+        <div
+          className={`bg-slate-50 rounded-xl px-3 py-2 text-slate-700 leading-relaxed [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 ${isReply ? 'text-xs' : 'text-sm'}`}
+          dangerouslySetInnerHTML={{ __html: c.content }}
+        />
 
         <div className="flex items-center gap-3 flex-wrap">
           <ReactionBar
@@ -378,11 +454,11 @@ export default function DocumentComments({ docId, currentUser }: Props) {
                   <div className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[10px] font-bold ${avatarColor(currentUser)}`}>
                     {currentUser[0]?.toUpperCase()}
                   </div>
-                  <CommentInput
+                  <DocCommentInput
                     key={`reply-${c.id}`}
                     placeholder={`Reply to @${c.createdBy}...`}
                     submitLabel="Reply"
-                    onSubmit={content => handleCreate(content, c.id)}
+                    onSubmit={(content: string) => handleCreate(content, c.id)}
                     onCancel={() => setReplyToId(null)}
                   />
                 </div>
@@ -397,9 +473,9 @@ export default function DocumentComments({ docId, currentUser }: Props) {
         <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold ${avatarColor(currentUser)}`}>
           {currentUser[0]?.toUpperCase()}
         </div>
-        <CommentInput
+        <DocCommentInput
           key="new-comment"
-          onSubmit={content => handleCreate(content)}
+          onSubmit={(content: string) => handleCreate(content)}
           placeholder="Write a comment..."
           submitLabel="Comment"
         />
