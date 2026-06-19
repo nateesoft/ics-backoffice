@@ -1,6 +1,9 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { docCommentsApi, uploadsApi } from '@/lib/api';
+import { docCommentsApi, uploadsApi, issuesApi, documentsApi } from '@/lib/api';
+
+interface RefIssue { id: number; projectName: string; }
+interface RefDocument { id: number; title: string; }
 
 interface DocReaction {
   id: number;
@@ -55,26 +58,146 @@ function groupReactions(reactions: DocReaction[], currentUser: string) {
   return groups;
 }
 
-function DocCommentInput({ onSubmit, onCancel, placeholder = 'Write a comment...', submitLabel = 'Comment', initialValue = '' }: {
+function DocCommentInput({ onSubmit, onCancel, placeholder = 'Write a comment...', submitLabel = 'Comment', initialValue = '', issues = [], documents = [] }: {
   onSubmit: (html: string) => Promise<void>;
   onCancel?: () => void;
   placeholder?: string;
   submitLabel?: string;
   initialValue?: string;
+  issues?: RefIssue[];
+  documents?: RefDocument[];
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const issueDropdownRef = useRef<HTMLDivElement>(null);
+  const docDropdownRef = useRef<HTMLDivElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [insertingImage, setInsertingImage] = useState(false);
+
+  const [issueOpen, setIssueOpen] = useState(false);
+  const [issueQuery, setIssueQuery] = useState('');
+  const [issueIndex, setIssueIndex] = useState(0);
+  const [issuePos, setIssuePos] = useState({ top: 0, left: 0 });
+
+  const [docOpen, setDocOpen] = useState(false);
+  const [docQuery, setDocQuery] = useState('');
+  const [docIndex, setDocIndex] = useState(0);
+  const [docPos, setDocPos] = useState({ top: 0, left: 0 });
+
+  const filteredIssues = issues.filter(iss =>
+    !issueQuery || String(iss.id).includes(issueQuery) || iss.projectName.toLowerCase().includes(issueQuery.toLowerCase())
+  ).slice(0, 10);
+
+  const filteredDocs = documents.filter(doc =>
+    !docQuery || String(doc.id).includes(docQuery) || doc.title.toLowerCase().includes(docQuery.toLowerCase())
+  ).slice(0, 10);
 
   useEffect(() => {
     if (editorRef.current) editorRef.current.innerHTML = initialValue;
     editorRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    if (!issueOpen || !issueDropdownRef.current) return;
+    const item = issueDropdownRef.current.children[issueIndex] as HTMLElement;
+    item?.scrollIntoView({ block: 'nearest' });
+  }, [issueIndex, issueOpen]);
+
+  useEffect(() => {
+    if (!docOpen || !docDropdownRef.current) return;
+    const item = docDropdownRef.current.children[docIndex] as HTMLElement;
+    item?.scrollIntoView({ block: 'nearest' });
+  }, [docIndex, docOpen]);
+
   function execCmd(cmd: string, val?: string) {
     document.execCommand(cmd, false, val);
     editorRef.current?.focus();
+  }
+
+  function detectPopups() {
+    const sel = window.getSelection();
+    if (!sel?.rangeCount) { setIssueOpen(false); setDocOpen(false); return; }
+    const range = sel.getRangeAt(0);
+    const node = range.startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) { setIssueOpen(false); setDocOpen(false); return; }
+    const text = node.textContent || '';
+    const offset = range.startOffset;
+    const before = text.slice(0, offset);
+
+    const hashIdx = before.lastIndexOf('#');
+    const bangIdx = before.lastIndexOf('!');
+    const maxIdx = Math.max(hashIdx, bangIdx);
+    if (maxIdx === -1) { setIssueOpen(false); setDocOpen(false); return; }
+
+    const query = before.slice(maxIdx + 1);
+    if (query.includes(' ')) { setIssueOpen(false); setDocOpen(false); return; }
+
+    const rect = range.getBoundingClientRect();
+    const pos = { top: rect.bottom + 4, left: rect.left };
+
+    if (maxIdx === hashIdx) {
+      setDocOpen(false); setIssueQuery(query); setIssueIndex(0); setIssuePos(pos); setIssueOpen(true);
+    } else {
+      setIssueOpen(false); setDocQuery(query); setDocIndex(0); setDocPos(pos); setDocOpen(true);
+    }
+  }
+
+  function insertIssueRef(id: number, projectName: string) {
+    editorRef.current?.focus();
+    const sel = window.getSelection();
+    if (!sel?.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    const node = range.startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) return;
+    const before = (node.textContent || '').slice(0, range.startOffset);
+    const hashIdx = before.lastIndexOf('#');
+    if (hashIdx === -1) return;
+    const refRange = range.cloneRange();
+    refRange.setStart(node, hashIdx);
+    refRange.setEnd(node, range.startOffset);
+    refRange.deleteContents();
+    const span = document.createElement('span');
+    span.className = 'issue-ref text-amber-700 font-semibold bg-amber-50 rounded px-0.5 border border-amber-200';
+    span.dataset.issueId = String(id);
+    span.contentEditable = 'false';
+    span.textContent = `#${id} ${projectName}`;
+    refRange.insertNode(span);
+    const after = document.createRange();
+    after.setStartAfter(span);
+    after.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(after);
+    document.execCommand('insertText', false, ' ');
+    setIssueOpen(false);
+  }
+
+  function insertDocRef(id: number, title: string) {
+    editorRef.current?.focus();
+    const sel = window.getSelection();
+    if (!sel?.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    const node = range.startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) return;
+    const before = (node.textContent || '').slice(0, range.startOffset);
+    const bangIdx = before.lastIndexOf('!');
+    if (bangIdx === -1) return;
+    const refRange = range.cloneRange();
+    refRange.setStart(node, bangIdx);
+    refRange.setEnd(node, range.startOffset);
+    refRange.deleteContents();
+    const span = document.createElement('span');
+    span.className = 'doc-ref text-emerald-700 font-semibold bg-emerald-50 rounded px-0.5 border border-emerald-200';
+    span.dataset.docId = String(id);
+    span.contentEditable = 'false';
+    span.textContent = `!${id} ${title}`;
+    refRange.insertNode(span);
+    const after = document.createRange();
+    after.setStartAfter(span);
+    after.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(after);
+    document.execCommand('insertText', false, ' ');
+    setDocOpen(false);
   }
 
   async function insertImageInline(file: File) {
@@ -166,14 +289,71 @@ function DocCommentInput({ onSubmit, onCancel, placeholder = 'Write a comment...
           contentEditable
           suppressContentEditableWarning
           onPaste={handlePaste}
-          onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); }}
+          onInput={detectPopups}
+          onKeyDown={e => {
+            if (issueOpen && filteredIssues.length > 0) {
+              if (e.key === 'ArrowDown') { e.preventDefault(); setIssueIndex(i => Math.min(i + 1, filteredIssues.length - 1)); return; }
+              if (e.key === 'ArrowUp') { e.preventDefault(); setIssueIndex(i => Math.max(i - 1, 0)); return; }
+              if (e.key === 'Enter') { e.preventDefault(); const iss = filteredIssues[issueIndex]; if (iss) insertIssueRef(iss.id, iss.projectName); return; }
+              if (e.key === 'Escape') { setIssueOpen(false); return; }
+            }
+            if (docOpen && filteredDocs.length > 0) {
+              if (e.key === 'ArrowDown') { e.preventDefault(); setDocIndex(i => Math.min(i + 1, filteredDocs.length - 1)); return; }
+              if (e.key === 'ArrowUp') { e.preventDefault(); setDocIndex(i => Math.max(i - 1, 0)); return; }
+              if (e.key === 'Enter') { e.preventDefault(); const doc = filteredDocs[docIndex]; if (doc) insertDocRef(doc.id, doc.title); return; }
+              if (e.key === 'Escape') { setDocOpen(false); return; }
+            }
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit();
+          }}
           data-placeholder={placeholder}
-          className="min-h-[72px] max-h-[240px] overflow-y-auto px-3 py-2.5 text-sm text-slate-800 focus:outline-none leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1"
+          className="min-h-[72px] max-h-[240px] overflow-y-auto px-3 py-2.5 text-sm text-slate-800 focus:outline-none leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_.issue-ref]:text-amber-700 [&_.issue-ref]:font-semibold [&_.issue-ref]:bg-amber-50 [&_.issue-ref]:rounded [&_.issue-ref]:px-0.5 [&_.doc-ref]:text-emerald-700 [&_.doc-ref]:font-semibold [&_.doc-ref]:bg-emerald-50 [&_.doc-ref]:rounded [&_.doc-ref]:px-0.5 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1"
         />
       </div>
 
+      {/* Issue ref dropdown */}
+      {issueOpen && filteredIssues.length > 0 && (
+        <div
+          ref={issueDropdownRef}
+          style={{ position: 'fixed', top: issuePos.top, left: issuePos.left, zIndex: 9999 }}
+          className="w-72 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg py-1"
+        >
+          {filteredIssues.map((iss, i) => (
+            <div
+              key={iss.id}
+              onMouseDown={e => { e.preventDefault(); insertIssueRef(iss.id, iss.projectName); }}
+              className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer text-sm transition ${i === issueIndex ? 'bg-amber-50 text-amber-800' : 'text-slate-700 hover:bg-slate-50'}`}
+            >
+              <span className="w-6 h-6 rounded bg-amber-100 flex items-center justify-center text-xs text-amber-700 font-bold flex-shrink-0">#</span>
+              <span className="font-medium truncate">{iss.projectName}</span>
+              <span className="text-xs text-slate-400 ml-auto flex-shrink-0">#{iss.id}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Document ref dropdown */}
+      {docOpen && filteredDocs.length > 0 && (
+        <div
+          ref={docDropdownRef}
+          style={{ position: 'fixed', top: docPos.top, left: docPos.left, zIndex: 9999 }}
+          className="w-72 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg py-1"
+        >
+          {filteredDocs.map((doc, i) => (
+            <div
+              key={doc.id}
+              onMouseDown={e => { e.preventDefault(); insertDocRef(doc.id, doc.title); }}
+              className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer text-sm transition ${i === docIndex ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700 hover:bg-slate-50'}`}
+            >
+              <span className="w-6 h-6 rounded bg-emerald-100 flex items-center justify-center text-xs text-emerald-700 font-bold flex-shrink-0">!</span>
+              <span className="font-medium truncate">{doc.title}</span>
+              <span className="text-xs text-slate-400 ml-auto flex-shrink-0">!{doc.id}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="flex items-center justify-between mt-1.5">
-        <span className="text-xs text-slate-400">Ctrl+Enter to submit · paste or click 🖼 to insert image</span>
+        <span className="text-xs text-slate-400">Ctrl+Enter to submit · # issue · ! document</span>
         <div className="flex gap-2">
           {onCancel && (
             <button type="button" onClick={onCancel}
@@ -282,6 +462,17 @@ export default function DocumentComments({ docId, currentUser }: Props) {
   const [loading, setLoading] = useState(true);
   const [editId, setEditId] = useState<number | null>(null);
   const [replyToId, setReplyToId] = useState<number | null>(null);
+  const [refIssues, setRefIssues] = useState<RefIssue[]>([]);
+  const [refDocs, setRefDocs] = useState<RefDocument[]>([]);
+
+  useEffect(() => {
+    issuesApi.getAll().then(r => setRefIssues(
+      r.data.filter((iss: any) => !iss.isCancelled).map((iss: any) => ({ id: iss.id, projectName: iss.projectName }))
+    )).catch(() => {});
+    documentsApi.getAll().then(r => setRefDocs(
+      r.data.map((doc: any) => ({ id: doc.id, title: doc.title }))
+    )).catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -337,6 +528,8 @@ export default function DocumentComments({ docId, currentUser }: Props) {
           onSubmit={(content: string) => handleUpdate(c.id, content)}
           onCancel={() => setEditId(null)}
           submitLabel="Save"
+          issues={refIssues}
+          documents={refDocs}
         />
       );
     }
@@ -460,6 +653,8 @@ export default function DocumentComments({ docId, currentUser }: Props) {
                     submitLabel="Reply"
                     onSubmit={(content: string) => handleCreate(content, c.id)}
                     onCancel={() => setReplyToId(null)}
+                    issues={refIssues}
+                    documents={refDocs}
                   />
                 </div>
               )}
@@ -478,6 +673,8 @@ export default function DocumentComments({ docId, currentUser }: Props) {
           onSubmit={(content: string) => handleCreate(content)}
           placeholder="Write a comment..."
           submitLabel="Comment"
+          issues={refIssues}
+          documents={refDocs}
         />
       </div>
     </div>

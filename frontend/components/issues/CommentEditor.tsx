@@ -16,6 +16,16 @@ export interface MentionUser {
   username: string;
 }
 
+export interface MentionIssue {
+  id: number;
+  projectName: string;
+}
+
+export interface MentionDocument {
+  id: number;
+  title: string;
+}
+
 interface CommentEditorProps {
   commentId?: number;
   initialContent?: string;
@@ -25,6 +35,8 @@ interface CommentEditorProps {
   submitLabel?: string;
   placeholder?: string;
   users?: MentionUser[];
+  issues?: MentionIssue[];
+  documents?: MentionDocument[];
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/ics-backoffice/api';
@@ -66,11 +78,15 @@ export default function CommentEditor({
   submitLabel = 'Comment',
   placeholder = 'Write a comment...',
   users = [],
+  issues = [],
+  documents = [],
 }: CommentEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const issueDropdownRef = useRef<HTMLDivElement>(null);
+  const docDropdownRef = useRef<HTMLDivElement>(null);
   const [attachments, setAttachments] = useState<CommentAttachment[]>(initialAttachments);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
@@ -85,10 +101,34 @@ export default function CommentEditor({
   const [mentionIndex, setMentionIndex] = useState(0);
   const [mentionPos, setMentionPos] = useState({ top: 0, left: 0 });
 
+  // Issue ref state
+  const [issueOpen, setIssueOpen] = useState(false);
+  const [issueQuery, setIssueQuery] = useState('');
+  const [issueIndex, setIssueIndex] = useState(0);
+  const [issuePos, setIssuePos] = useState({ top: 0, left: 0 });
+
+  // Document ref state
+  const [docOpen, setDocOpen] = useState(false);
+  const [docQuery, setDocQuery] = useState('');
+  const [docIndex, setDocIndex] = useState(0);
+  const [docPos, setDocPos] = useState({ top: 0, left: 0 });
+
   const allUsers = [ALL_USER, ...users];
   const filteredUsers = mentionQuery
     ? allUsers.filter(u => u.username.toLowerCase().includes(mentionQuery.toLowerCase()))
     : allUsers;
+
+  const filteredIssues = issues.filter(iss =>
+    !issueQuery ||
+    String(iss.id).includes(issueQuery) ||
+    iss.projectName.toLowerCase().includes(issueQuery.toLowerCase())
+  ).slice(0, 10);
+
+  const filteredDocs = documents.filter(doc =>
+    !docQuery ||
+    String(doc.id).includes(docQuery) ||
+    doc.title.toLowerCase().includes(docQuery.toLowerCase())
+  ).slice(0, 10);
 
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== initialContent) {
@@ -103,26 +143,51 @@ export default function CommentEditor({
     item?.scrollIntoView({ block: 'nearest' });
   }, [mentionIndex, mentionOpen]);
 
-  function detectMention() {
+  useEffect(() => {
+    if (!issueOpen || !issueDropdownRef.current) return;
+    const item = issueDropdownRef.current.children[issueIndex] as HTMLElement;
+    item?.scrollIntoView({ block: 'nearest' });
+  }, [issueIndex, issueOpen]);
+
+  useEffect(() => {
+    if (!docOpen || !docDropdownRef.current) return;
+    const item = docDropdownRef.current.children[docIndex] as HTMLElement;
+    item?.scrollIntoView({ block: 'nearest' });
+  }, [docIndex, docOpen]);
+
+  function detectPopups() {
     const sel = window.getSelection();
-    if (!sel?.rangeCount) { setMentionOpen(false); return; }
+    if (!sel?.rangeCount) { setMentionOpen(false); setIssueOpen(false); setDocOpen(false); return; }
     const range = sel.getRangeAt(0);
     const node = range.startContainer;
-    if (node.nodeType !== Node.TEXT_NODE) { setMentionOpen(false); return; }
+    if (node.nodeType !== Node.TEXT_NODE) { setMentionOpen(false); setIssueOpen(false); setDocOpen(false); return; }
     const text = node.textContent || '';
     const offset = range.startOffset;
     const before = text.slice(0, offset);
+
     const atIdx = before.lastIndexOf('@');
-    if (atIdx === -1 || before.slice(atIdx + 1).includes(' ')) {
-      setMentionOpen(false);
-      return;
-    }
-    const query = before.slice(atIdx + 1);
-    setMentionQuery(query);
-    setMentionIndex(0);
+    const hashIdx = before.lastIndexOf('#');
+    const bangIdx = before.lastIndexOf('!');
+    const maxIdx = Math.max(atIdx, hashIdx, bangIdx);
+
+    if (maxIdx === -1) { setMentionOpen(false); setIssueOpen(false); setDocOpen(false); return; }
+
+    const query = before.slice(maxIdx + 1);
+    if (query.includes(' ')) { setMentionOpen(false); setIssueOpen(false); setDocOpen(false); return; }
+
     const rect = range.getBoundingClientRect();
-    setMentionPos({ top: rect.bottom + 4, left: rect.left });
-    setMentionOpen(true);
+    const pos = { top: rect.bottom + 4, left: rect.left };
+
+    if (maxIdx === atIdx) {
+      setIssueOpen(false); setDocOpen(false);
+      setMentionQuery(query); setMentionIndex(0); setMentionPos(pos); setMentionOpen(true);
+    } else if (maxIdx === hashIdx) {
+      setMentionOpen(false); setDocOpen(false);
+      setIssueQuery(query); setIssueIndex(0); setIssuePos(pos); setIssueOpen(true);
+    } else {
+      setMentionOpen(false); setIssueOpen(false);
+      setDocQuery(query); setDocIndex(0); setDocPos(pos); setDocOpen(true);
+    }
   }
 
   function insertMention(username: string) {
@@ -160,28 +225,92 @@ export default function CommentEditor({
     setMentionOpen(false);
   }
 
+  function insertIssueRef(id: number, projectName: string) {
+    editorRef.current?.focus();
+    const sel = window.getSelection();
+    if (!sel?.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    const node = range.startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) return;
+    const text = node.textContent || '';
+    const offset = range.startOffset;
+    const before = text.slice(0, offset);
+    const hashIdx = before.lastIndexOf('#');
+    if (hashIdx === -1) return;
+
+    const refRange = range.cloneRange();
+    refRange.setStart(node, hashIdx);
+    refRange.setEnd(node, offset);
+    refRange.deleteContents();
+
+    const span = document.createElement('span');
+    span.className = 'issue-ref text-amber-700 font-semibold bg-amber-50 rounded px-0.5 border border-amber-200';
+    span.dataset.issueId = String(id);
+    span.contentEditable = 'false';
+    span.textContent = `#${id} ${projectName}`;
+    refRange.insertNode(span);
+
+    const afterRange = document.createRange();
+    afterRange.setStartAfter(span);
+    afterRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(afterRange);
+    document.execCommand('insertText', false, ' ');
+    setIssueOpen(false);
+  }
+
+  function insertDocRef(id: number, title: string) {
+    editorRef.current?.focus();
+    const sel = window.getSelection();
+    if (!sel?.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    const node = range.startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) return;
+    const text = node.textContent || '';
+    const offset = range.startOffset;
+    const before = text.slice(0, offset);
+    const bangIdx = before.lastIndexOf('!');
+    if (bangIdx === -1) return;
+
+    const refRange = range.cloneRange();
+    refRange.setStart(node, bangIdx);
+    refRange.setEnd(node, offset);
+    refRange.deleteContents();
+
+    const span = document.createElement('span');
+    span.className = 'doc-ref text-emerald-700 font-semibold bg-emerald-50 rounded px-0.5 border border-emerald-200';
+    span.dataset.docId = String(id);
+    span.contentEditable = 'false';
+    span.textContent = `!${id} ${title}`;
+    refRange.insertNode(span);
+
+    const afterRange = document.createRange();
+    afterRange.setStartAfter(span);
+    afterRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(afterRange);
+    document.execCommand('insertText', false, ' ');
+    setDocOpen(false);
+  }
+
   function handleEditorKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (mentionOpen && filteredUsers.length > 0) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setMentionIndex(i => Math.min(i + 1, filteredUsers.length - 1));
-        return;
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setMentionIndex(i => Math.max(i - 1, 0));
-        return;
-      }
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const u = filteredUsers[mentionIndex];
-        if (u) insertMention(u.username);
-        return;
-      }
-      if (e.key === 'Escape') {
-        setMentionOpen(false);
-        return;
-      }
+      if (e.key === 'ArrowDown') { e.preventDefault(); setMentionIndex(i => Math.min(i + 1, filteredUsers.length - 1)); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setMentionIndex(i => Math.max(i - 1, 0)); return; }
+      if (e.key === 'Enter') { e.preventDefault(); const u = filteredUsers[mentionIndex]; if (u) insertMention(u.username); return; }
+      if (e.key === 'Escape') { setMentionOpen(false); return; }
+    }
+    if (issueOpen && filteredIssues.length > 0) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); setIssueIndex(i => Math.min(i + 1, filteredIssues.length - 1)); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setIssueIndex(i => Math.max(i - 1, 0)); return; }
+      if (e.key === 'Enter') { e.preventDefault(); const iss = filteredIssues[issueIndex]; if (iss) insertIssueRef(iss.id, iss.projectName); return; }
+      if (e.key === 'Escape') { setIssueOpen(false); return; }
+    }
+    if (docOpen && filteredDocs.length > 0) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); setDocIndex(i => Math.min(i + 1, filteredDocs.length - 1)); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setDocIndex(i => Math.max(i - 1, 0)); return; }
+      if (e.key === 'Enter') { e.preventDefault(); const doc = filteredDocs[docIndex]; if (doc) insertDocRef(doc.id, doc.title); return; }
+      if (e.key === 'Escape') { setDocOpen(false); return; }
     }
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
@@ -344,11 +473,11 @@ export default function CommentEditor({
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
-          onInput={detectMention}
+          onInput={detectPopups}
           onKeyDown={handleEditorKeyDown}
           onPaste={handleEditorPaste}
           data-placeholder={placeholder}
-          className="min-h-[80px] max-h-[250px] overflow-y-auto px-3 py-2.5 text-sm text-slate-800 focus:outline-none leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:bg-slate-100 [&_pre]:rounded [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-xs [&_blockquote]:border-l-4 [&_blockquote]:border-indigo-300 [&_blockquote]:pl-3 [&_blockquote]:text-slate-600 [&_.mention]:text-indigo-600 [&_.mention]:font-semibold [&_.mention]:bg-indigo-50 [&_.mention]:rounded [&_.mention]:px-0.5 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1"
+          className="min-h-[80px] max-h-[250px] overflow-y-auto px-3 py-2.5 text-sm text-slate-800 focus:outline-none leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:bg-slate-100 [&_pre]:rounded [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-xs [&_blockquote]:border-l-4 [&_blockquote]:border-indigo-300 [&_blockquote]:pl-3 [&_blockquote]:text-slate-600 [&_.mention]:text-indigo-600 [&_.mention]:font-semibold [&_.mention]:bg-indigo-50 [&_.mention]:rounded [&_.mention]:px-0.5 [&_.issue-ref]:text-amber-700 [&_.issue-ref]:font-semibold [&_.issue-ref]:bg-amber-50 [&_.issue-ref]:rounded [&_.issue-ref]:px-0.5 [&_.doc-ref]:text-emerald-700 [&_.doc-ref]:font-semibold [&_.doc-ref]:bg-emerald-50 [&_.doc-ref]:rounded [&_.doc-ref]:px-0.5 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1"
         />
 
         {/* Drop zone */}
@@ -404,7 +533,7 @@ export default function CommentEditor({
 
       {/* Actions */}
       <div className="flex items-center justify-between mt-1.5">
-        <span className="text-xs text-slate-400">Ctrl+Enter to submit · @ to mention</span>
+        <span className="text-xs text-slate-400">Ctrl+Enter to submit · @ mention · # issue · ! document</span>
         <div className="flex gap-2">
           {onCancel && (
             <button type="button" onClick={onCancel} className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-medium transition">
@@ -446,6 +575,52 @@ export default function CommentEditor({
               )}
               <span className="font-medium">@{u.username}</span>
               {u.id === -1 && <span className="text-xs text-slate-400 ml-auto">Everyone</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Issue ref dropdown */}
+      {issueOpen && filteredIssues.length > 0 && (
+        <div
+          ref={issueDropdownRef}
+          style={{ position: 'fixed', top: issuePos.top, left: issuePos.left, zIndex: 9999 }}
+          className="w-72 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg py-1"
+        >
+          {filteredIssues.map((iss, i) => (
+            <div
+              key={iss.id}
+              onMouseDown={e => { e.preventDefault(); insertIssueRef(iss.id, iss.projectName); }}
+              className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer text-sm transition ${
+                i === issueIndex ? 'bg-amber-50 text-amber-800' : 'text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <span className="w-6 h-6 rounded bg-amber-100 flex items-center justify-center text-xs text-amber-700 font-bold flex-shrink-0">#</span>
+              <span className="font-medium truncate">{iss.projectName}</span>
+              <span className="text-xs text-slate-400 ml-auto flex-shrink-0">#{iss.id}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Document ref dropdown */}
+      {docOpen && filteredDocs.length > 0 && (
+        <div
+          ref={docDropdownRef}
+          style={{ position: 'fixed', top: docPos.top, left: docPos.left, zIndex: 9999 }}
+          className="w-72 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg py-1"
+        >
+          {filteredDocs.map((doc, i) => (
+            <div
+              key={doc.id}
+              onMouseDown={e => { e.preventDefault(); insertDocRef(doc.id, doc.title); }}
+              className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer text-sm transition ${
+                i === docIndex ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <span className="w-6 h-6 rounded bg-emerald-100 flex items-center justify-center text-xs text-emerald-700 font-bold flex-shrink-0">!</span>
+              <span className="font-medium truncate">{doc.title}</span>
+              <span className="text-xs text-slate-400 ml-auto flex-shrink-0">!{doc.id}</span>
             </div>
           ))}
         </div>

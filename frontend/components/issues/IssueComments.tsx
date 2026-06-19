@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { commentsApi, commentAttachmentsApi, commentReactionsApi, usersApi } from '@/lib/api';
-import CommentEditor, { CommentAttachment, MentionUser } from './CommentEditor';
+import { commentsApi, commentAttachmentsApi, commentReactionsApi, usersApi, issuesApi, documentsApi } from '@/lib/api';
+import CommentEditor, { CommentAttachment, MentionUser, MentionIssue, MentionDocument } from './CommentEditor';
 
 interface CommentReaction {
   id: number;
@@ -186,9 +186,17 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
   const [editId, setEditId] = useState<number | null>(null);
   const [replyToId, setReplyToId] = useState<number | null>(null);
   const [users, setUsers] = useState<MentionUser[]>([]);
+  const [mentionIssues, setMentionIssues] = useState<MentionIssue[]>([]);
+  const [mentionDocs, setMentionDocs] = useState<MentionDocument[]>([]);
 
   useEffect(() => {
     usersApi.getAll().then(r => setUsers(r.data)).catch(() => {});
+    issuesApi.getAll().then(r => setMentionIssues(
+      r.data.filter((iss: any) => !iss.isCancelled).map((iss: any) => ({ id: iss.id, projectName: iss.projectName }))
+    )).catch(() => {});
+    documentsApi.getAll().then(r => setMentionDocs(
+      r.data.map((doc: any) => ({ id: doc.id, title: doc.title }))
+    )).catch(() => {});
   }, []);
 
   const load = useCallback(async () => {
@@ -252,6 +260,8 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
           onCancel={() => setEditId(null)}
           submitLabel="Save"
           users={users}
+          issues={mentionIssues}
+          documents={mentionDocs}
         />
       );
     }
@@ -378,6 +388,8 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
                       placeholder={`Reply to @${c.createdBy}...`}
                       submitLabel="Reply"
                       users={users}
+                      issues={mentionIssues}
+                      documents={mentionDocs}
                     />
                   </div>
                 </div>
@@ -398,6 +410,8 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
           placeholder="Write a comment..."
           submitLabel="Comment"
           users={users}
+          issues={mentionIssues}
+          documents={mentionDocs}
         />
       </div>
     </div>
