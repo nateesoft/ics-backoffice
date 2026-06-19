@@ -95,7 +95,7 @@ function AvatarModal({ user, onClose, onUpdated }: { user: any; onClose: () => v
   const currentAvatarUrl = user.avatarFilename ? avatarSrc(user.id) : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-bold text-slate-800">Profile Photo</h2>
@@ -210,7 +210,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   const labelCls = "block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-bold text-slate-800">Change Password</h2>
@@ -267,7 +267,7 @@ function UnauthorizedModal() {
     router.push(`/login?redirect=${encodeURIComponent(current)}`);
   }
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 flex flex-col items-center gap-4">
         <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center">
           <svg className="w-7 h-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">

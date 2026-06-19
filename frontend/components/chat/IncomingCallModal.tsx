@@ -16,7 +16,7 @@ export default function IncomingCallModal({ callerName, callType, onAccept, onRe
   }, [onReject]);
 
   return (
-    <div className="fixed inset-0 z-[190] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[190] flex items-center justify-center bg-black/60">
       <div className="bg-slate-800 rounded-2xl p-6 w-72 shadow-2xl text-center border border-slate-700">
         {/* Pulsing avatar */}
         <div className="relative mx-auto mb-4 w-20 h-20">

@@ -1,5 +1,5 @@
 'use client';
-import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { chatApi, ChatMessage } from '@/lib/api';
 
@@ -177,12 +177,14 @@ export function ChatProvider({ children, currentUserId }: { children: React.Reac
 
   const totalUnread = threads.reduce((sum, t) => sum + t.unread, 0);
 
+  const value = useMemo(() => ({
+    openThread, closeThread, sendMessage,
+    threads, activeThreadId, totalUnread,
+    startCall, activeCall, incomingCall, acceptCall, rejectCall, endCall,
+  }), [openThread, closeThread, sendMessage, threads, activeThreadId, totalUnread, startCall, activeCall, incomingCall, acceptCall, rejectCall, endCall]);
+
   return (
-    <ChatContext.Provider value={{
-      openThread, closeThread, sendMessage,
-      threads, activeThreadId, totalUnread,
-      startCall, activeCall, incomingCall, acceptCall, rejectCall, endCall,
-    }}>
+    <ChatContext.Provider value={value}>
       {children}
     </ChatContext.Provider>
   );
