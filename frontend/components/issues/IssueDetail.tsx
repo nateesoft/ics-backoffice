@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { attachmentsApi, issuesApi } from '@/lib/api';
+import { linkify } from '@/lib/linkify';
 import IssueComments from './IssueComments';
 import { Issue, PRIORITY_COLORS, STATUS_COLORS, TAG_COLORS, IssueTag } from '@/types/issue';
 
@@ -289,7 +290,7 @@ export default function IssueDetail({ issue, currentUser, onClone }: { issue: Is
       <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{label}</div>
       <div
         className="col-span-2 text-sm text-slate-800 [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:bg-slate-100 [&_pre]:rounded [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-xs [&_blockquote]:border-l-4 [&_blockquote]:border-indigo-300 [&_blockquote]:pl-3 [&_blockquote]:text-slate-600"
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={{ __html: linkify(html) }}
       />
     </div>
   ) : null;

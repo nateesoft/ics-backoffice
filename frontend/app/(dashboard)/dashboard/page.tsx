@@ -18,6 +18,7 @@ import IssueDetail from '@/components/issues/IssueDetail';
 import PostItBoard from '@/components/dashboard/PostItBoard';
 import { Issue, TaskStatus, TASK_STATUSES, PRIORITIES, CODE_TYPES, ISSUE_TAGS, STATUS_COLORS, PRIORITY_COLORS, TAG_COLORS, IssueTag } from '@/types/issue';
 import { issuesApi, authApi, usersApi } from '@/lib/api';
+import { linkify } from '@/lib/linkify';
 
 interface SystemUser { id: number; username: string; }
 
@@ -131,7 +132,7 @@ function IssueCard({ issue, onView, ghost }: { issue: Issue; onView?: () => void
       {issue.detail && (
         <p
           className="text-xs text-slate-500 line-clamp-2 mb-2"
-          dangerouslySetInnerHTML={{ __html: issue.detail }}
+          dangerouslySetInnerHTML={{ __html: linkify(issue.detail) }}
         />
       )}
       <div className="flex items-center justify-between text-xs text-slate-400">

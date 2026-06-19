@@ -12,6 +12,7 @@ import SpreadsheetEditor from '@/components/documents/SpreadsheetEditor';
 import { Document, DocumentAttachment, DOCUMENT_CATEGORIES, CATEGORY_COLORS, DOC_TYPES } from '@/types/document';
 import { documentsApi, docFoldersApi, authApi, DocFolder } from '@/lib/api';
 import DocumentComments from '@/components/documents/DocumentComments';
+import { linkify } from '@/lib/linkify';
 
 function stripHtml(html: string) {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -398,7 +399,7 @@ function DocumentDetail({ doc, currentUser, onEdit }: { doc: Document; currentUs
             [&_th]:border [&_th]:border-slate-300 [&_th]:px-2.5 [&_th]:py-1.5 [&_th]:bg-slate-100 [&_th]:font-semibold [&_th]:text-left
             [&_tr:hover_td]:bg-white
             [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-2"
-          dangerouslySetInnerHTML={{ __html: doc.content }}
+          dangerouslySetInnerHTML={{ __html: linkify(doc.content) }}
         />
       ) : (
         <p className="text-sm text-slate-400 italic">No content provided.</p>

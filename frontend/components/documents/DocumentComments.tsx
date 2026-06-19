@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { docCommentsApi, uploadsApi, issuesApi, documentsApi } from '@/lib/api';
+import { linkify } from '@/lib/linkify';
 
 interface RefIssue { id: number; projectName: string; }
 interface RefDocument { id: number; title: string; }
@@ -538,7 +539,7 @@ export default function DocumentComments({ docId, currentUser }: Props) {
       <div className="group relative">
         <div
           className={`bg-slate-50 rounded-xl px-3 py-2 text-slate-700 leading-relaxed [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-1 ${isReply ? 'text-xs' : 'text-sm'}`}
-          dangerouslySetInnerHTML={{ __html: c.content }}
+          dangerouslySetInnerHTML={{ __html: linkify(c.content) }}
         />
 
         <div className="flex items-center gap-3 flex-wrap">

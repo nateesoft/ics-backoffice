@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { commentsApi, commentAttachmentsApi, commentReactionsApi, usersApi, issuesApi, documentsApi } from '@/lib/api';
 import CommentEditor, { CommentAttachment, MentionUser, MentionIssue, MentionDocument } from './CommentEditor';
+import { linkify } from '@/lib/linkify';
 
 interface CommentReaction {
   id: number;
@@ -274,7 +275,7 @@ export default function IssueComments({ issueId, currentUser }: IssueCommentsPro
             [&_pre]:bg-slate-100 [&_pre]:rounded [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-xs
             [&_blockquote]:border-l-4 [&_blockquote]:border-indigo-300 [&_blockquote]:pl-3 [&_blockquote]:text-slate-600
             ${isReply ? 'text-xs' : 'text-sm'}`}
-          dangerouslySetInnerHTML={{ __html: c.content }}
+          dangerouslySetInnerHTML={{ __html: linkify(c.content) }}
         />
         <AttachmentList attachments={c.attachments} />
 
