@@ -13,6 +13,48 @@ interface IssueFormProps {
 
 const today = new Date().toISOString().split('T')[0];
 
+const FIELD_LABELS: Record<string, string> = {
+  projectName: 'Project Name',
+  codeType: 'Project Type',
+  detail: 'Detail',
+  githubLink: 'Github Link',
+  issueCreateDate: 'Issue Create Date',
+  priority: 'Priority',
+  taskWorkPeriod: 'Work Period',
+  taskWorkPeriodUnit: 'Work Period Unit',
+  targetDate: 'Target Date',
+  issuer: 'Issuer',
+  developer: 'Developer',
+  tester: 'Tester',
+  taskStatus: 'Task Status',
+  deploymentStatus: 'Deployment Status',
+  anydesk: 'Anydesk',
+  teamViewer: 'TeamViewer',
+  contractDetail: 'Contract Detail',
+  tags: 'Tags',
+  visibility: 'Visibility',
+};
+
+function humanizeErrorMessage(msg: string): string {
+  const field = msg.split(' ')[0];
+  const label = FIELD_LABELS[field] || field;
+
+  if (/should not be empty/i.test(msg)) return `กรุณากรอก ${label}`;
+  if (/must be one of the following values/i.test(msg)) return `กรุณาเลือก ${label} ที่ถูกต้อง`;
+  if (/must be a valid ISO 8601 date string/i.test(msg)) return `กรุณากรอก ${label} ให้ถูกต้อง (ตัวอย่าง: 2025-01-31)`;
+  if (/must be a number/i.test(msg)) return `${label} ต้องเป็นตัวเลข`;
+  if (/must be a string/i.test(msg)) return `กรุณากรอก ${label}`;
+  if (/must be shorter than or equal to (\d+)/i.test(msg)) {
+    const n = msg.match(/(\d+)/)?.[1];
+    return `${label} ต้องไม่เกิน ${n} ตัวอักษร`;
+  }
+  if (/must be longer than or equal to (\d+)/i.test(msg)) {
+    const n = msg.match(/(\d+)/)?.[1];
+    return `${label} ต้องมีอย่างน้อย ${n} ตัวอักษร`;
+  }
+  return msg;
+}
+
 export default function IssueForm({ initial, onSuccess, onCancel, defaultDate }: IssueFormProps) {
   const isEdit = !!initial?.id;
   const [form, setForm] = useState({
@@ -38,7 +80,7 @@ export default function IssueForm({ initial, onSuccess, onCancel, defaultDate }:
   });
   const pendingFilesRef = useRef<File[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | string[]>('');
   const [users, setUsers] = useState<{ id: number; username: string }[]>([]);
 
   useEffect(() => {
@@ -70,7 +112,21 @@ export default function IssueForm({ initial, onSuccess, onCancel, defaultDate }:
 
       onSuccess(savedIssue);
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to save issue');
+      if (!err?.response) {
+        setError('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
+      } else {
+        const msg = err.response.data?.message;
+        const status = err.response.status;
+        if (status === 400) {
+          setError(Array.isArray(msg) ? msg.map(humanizeErrorMessage) : (msg ? humanizeErrorMessage(msg) : 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบข้อมูลอีกครั้ง'));
+        } else if (status === 401 || status === 403) {
+          setError('ไม่มีสิทธิ์ดำเนินการนี้ กรุณาเข้าสู่ระบบใหม่');
+        } else if (status >= 500) {
+          setError('เกิดข้อผิดพลาดในเซิร์ฟเวอร์ กรุณาลองใหม่ภายหลัง');
+        } else {
+          setError(msg || 'บันทึกข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -233,7 +289,28 @@ export default function IssueForm({ initial, onSuccess, onCancel, defaultDate }:
         </div>
       </div>
 
-      {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg border border-red-100">{error}</div>}
+      {error && (error as string[]).length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex gap-3">
+          <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-red-700">เกิดข้อผิดพลาด</p>
+            {Array.isArray(error) ? (
+              <ul className="mt-1 text-sm text-red-600 list-disc list-inside space-y-0.5">
+                {error.map((msg, i) => <li key={i}>{msg}</li>)}
+              </ul>
+            ) : (
+              <p className="mt-0.5 text-sm text-red-600">{error}</p>
+            )}
+          </div>
+          <button type="button" onClick={() => setError('')} className="shrink-0 text-red-400 hover:text-red-600 transition">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={onCancel} className="px-5 py-2 rounded-lg border border-slate-200 text-sm font-medium hover:bg-slate-50 transition">
