@@ -226,7 +226,7 @@ export default function IssuesPage() {
           {showMoreFilters && (
             <div className="flex flex-wrap gap-3 pt-2 border-t border-slate-100">
               <select className={selectCls} value={filterCodeType} onChange={e => setFilterCodeType(e.target.value)}>
-                <option value="">All Code Types</option>
+                <option value="">All Project Types</option>
                 {CODE_TYPES.map(c => <option key={c}>{c}</option>)}
               </select>
               <select className={selectCls} value={filterDeployment} onChange={e => setFilterDeployment(e.target.value)}>

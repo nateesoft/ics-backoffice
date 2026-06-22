@@ -88,7 +88,7 @@ export default function IssueForm({ initial, onSuccess, onCancel, defaultDate }:
           <input className={inputCls} value={form.projectName} onChange={e => set('projectName', e.target.value)} required placeholder="Project name" />
         </div>
         <div>
-          <label className={labelCls}>Code Type *</label>
+          <label className={labelCls}>Project Type *</label>
           <select className={selectCls} value={form.codeType} onChange={e => set('codeType', e.target.value)} required>
             {CODE_TYPES.map(t => <option key={t}>{t}</option>)}
           </select>

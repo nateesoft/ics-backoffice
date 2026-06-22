@@ -694,7 +694,7 @@ export default function DashboardPage() {
                 onChange={e => setBoardCodeType(e.target.value)}
                 className="px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
               >
-                <option value="">All Code Types</option>
+                <option value="">All Project Types</option>
                 {CODE_TYPES.map(c => <option key={c}>{c}</option>)}
               </select>
               <select

@@ -326,7 +326,7 @@ export default function IssueDetail({ issue, currentUser, onClone }: { issue: Is
       </div>
       <div className="space-y-1">
         {row('Project', issue.projectName)}
-        {row('Code Type', issue.codeType)}
+        {row('Project Type', issue.codeType)}
         {htmlRow('Detail', issue.detail)}
         {row('Github', issue.githubLink)}
         {row('Created Date', issue.issueCreateDate)}
