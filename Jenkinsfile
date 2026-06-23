@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DEPLOY_DIR = 'D:\\ICS-Projects\\apps\\ics-backoffice'
-        PM2_HOME   = 'C:\\ProgramData\\pm2'
+        PATH       = "C:\\Program Files\\nodejs;${env.PATH}"
     }
 
     stages {
