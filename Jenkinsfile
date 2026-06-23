@@ -4,6 +4,7 @@ pipeline {
     environment {
         DEPLOY_DIR = 'D:\\ICS-Projects\\apps\\ics-backoffice'
         PATH       = "C:\\Program Files\\nodejs;${env.PATH}"
+        PM2_HOME   = 'C:\\Users\\Administrator\\.pm2'
     }
 
     stages {
@@ -45,9 +46,7 @@ pipeline {
 
         stage('Stop PM2') {
             steps {
-                // Kill the PM2 daemon entirely — avoids hang when daemon is unresponsive
-                // or when app names don't exist yet (first deploy)
-                bat 'pm2 kill 2>nul & exit 0'
+                bat 'set PM2_HOME=%PM2_HOME% && pm2 kill 2>nul & exit 0'
             }
         }
 
@@ -90,15 +89,15 @@ pipeline {
 
         stage('Start PM2') {
             steps {
-                bat "cd /d %DEPLOY_DIR% && pm2 start ecosystem.config.js --env production"
-                bat 'pm2 save'
+                bat "set PM2_HOME=%PM2_HOME% && cd /d %DEPLOY_DIR% && pm2 start ecosystem.config.js --env production"
+                bat 'set PM2_HOME=%PM2_HOME% && pm2 save'
             }
         }
     }
 
     post {
         success {
-            bat 'pm2 list'
+            bat 'set PM2_HOME=%PM2_HOME% && pm2 list'
             echo 'Deployment successful!'
         }
         failure {
