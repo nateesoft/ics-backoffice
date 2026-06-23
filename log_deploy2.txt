@@ -1,0 +1,889 @@
+Started by user admin
+
+Obtained Jenkinsfile from git https://github.com/nateesoft/ics-backoffice.git
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins
+ in C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+The recommended git tool is: git.exe
+No credentials specified
+ > git.exe rev-parse --resolve-git-dir C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\.git # timeout=10
+Fetching changes from the remote Git repository
+ > git.exe config remote.origin.url https://github.com/nateesoft/ics-backoffice.git # timeout=10
+Fetching upstream changes from https://github.com/nateesoft/ics-backoffice.git
+ > git.exe --version # timeout=10
+ > git --version # 'git version 2.49.0.windows.1'
+ > git.exe fetch --tags --force --progress -- https://github.com/nateesoft/ics-backoffice.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git.exe rev-parse "refs/remotes/origin/main^{commit}" # timeout=10
+Checking out Revision 3360c63e7ec3f3b05b425c6059fbf7d14fa9e6de (refs/remotes/origin/main)
+ > git.exe config core.sparsecheckout # timeout=10
+ > git.exe checkout -f 3360c63e7ec3f3b05b425c6059fbf7d14fa9e6de # timeout=10
+Commit message: "update date filter issue task and can reply note"
+ > git.exe rev-list --no-walk 36ccb154625183ca6f45cd431345960d082d86d5 # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Checkout)
+[Pipeline] checkout
+The recommended git tool is: git.exe
+No credentials specified
+ > git.exe rev-parse --resolve-git-dir C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\.git # timeout=10
+Fetching changes from the remote Git repository
+ > git.exe config remote.origin.url https://github.com/nateesoft/ics-backoffice.git # timeout=10
+Fetching upstream changes from https://github.com/nateesoft/ics-backoffice.git
+ > git.exe --version # timeout=10
+ > git --version # 'git version 2.49.0.windows.1'
+ > git.exe fetch --tags --force --progress -- https://github.com/nateesoft/ics-backoffice.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git.exe rev-parse "refs/remotes/origin/main^{commit}" # timeout=10
+Checking out Revision 3360c63e7ec3f3b05b425c6059fbf7d14fa9e6de (refs/remotes/origin/main)
+ > git.exe config core.sparsecheckout # timeout=10
+ > git.exe checkout -f 3360c63e7ec3f3b05b425c6059fbf7d14fa9e6de # timeout=10
+Commit message: "update date filter issue task and can reply note"
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build Backend)
+[Pipeline] dir
+Running in C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend
+[Pipeline] {
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend>npm ci 
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+
+added 792 packages, and audited 793 packages in 6m
+
+158 packages are looking for funding
+  run `npm fund` for details
+
+23 vulnerabilities (18 moderate, 5 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend>npm run build 
+
+> backend@0.0.1 build
+> nest build
+
+[Pipeline] }
+[Pipeline] // dir
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build Frontend)
+[Pipeline] dir
+Running in C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\frontend
+[Pipeline] {
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\frontend>npm ci 
+
+added 429 packages, and audited 430 packages in 4m
+
+153 packages are looking for funding
+  run `npm fund` for details
+
+5 vulnerabilities (2 moderate, 3 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\frontend>npm run build 
+
+> frontend@0.1.0 build
+> next build
+
+▲ Next.js 16.2.7 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 6.6s
+  Running TypeScript ...
+  Finished TypeScript in 7.7s ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/12) ...
+  Generating static pages using 3 workers (3/12) 
+  Generating static pages using 3 workers (6/12) 
+  Generating static pages using 3 workers (9/12) 
+✓ Generating static pages using 3 workers (12/12) in 1455ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /dashboard
+├ ○ /documents
+├ ○ /issues
+├ ○ /login
+├ ○ /meeting
+├ ○ /_not-found
+├ ○ /planning
+├ ○ /profile
+└ ○ /reports
+
+
+○  (Static)  prerendered as static content
+
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // dir
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Prepare Frontend Standalone)
+[Pipeline] dir
+Running in C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\frontend
+[Pipeline] {
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\frontend>xcopy /E /I /Y public .next\standalone\public\ 
+public\file.svg
+public\globe.svg
+public\manifest.json
+public\next.svg
+public\sw.js
+public\vercel.svg
+public\window.svg
+public\icons\icon.svg
+8 File(s) copied
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\frontend>xcopy /E /I /Y .next\static .next\standalone\.next\static\ 
+.next\static\bxVhW1pNu6GJ7DR4fRafz\_buildManifest.js
+.next\static\bxVhW1pNu6GJ7DR4fRafz\_clientMiddlewareManifest.js
+.next\static\bxVhW1pNu6GJ7DR4fRafz\_ssgManifest.js
+.next\static\chunks\05-c3ty_6dwfk.js
+.next\static\chunks\07-hzktxqjvzd.js
+.next\static\chunks\0cz1d0mv5g_q7.js
+.next\static\chunks\0f6is9_vloel6.css
+.next\static\chunks\0mdxgnkni0cic.js
+.next\static\chunks\0q8cmrhyx9tod.js
+.next\static\chunks\0rlci1sc7ip_8.js
+.next\static\chunks\10qk6v6416kh8.js
+.next\static\chunks\11iezg90y88ij.js
+.next\static\chunks\14mrh2-p_w84d.js
+.next\static\chunks\199s29ullloms.js
+.next\static\chunks\1d3c43znsvlu3.js
+.next\static\chunks\1jgr06av_ompy.js
+.next\static\chunks\1k82b76o3w199.js
+.next\static\chunks\1mwm222j8mb3w.js
+.next\static\chunks\2-42adx252wvt.js
+.next\static\chunks\2fe4jbjtl2hvv.js
+.next\static\chunks\2i39eljvonul5.js
+.next\static\chunks\2qxwtxdwfv56s.js
+.next\static\chunks\2ra43xj482w41.js
+.next\static\chunks\2t9s6awjotf77.js
+.next\static\chunks\2xctvq31_rsb_.js
+.next\static\chunks\3akvatdqqehfj.css
+.next\static\chunks\3efvrswxazog2.js
+.next\static\chunks\3mrge0pkk_yx7.js
+.next\static\chunks\3n7dm2ojtyzwn.js
+.next\static\chunks\3x3bv_url6up5.js
+.next\static\chunks\turbopack-0fw3x4j__fq88.js
+.next\static\media\favicon.2vob68tjqpejf.ico
+32 File(s) copied
+[Pipeline] }
+[Pipeline] // dir
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Stop PM2)
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice>pm2 kill   2>nul  & exit 0 
+[32m[PM2] [39mApplying action deleteProcessId on app [all](ids: [ 0, 1, 2, 3, 4 ])
+[32m[PM2] [39m[all](1) ✓
+[32m[PM2] [39m[all](2) ✓
+[32m[PM2] [39m[ics-frontend](4) ✓
+[32m[PM2] [39m[castin](0) ✓
+[32m[PM2] [39m[ics-backend](3) ✓
+[32m[PM2] [39m[v] All Applications Stopped
+[32m[PM2] [39m[v] PM2 Daemon Stopped
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy Backend)
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice>if not exist D:\ICS-Projects\apps\ics-backoffice\backend\uploads mkdir D:\ICS-Projects\apps\ics-backoffice\backend\uploads 
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice>robocopy backend\dist D:\ICS-Projects\apps\ics-backoffice\backend\dist /E /PURGE 
+
+-------------------------------------------------------------------------------
+   ROBOCOPY     ::     Robust File Copy for Windows                              
+-------------------------------------------------------------------------------
+
+  Started : 17 �Զع�¹ 2569 10:46:43
+   Source : C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\
+     Dest : D:\ICS-Projects\apps\ics-backoffice\backend\dist\
+
+    Files : *.*
+	    
+  Options : *.* /S /E /DCOPY:DA /COPY:DAT /PURGE /R:1000000 /W:30 
+
+------------------------------------------------------------------------------
+
+	                   1	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\
+	    Newer     		  322575	tsconfig.build.tsbuildinfo
+ 40%  
+ 81%  
+100%  
+	                   3	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\scripts\
+	    Newer     		      11	create-db.d.ts
+100%  
+	    Newer     		    3210	create-db.js
+100%  
+	    Newer     		    2045	create-db.js.map
+100%  
+	                  12	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\
+	    Newer     		     181	app.controller.d.ts
+100%  
+	    Newer     		    1611	app.controller.js
+100%  
+	    Newer     		     436	app.controller.js.map
+100%  
+	    Newer     		      35	app.module.d.ts
+100%  
+	    Newer     		    6049	app.module.js
+100%  
+	    Newer     		    1685	app.module.js.map
+100%  
+	    Newer     		      60	app.service.d.ts
+100%  
+	    Newer     		     981	app.service.js
+100%  
+	    Newer     		     281	app.service.js.map
+100%  
+	    Newer     		      11	main.d.ts
+100%  
+	    Newer     		     826	main.js
+100%  
+	    Newer     		     594	main.js.map
+100%  
+	                   9	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\attachments\
+	    Newer     		     566	attachments.controller.d.ts
+100%  
+	    Newer     		    3013	attachments.controller.js
+100%  
+	    Newer     		    1093	attachments.controller.js.map
+100%  
+	    Newer     		      43	attachments.module.d.ts
+100%  
+	    Newer     		    2210	attachments.module.js
+100%  
+	    Newer     		     972	attachments.module.js.map
+100%  
+	    Newer     		     539	attachments.service.d.ts
+100%  
+	    Newer     		    2484	attachments.service.js
+100%  
+	    Newer     		    1289	attachments.service.js.map
+100%  
+	                  15	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\auth\
+	    Newer     		    1442	auth.controller.d.ts
+100%  
+	    Newer     		    8549	auth.controller.js
+100%  
+	    Newer     		    4962	auth.controller.js.map
+100%  
+	    Newer     		      36	auth.module.d.ts
+100%  
+	    Newer     		    1995	auth.module.js
+100%  
+	    Newer     		     824	auth.module.js.map
+100%  
+	    Newer     		    1146	auth.service.d.ts
+100%  
+	    Newer     		    6266	auth.service.js
+100%  
+	    Newer     		    3926	auth.service.js.map
+100%  
+	    Newer     		     180	jwt-auth.guard.d.ts
+100%  
+	    Newer     		    1035	jwt-auth.guard.js
+100%  
+	    Newer     		     298	jwt-auth.guard.js.map
+100%  
+	    Newer     		     503	jwt.strategy.d.ts
+100%  
+	    Newer     		    1819	jwt.strategy.js
+100%  
+	    Newer     		     709	jwt.strategy.js.map
+100%  
+	                  12	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\chat\
+	    Newer     		     436	chat.controller.d.ts
+100%  
+	    Newer     		    2475	chat.controller.js
+100%  
+	    Newer     		     845	chat.controller.js.map
+100%  
+	    Newer     		    1236	chat.gateway.d.ts
+100%  
+	    Newer     		    8450	chat.gateway.js
+100%  
+	    Newer     		    4392	chat.gateway.js.map
+100%  
+	    Newer     		      36	chat.module.d.ts
+100%  
+	    Newer     		    1814	chat.module.js
+100%  
+	    Newer     		     698	chat.module.js.map
+100%  
+	    Newer     		     551	chat.service.d.ts
+100%  
+	    Newer     		    2774	chat.service.js
+100%  
+	    Newer     		    1563	chat.service.js.map
+100%  
+	                   9	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\comment-attachments\
+	    Newer     		     511	comment-attachments.controller.d.ts
+100%  
+	    Newer     		    2762	comment-attachments.controller.js
+100%  
+	    Newer     		     944	comment-attachments.controller.js.map
+100%  
+	    Newer     		      50	comment-attachments.module.d.ts
+100%  
+	    Newer     		    2274	comment-attachments.module.js
+100%  
+	    Newer     		     933	comment-attachments.module.js.map
+100%  
+	    Newer     		     502	comment-attachments.service.d.ts
+100%  
+	    Newer     		    2461	comment-attachments.service.js
+100%  
+	    Newer     		    1158	comment-attachments.service.js.map
+100%  
+	                  12	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\comment-reactions\
+	    Newer     		     387	comment-reactions.controller.d.ts
+100%  
+	    Newer     		    2389	comment-reactions.controller.js
+100%  
+	    Newer     		     783	comment-reactions.controller.js.map
+100%  
+	    Newer     		      62	comment-reactions.dto.d.ts
+100%  
+	    Newer     		    1232	comment-reactions.dto.js
+100%  
+	    Newer     		     285	comment-reactions.dto.js.map
+100%  
+	    Newer     		      48	comment-reactions.module.d.ts
+100%  
+	    Newer     		    1581	comment-reactions.module.js
+100%  
+	    Newer     		     491	comment-reactions.module.js.map
+100%  
+	    Newer     		     390	comment-reactions.service.d.ts
+100%  
+	    Newer     		    2199	comment-reactions.service.js
+100%  
+	    Newer     		    1001	comment-reactions.service.js.map
+100%  
+	                  12	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\comments\
+	    Newer     		    1035	comments.controller.d.ts
+100%  
+	    Newer     		    3519	comments.controller.js
+100%  
+	    Newer     		    1500	comments.controller.js.map
+100%  
+	    Newer     		     150	comments.dto.d.ts
+100%  
+	    Newer     		    1751	comments.dto.js
+100%  
+	    Newer     		     456	comments.dto.js.map
+100%  
+	    Newer     		      40	comments.module.d.ts
+100%  
+	    Newer     		    1791	comments.module.js
+100%  
+	    Newer     		     527	comments.module.js.map
+100%  
+	    Newer     		    1346	comments.service.d.ts
+100%  
+	    Newer     		    5024	comments.service.js
+100%  
+	    Newer     		    3938	comments.service.js.map
+100%  
+	                   6	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\doc-images\
+	    Newer     		     215	doc-images.controller.d.ts
+100%  
+	    Newer     		    3196	doc-images.controller.js
+100%  
+	    Newer     		    1530	doc-images.controller.js.map
+100%  
+	    Newer     		      41	doc-images.module.d.ts
+100%  
+	    Newer     		    1112	doc-images.module.js
+100%  
+	    Newer     		     320	doc-images.module.js.map
+100%  
+	                  12	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\document-comments\
+	    Newer     		    1261	document-comments.controller.d.ts
+100%  
+	    Newer     		    4424	document-comments.controller.js
+100%  
+	    Newer     		    1880	document-comments.controller.js.map
+100%  
+	    Newer     		     230	document-comments.dto.d.ts
+100%  
+	    Newer     		    1994	document-comments.dto.js
+100%  
+	    Newer     		     503	document-comments.dto.js.map
+100%  
+	    Newer     		      48	document-comments.module.d.ts
+100%  
+	    Newer     		    1741	document-comments.module.js
+100%  
+	    Newer     		     516	document-comments.module.js.map
+100%  
+	    Newer     		    1295	document-comments.service.d.ts
+100%  
+	    Newer     		    4389	document-comments.service.js
+100%  
+	    Newer     		    3372	document-comments.service.js.map
+100%  
+	                  12	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\document-folders\
+	    Newer     		     675	document-folders.controller.d.ts
+100%  
+	    Newer     		    3273	document-folders.controller.js
+100%  
+	    Newer     		    1166	document-folders.controller.js.map
+100%  
+	    Newer     		     149	document-folders.dto.d.ts
+100%  
+	    Newer     		    1733	document-folders.dto.js
+100%  
+	    Newer     		     455	document-folders.dto.js.map
+100%  
+	    Newer     		      47	document-folders.module.d.ts
+100%  
+	    Newer     		    1560	document-folders.module.js
+100%  
+	    Newer     		     488	document-folders.module.js.map
+100%  
+	    Newer     		     581	document-folders.service.d.ts
+100%  
+	    Newer     		    2606	document-folders.service.js
+100%  
+	    Newer     		    1512	document-folders.service.js.map
+100%  
+	                  12	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\documents\
+	    Newer     		    1291	documents.controller.d.ts
+100%  
+	    Newer     		    5196	documents.controller.js
+100%  
+	    Newer     		    2324	documents.controller.js.map
+100%  
+	    Newer     		     318	documents.dto.d.ts
+100%  
+	    Newer     		    3706	documents.dto.js
+100%  
+	    Newer     		    1482	documents.dto.js.map
+100%  
+	    Newer     		      41	documents.module.d.ts
+100%  
+	    Newer     		    2300	documents.module.js
+100%  
+	    Newer     		     981	documents.module.js.map
+100%  
+	    Newer     		    1235	documents.service.d.ts
+100%  
+	    Newer     		    3828	documents.service.js
+100%  
+	    Newer     		    2637	documents.service.js.map
+100%  
+	                  60	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\entities\
+	    Newer     		     247	attachment.entity.d.ts
+100%  
+	    Newer     		    2523	attachment.entity.js
+100%  
+	    Newer     		     852	attachment.entity.js.map
+100%  
+	    Newer     		     190	chat-message.entity.d.ts
+100%  
+	    Newer     		    2185	chat-message.entity.js
+100%  
+	    Newer     		     715	chat-message.entity.js.map
+100%  
+	    Newer     		     193	comment-attachment.entity.d.ts
+100%  
+	    Newer     		    2273	comment-attachment.entity.js
+100%  
+	    Newer     		     727	comment-attachment.entity.js.map
+100%  
+	    Newer     		     143	comment-reaction.entity.d.ts
+100%  
+	    Newer     		    2005	comment-reaction.entity.js
+100%  
+	    Newer     		     673	comment-reaction.entity.js.map
+100%  
+	    Newer     		     190	comment.entity.d.ts
+100%  
+	    Newer     		    2269	comment.entity.js
+100%  
+	    Newer     		     841	comment.entity.js.map
+100%  
+	    Newer     		     265	document-attachment.entity.d.ts
+100%  
+	    Newer     		    2616	document-attachment.entity.js
+100%  
+	    Newer     		     882	document-attachment.entity.js.map
+100%  
+	    Newer     		     151	document-comment-reaction.entity.d.ts
+100%  
+	    Newer     		    2127	document-comment-reaction.entity.js
+100%  
+	    Newer     		     700	document-comment-reaction.entity.js.map
+100%  
+	    Newer     		     196	document-comment.entity.d.ts
+100%  
+	    Newer     		    2332	document-comment.entity.js
+100%  
+	    Newer     		     859	document-comment.entity.js.map
+100%  
+	    Newer     		     118	document-folder.entity.d.ts
+100%  
+	    Newer     		    1777	document-folder.entity.js
+100%  
+	    Newer     		     558	document-folder.entity.js.map
+100%  
+	    Newer     		     457	document.entity.d.ts
+100%  
+	    Newer     		    2850	document.entity.js
+100%  
+	    Newer     		    1173	document.entity.js.map
+100%  
+	    Newer     		     200	issue-history.entity.d.ts
+100%  
+	    Newer     		    2232	issue-history.entity.js
+100%  
+	    Newer     		     781	issue-history.entity.js.map
+100%  
+	    Newer     		    1327	issue.entity.d.ts
+100%  
+	    Newer     		    6537	issue.entity.js
+100%  
+	    Newer     		    3171	issue.entity.js.map
+100%  
+	    New File  		     137	note-reaction.entity.d.ts
+100%  
+	    New File  		    1875	note-reaction.entity.js
+100%  
+	    New File  		     572	note-reaction.entity.js.map
+100%  
+	    New File  		     157	note-reply.entity.d.ts
+100%  
+	    New File  		    2023	note-reply.entity.js
+100%  
+	    New File  		     690	note-reply.entity.js.map
+100%  
+	    Newer     		     170	note.entity.d.ts
+100%  
+	    Newer     		    2127	note.entity.js
+100%  
+	    Newer     		     826	note.entity.js.map
+100%  
+	    Newer     		     199	notification.entity.d.ts
+100%  
+	    Newer     		    2240	notification.entity.js
+100%  
+	    Newer     		     768	notification.entity.js.map
+100%  
+	    Newer     		     258	project-phase.entity.d.ts
+100%  
+	    Newer     		    2599	project-phase.entity.js
+100%  
+	    Newer     		    1009	project-phase.entity.js.map
+100%  
+	    Newer     		     270	project-plan.entity.d.ts
+100%  
+	    Newer     		    2547	project-plan.entity.js
+100%  
+	    Newer     		    1015	project-plan.entity.js.map
+100%  
+	    Newer     		     161	push-subscription.entity.d.ts
+100%  
+	    Newer     		    2167	push-subscription.entity.js
+100%  
+	    Newer     		     774	push-subscription.entity.js.map
+100%  
+	    Newer     		     294	user.entity.d.ts
+100%  
+	    Newer     		    2780	user.entity.js
+100%  
+	    Newer     		    1245	user.entity.js.map
+100%  
+	                  12	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\issues\
+	    Newer     		    1176	issues.controller.d.ts
+100%  
+	    Newer     		    4904	issues.controller.js
+100%  
+	    Newer     		    2153	issues.controller.js.map
+100%  
+	    Newer     		     740	issues.dto.d.ts
+100%  
+	    Newer     		    5192	issues.dto.js
+100%  
+	    Newer     		    1713	issues.dto.js.map
+100%  
+	    Newer     		      38	issues.module.d.ts
+100%  
+	    Newer     		    1599	issues.module.js
+100%  
+	    Newer     		     495	issues.module.js.map
+100%  
+	    Newer     		    1266	issues.service.d.ts
+100%  
+	    Newer     		    7503	issues.service.js
+100%  
+	    Newer     		    6091	issues.service.js.map
+100%  
+	                   9	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\line-notify\
+	    Newer     		     508	line-notify.controller.d.ts
+100%  
+	    Newer     		    3736	line-notify.controller.js
+100%  
+	    Newer     		    1837	line-notify.controller.js.map
+100%  
+	    Newer     		      42	line-notify.module.d.ts
+100%  
+	    Newer     		    1492	line-notify.module.js
+100%  
+	    Newer     		     506	line-notify.module.js.map
+100%  
+	    Newer     		    1094	line-notify.service.d.ts
+100%  
+	    Newer     		    7486	line-notify.service.js
+100%  
+	    Newer     		    4886	line-notify.service.js.map
+100%  
+	                  12	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\notes\
+	    Newer     		    1564	notes.controller.d.ts
+100%  
+	    Newer     		    5674	notes.controller.js
+100%  
+	    Newer     		    2676	notes.controller.js.map
+100%  
+	    Newer     		     285	notes.dto.d.ts
+100%  
+	    Newer     		    2356	notes.dto.js
+100%  
+	    Newer     		     658	notes.dto.js.map
+100%  
+	    Newer     		      37	notes.module.d.ts
+100%  
+	    Newer     		    1554	notes.module.js
+100%  
+	    Newer     		     490	notes.module.js.map
+100%  
+	    Newer     		    1613	notes.service.d.ts
+100%  
+	    Newer     		    5401	notes.service.js
+100%  
+	    Newer     		    4468	notes.service.js.map
+100%  
+	                   9	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\notifications\
+	    Newer     		     359	notifications.controller.d.ts
+100%  
+	    Newer     		    2870	notifications.controller.js
+100%  
+	    Newer     		    1052	notifications.controller.js.map
+100%  
+	    Newer     		      45	notifications.module.d.ts
+100%  
+	    Newer     		    1914	notifications.module.js
+100%  
+	    Newer     		     586	notifications.module.js.map
+100%  
+	    Newer     		    1212	notifications.service.d.ts
+100%  
+	    Newer     		    6092	notifications.service.js
+100%  
+	    Newer     		    4331	notifications.service.js.map
+100%  
+	                   9	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\project-plans\
+	    Newer     		    1653	project-plans.controller.d.ts
+100%  
+	    Newer     		    8233	project-plans.controller.js
+100%  
+	    Newer     		    3322	project-plans.controller.js.map
+100%  
+	    Newer     		      44	project-plans.module.d.ts
+100%  
+	    Newer     		    1610	project-plans.module.js
+100%  
+	    Newer     		     503	project-plans.module.js.map
+100%  
+	    Newer     		    1470	project-plans.service.d.ts
+100%  
+	    Newer     		    2650	project-plans.service.js
+100%  
+	    Newer     		    1502	project-plans.service.js.map
+100%  
+	                  12	C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice\backend\dist\src\push-subscriptions\
+	    Newer     		     427	push-subscriptions.controller.d.ts
+100%  
+	    Newer     		    2671	push-subscriptions.controller.js
+100%  
+	    Newer     		     890	push-subscriptions.controller.js.map
+100%  
+	    Newer     		      98	push-subscriptions.dto.d.ts
+100%  
+	    Newer     		    1588	push-subscriptions.dto.js
+100%  
+	    Newer     		     432	push-subscriptions.dto.js.map
+100%  
+	    Newer     		      49	push-subscriptions.module.d.ts
+100%  
+	    Newer     		    1676	push-subscriptions.module.js
+100%  
+	    Newer     		     528	push-subscriptions.module.js.map
+100%  
+	    Newer     		     708	push-subscriptions.service.d.ts
+100%  
+	    Newer     		    4359	push-subscriptions.service.js
+100%  
+	    Newer     		    1873	push-subscriptions.service.js.map
+100%  
+
+------------------------------------------------------------------------------
+
+               Total    Copied   Skipped  Mismatch    FAILED    Extras
+    Dirs :        20         0        20         0         0         0
+   Files :       250       250         0         0         0         0
+   Bytes :   715.9 k   715.9 k         0         0         0         0
+   Times :   0:00:00   0:00:00                       0:00:00   0:00:00
+
+
+   Speed :              959619 Bytes/sec.
+   Speed :              54.909 MegaBytes/min.
+   Ended : 17 �Զع�¹ 2569 10:46:44
+
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice>if 1 GEQ 8 exit 1 
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice>exit 0 
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice>copy /Y backend\package.json D:\ICS-Projects\apps\ics-backoffice\backend\package.json 
+        1 file(s) copied.
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice>copy /Y backend\package-lock.json D:\ICS-Projects\apps\ics-backoffice\backend\package-lock.json 
+        1 file(s) copied.
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice>if exist backend\.env copy /Y backend\.env D:\ICS-Projects\apps\ics-backoffice\backend\.env 
+        1 file(s) copied.
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice>cd /d D:\ICS-Projects\apps\ics-backoffice\backend   && npm ci --omit=dev --prefer-offline 
+
+added 240 packages, and audited 241 packages in 59s
+
+54 packages are looking for funding
+  run `npm fund` for details
+
+4 high severity vulnerabilities
+
+To address all issues, run:
+  npm audit fix
+
+Run `npm audit` for details.
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy Frontend)
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice>if not exist D:\ICS-Projects\apps\ics-backoffice\frontend mkdir D:\ICS-Projects\apps\ics-backoffice\frontend 
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice>powershell -Command "Copy-Item -Path frontend\.next\standalone\* -Destination D:\ICS-Projects\apps\ics-backoffice\frontend -Recurse -Force" 
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy Config)
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice>copy /Y ecosystem.config.js D:\ICS-Projects\apps\ics-backoffice\ecosystem.config.js 
+        1 file(s) copied.
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Start PM2)
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice>cd /d D:\ICS-Projects\apps\ics-backoffice   && pm2 start ecosystem.config.js --env production 
+[33m[PM2][WARN] [39mApplications ics-backend, ics-frontend not running, starting...
+[32m[PM2] [39mApp [ics-backend] launched (1 instances)
+[32m[PM2] [39mApp [ics-frontend] launched (1 instances)
+┌────┬────────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name                   │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ castin                 │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 5824     │ 85s    │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 0b       │ [1mAdm… │ [90mdisabled[39m │
+│ [1m[36m1[39m[22m  │ cmfp                   │ default     │ N/A     │ [7m[1mfork[22m[27m    │ N/A      │ 85s    │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 0b       │ [1mAdm… │ [90mdisabled[39m │
+│ [1m[36m3[39m[22m  │ ics-backend            │ default     │ 0.0.1   │ [34m[1mcluster[22m[39m │ 7840     │ 0s     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 0b       │ [1mSYSTEM[22m   │ [90mdisabled[39m │
+│ [1m[36m4[39m[22m  │ ics-frontend           │ default     │ 0.1.0   │ [34m[1mcluster[22m[39m │ 840      │ 0s     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 0b       │ [1mSYSTEM[22m   │ [90mdisabled[39m │
+│ [1m[36m2[39m[22m  │ import-xlsx-tranout    │ default     │ N/A     │ [7m[1mfork[22m[27m    │ N/A      │ 85s    │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 0b       │ [1mSYSTEM[22m   │ [90mdisabled[39m │
+└────┴────────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice>pm2 save 
+[32m[PM2] [39mSaving current process list...
+[32m[PM2] [39mSuccessfully saved in C:\ProgramData\pm2\dump.pm2
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] bat
+
+C:\ProgramData\Jenkins\.jenkins\workspace\ics-backoffice>pm2 list 
+┌────┬────────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name                   │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ [1m[36m0[39m[22m  │ castin                 │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 5824     │ 88s    │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 0b       │ [1mAdm… │ [90mdisabled[39m │
+│ [1m[36m1[39m[22m  │ cmfp                   │ default     │ N/A     │ [7m[1mfork[22m[27m    │ N/A      │ 88s    │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 0b       │ [1mAdm… │ [90mdisabled[39m │
+│ [1m[36m3[39m[22m  │ ics-backend            │ default     │ 0.0.1   │ [34m[1mcluster[22m[39m │ 7840     │ 3s     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 0b       │ [1mSYSTEM[22m   │ [90mdisabled[39m │
+│ [1m[36m4[39m[22m  │ ics-frontend           │ default     │ 0.1.0   │ [34m[1mcluster[22m[39m │ 840      │ 3s     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 0b       │ [1mSYSTEM[22m   │ [90mdisabled[39m │
+│ [1m[36m2[39m[22m  │ import-xlsx-tranout    │ default     │ N/A     │ [7m[1mfork[22m[27m    │ N/A      │ 88s    │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 0b       │ [1mSYSTEM[22m   │ [90mdisabled[39m │
+└────┴────────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+[Pipeline] echo
+Deployment successful!
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS

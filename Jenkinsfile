@@ -4,7 +4,6 @@ pipeline {
     environment {
         DEPLOY_DIR = 'D:\\ICS-Projects\\apps\\ics-backoffice'
         PATH       = "C:\\Program Files\\nodejs;${env.PATH}"
-        PM2_HOME   = 'C:\\Users\\Administrator\\.pm2'
     }
 
     stages {
@@ -46,7 +45,7 @@ pipeline {
 
         stage('Stop PM2') {
             steps {
-                bat 'set PM2_HOME=%PM2_HOME% && pm2 kill 2>nul & exit 0'
+                bat 'pm2 kill 2>nul & exit 0'
             }
         }
 
@@ -89,15 +88,15 @@ pipeline {
 
         stage('Start PM2') {
             steps {
-                bat "set PM2_HOME=%PM2_HOME% && cd /d %DEPLOY_DIR% && pm2 start ecosystem.config.js --env production"
-                bat 'set PM2_HOME=%PM2_HOME% && pm2 save'
+                bat "cd /d %DEPLOY_DIR% && pm2 start ecosystem.config.js --env production"
+                bat 'pm2 save'
             }
         }
     }
 
     post {
         success {
-            bat 'set PM2_HOME=%PM2_HOME% && pm2 list'
+            bat 'pm2 list'
             echo 'Deployment successful!'
         }
         failure {
