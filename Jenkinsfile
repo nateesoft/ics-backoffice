@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DEPLOY_DIR = 'D:\\ICS-Projects\\apps\\ics-backoffice'
-        PM2_HOME   = 'D:\\ICS-Projects\\.pm2'
+        PM2_HOME   = 'C:\\Users\\Administrator\\.pm2'
         PATH       = "C:\\Program Files\\nodejs;C:\\Users\\Administrator\\AppData\\Roaming\\npm;${env.PATH}"
     }
 
