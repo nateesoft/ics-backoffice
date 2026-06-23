@@ -1,6 +1,8 @@
 'use client';
-import { useState, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
+import bgImage from '@/public/bg.webp';
 import { authApi } from '@/lib/api';
 
 function LoginForm() {
@@ -10,6 +12,11 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const usernameRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    usernameRef.current?.focus();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,15 +34,47 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-700">
-      <div className="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center relative">
+      <Image
+        src={bgImage}
+        alt=""
+        fill
+        className="object-cover"
+        priority
+      />
+      <div className="absolute inset-0 bg-black/50" />
+      <div className="login-card-wrapper w-full max-w-md relative z-10">
+        <div className="login-border-spin" />
+        <div className="login-card-shadow bg-white rounded-2xl p-10 relative z-10">
         <div className="mb-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-red-600 rounded-2xl mb-4">
+            <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}>
+              {/* Antennae */}
+              <line x1="9" y1="2" x2="12" y2="6" />
+              <line x1="15" y1="2" x2="12" y2="6" />
+              {/* Head */}
+              <circle cx="12" cy="8" r="2" />
+              {/* Body */}
+              <ellipse cx="12" cy="15" rx="4" ry="5" />
+              {/* Left legs */}
+              <line x1="8" y1="12" x2="4" y2="10" />
+              <line x1="8" y1="15" x2="4" y2="15" />
+              <line x1="8" y1="18" x2="4" y2="20" />
+              {/* Right legs */}
+              <line x1="16" y1="12" x2="20" y2="10" />
+              <line x1="16" y1="15" x2="20" y2="15" />
+              <line x1="16" y1="18" x2="20" y2="20" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">ICS Backoffice</h1>
+          <h1 className="text-2xl tracking-tight">
+            <span style={{
+              fontWeight: 800,
+              background: 'linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>ICS</span>
+            <span style={{ fontWeight: 400, color: '#64748b', marginLeft: '0.3rem' }}>Back Office</span>
+          </h1>
           <p className="text-slate-500 text-sm mt-1">Bug Issue Tracking System</p>
         </div>
 
@@ -43,6 +82,7 @@ function LoginForm() {
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Username</label>
             <input
+              ref={usernameRef}
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
@@ -75,6 +115,7 @@ function LoginForm() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+        </div>
       </div>
     </div>
   );
@@ -83,7 +124,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-700" />
+      <div className="min-h-screen bg-slate-900" />
     }>
       <LoginForm />
     </Suspense>

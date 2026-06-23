@@ -104,3 +104,51 @@ body {
 .calendar-dark .react-calendar__month-view__days__day--neighboringMonth {
   color: #334155;
 }
+
+/* Login sun shadow */
+.login-card-wrapper {
+  position: relative;
+  border-radius: 1.1rem;
+}
+
+/* Sun rays — large circle radiating outward from center */
+.login-border-spin {
+  position: absolute;
+  width: 680px;
+  height: 680px;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  z-index: 0;
+  background: repeating-conic-gradient(
+    rgba(220, 228, 235, 0.72) 0deg 9deg,
+    rgba(160, 175, 190, 0.44) 9deg 15deg,
+    transparent               15deg 30deg
+  );
+  filter: blur(16px);
+  opacity: 0.6;
+  animation: login-sun-spin 14s linear infinite;
+}
+
+@keyframes login-sun-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Card warm pulsing glow */
+.login-card-shadow {
+  animation: login-shadow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes login-shadow-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 28px rgba(190, 205, 220, 0.28),
+      0 8px 32px rgba(150, 170, 190, 0.16);
+  }
+  50% {
+    box-shadow:
+      0 0 52px rgba(190, 205, 220, 0.48),
+      0 12px 48px rgba(150, 170, 190, 0.3);
+  }
+}
