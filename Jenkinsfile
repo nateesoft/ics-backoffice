@@ -106,8 +106,14 @@ pipeline {
 
         stage('Start PM2') {
             steps {
-                bat "cd /d %DEPLOY_DIR% && pm2 start ecosystem.config.js --env production"
-                bat 'pm2 save'
+                // JENKINS_NODE_COOKIE=dontKillMe tells Jenkins' process killer to leave
+                // the pm2 daemon alone after the build finishes — otherwise Windows
+                // kills the whole child process tree (pm2 daemon + apps) at build end,
+                // which is why `pm2 list` shows nothing right after a successful deploy.
+                withEnv(['JENKINS_NODE_COOKIE=dontKillMe']) {
+                    bat "cd /d %DEPLOY_DIR% && pm2 start ecosystem.config.js --env production"
+                    bat 'pm2 save'
+                }
             }
         }
     }
