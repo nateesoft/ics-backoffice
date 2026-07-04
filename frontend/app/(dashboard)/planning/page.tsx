@@ -481,7 +481,7 @@ export default function PlanningPage() {
               {/* Name */}
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                  Project Name <span className="text-red-400">*</span>
+                  Issue Name <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text" autoFocus

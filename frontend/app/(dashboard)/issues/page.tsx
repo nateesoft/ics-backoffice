@@ -27,10 +27,13 @@ export default function IssuesPage() {
 
   function currentMonthRange() {
     const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    return { from: `${y}-${m}-01`, to: `${y}-${m}-${String(lastDay).padStart(2, '0')}` };
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const fy = start.getFullYear();
+    const fm = String(start.getMonth() + 1).padStart(2, '0');
+    const ty = end.getFullYear();
+    const tm = String(end.getMonth() + 1).padStart(2, '0');
+    return { from: `${fy}-${fm}-01`, to: `${ty}-${tm}-${String(end.getDate()).padStart(2, '0')}` };
   }
 
   const defaultDateRange = currentMonthRange();
@@ -226,7 +229,7 @@ export default function IssuesPage() {
           {showMoreFilters && (
             <div className="flex flex-wrap gap-3 pt-2 border-t border-slate-100">
               <select className={selectCls} value={filterCodeType} onChange={e => setFilterCodeType(e.target.value)}>
-                <option value="">All Project Types</option>
+                <option value="">All Issue Types</option>
                 {CODE_TYPES.map(c => <option key={c}>{c}</option>)}
               </select>
               <select className={selectCls} value={filterDeployment} onChange={e => setFilterDeployment(e.target.value)}>

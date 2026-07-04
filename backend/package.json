@@ -13,6 +13,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "db:create": "ts-node -r tsconfig-paths/register scripts/create-db.ts",
+    "db:migrate-code-type": "ts-node -r tsconfig-paths/register scripts/migrate-code-type-enum.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",

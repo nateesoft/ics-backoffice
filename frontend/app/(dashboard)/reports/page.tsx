@@ -98,7 +98,7 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* By Project Type */}
+              {/* By Issue Type */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
                 <h2 className="font-semibold text-slate-800 mb-4">Issues by Technology</h2>
                 {byCodeType.length === 0 ? (

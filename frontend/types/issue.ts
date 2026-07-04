@@ -1,4 +1,4 @@
-export type CodeType = 'Java' | 'NodeJS' | 'NestJS' | 'NextJS' | 'ReactJS' | 'Java Springboot' | 'Python' | 'Golang' | 'Service Support';
+export type CodeType = 'Application' | 'Web Application' | 'Service Support';
 export type Priority = 'Critical' | 'High' | 'Medium' | 'Low';
 export type WorkPeriodUnit = 'Days' | 'Hours';
 export type TaskStatus = 'New' | 'Todo' | 'InProgress' | 'Test' | 'Done';
@@ -34,7 +34,7 @@ export interface Issue {
 
 export type CreateIssueDto = Omit<Issue, 'id' | 'isCancelled' | 'createdAt' | 'updatedAt'>;
 
-export const CODE_TYPES: CodeType[] = ['Java', 'NodeJS', 'NestJS', 'NextJS', 'ReactJS', 'Java Springboot', 'Python', 'Golang', 'Service Support'];
+export const CODE_TYPES: CodeType[] = ['Application', 'Web Application', 'Service Support'];
 export const PRIORITIES: Priority[] = ['Critical', 'High', 'Medium', 'Low'];
 export const WORK_PERIOD_UNITS: WorkPeriodUnit[] = ['Days', 'Hours'];
 export const TASK_STATUSES: TaskStatus[] = ['New', 'Todo', 'InProgress', 'Test', 'Done'];

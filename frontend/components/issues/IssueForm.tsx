@@ -14,8 +14,8 @@ interface IssueFormProps {
 const today = new Date().toISOString().split('T')[0];
 
 const FIELD_LABELS: Record<string, string> = {
-  projectName: 'Project Name',
-  codeType: 'Project Type',
+  projectName: 'Issue Name',
+  codeType: 'Issue Type',
   detail: 'Detail',
   githubLink: 'Github Link',
   issueCreateDate: 'Issue Create Date',
@@ -59,7 +59,7 @@ export default function IssueForm({ initial, onSuccess, onCancel, defaultDate }:
   const isEdit = !!initial?.id;
   const [form, setForm] = useState({
     projectName: initial?.projectName || '',
-    codeType: initial?.codeType || 'NextJS',
+    codeType: initial?.codeType || 'Application',
     detail: initial?.detail || '',
     githubLink: initial?.githubLink || '',
     issueCreateDate: initial?.issueCreateDate || defaultDate || today,
@@ -140,11 +140,11 @@ export default function IssueForm({ initial, onSuccess, onCancel, defaultDate }:
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className={labelCls}>Project Name *</label>
-          <input className={inputCls} value={form.projectName} onChange={e => set('projectName', e.target.value)} required placeholder="Project name" />
+          <label className={labelCls}>Issue Name *</label>
+          <input className={inputCls} value={form.projectName} onChange={e => set('projectName', e.target.value)} required placeholder="Issue name" />
         </div>
         <div>
-          <label className={labelCls}>Project Type *</label>
+          <label className={labelCls}>Issue Type *</label>
           <select className={selectCls} value={form.codeType} onChange={e => set('codeType', e.target.value)} required>
             {CODE_TYPES.map(t => <option key={t}>{t}</option>)}
           </select>

@@ -1,14 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 export enum CodeType {
-  JAVA = 'Java',
-  NODEJS = 'NodeJS',
-  NESTJS = 'NestJS',
-  NEXTJS = 'NextJS',
-  REACTJS = 'ReactJS',
-  JAVA_SPRINGBOOT = 'Java Springboot',
-  PYTHON = 'Python',
-  GOLANG = 'Golang',
+  APPLICATION = 'Application',
+  WEB_APPLICATION = 'Web Application',
+  SERVICE_SUPPORT = 'Service Support',
 }
 
 export enum Priority {
