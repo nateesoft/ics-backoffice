@@ -64,12 +64,28 @@ pipeline {
                 """
                 bat "copy /Y backend\\package.json %DEPLOY_DIR%\\backend\\package.json"
                 bat "copy /Y backend\\package-lock.json %DEPLOY_DIR%\\backend\\package-lock.json"
+                bat "copy /Y backend\\tsconfig.json %DEPLOY_DIR%\\backend\\tsconfig.json"
+
+                // One-off DB migration scripts (run via ts-node, not part of nest build output)
+                bat """
+                    robocopy backend\\scripts %DEPLOY_DIR%\\backend\\scripts /E /PURGE
+                    if %ERRORLEVEL% GEQ 8 exit 1
+                    exit 0
+                """
 
                 // Deploy .env if it exists in workspace (skip silently on re-deploy if absent)
                 bat "if exist backend\\.env copy /Y backend\\.env %DEPLOY_DIR%\\backend\\.env"
 
                 // Install production dependencies — network-timeout guards against hanging
                 bat "cd /d %DEPLOY_DIR%\\backend && npm ci --omit=dev --prefer-offline"
+            }
+        }
+
+        stage('Migrate Database') {
+            steps {
+                // Must run before Start PM2 — synchronize:true would otherwise try to
+                // ALTER the codeType enum itself and fail on rows with retired values.
+                bat "cd /d %DEPLOY_DIR%\\backend && npm run db:migrate-code-type"
             }
         }
 
