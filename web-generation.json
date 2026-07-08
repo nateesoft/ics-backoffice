@@ -1,0 +1,508 @@
+{
+    "templates": [
+        {
+            "templateId": "simple-crud-app-v1",
+            "name": "Simple CRUD Application",
+            "description": "Reusable CRUD template: list / search / view / create / update / delete for a single resource.",
+            "architecture": {
+                "type": "web-application",
+                "frontend": "nextjs",
+                "backend": "nestjs",
+                "database": "postgresql"
+            },
+            "components": [
+                {
+                    "type": "mainPage",
+                    "name": "MainPage",
+                    "description": "Show Main Page",
+                    "jsonSchema": {},
+                    "uiElements": []
+                },
+                {
+                    "type": "page",
+                    "name": "ProductListPage",
+                    "description": "Show Product List Page",
+                    "jsonSchema": {},
+                    "uiElements": []
+                },
+                {
+                    "type": "modal",
+                    "name": "ViewProductModal",
+                    "description": "Show View Product Modal",
+                    "jsonSchema": {},
+                    "uiElements": []
+                },
+                {
+                    "type": "global-alert",
+                    "name": "InfoAlert",
+                    "description": "Show Info Alert",
+                    "jsonSchema": {},
+                    "uiElements": []
+                },
+                {
+                    "type": "component",
+                    "name": "CalendarComponent",
+                    "description": "Show Calendar Component",
+                    "jsonSchema": {},
+                    "uiElements": []
+                }
+            ],
+            "backendServices": {
+                "productService": {
+                    "routes": [
+                        {
+                            "name": "getProducts",
+                            "method": "GET",
+                            "path": "/products",
+                            "queryParameters": {},
+                            "payload": {},
+                            "logicPipeline": [
+                                {
+                                    "queryList": {
+                                        "limit": 100,
+                                        "orderBy": "code",
+                                        "orderByType": "asc"
+                                    },
+                                    "assignTo": "products"
+                                },
+                                {
+                                    "responseJson": {
+                                        "status": 200,
+                                        "message": "Show all products successfully",
+                                        "data": "${products}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "getProductsById",
+                            "method": "GET",
+                            "path": "/products/:id",
+                            "queryParameters": {},
+                            "payload": {},
+                            "logicPipeline": [
+                                {
+                                    "validateParams": [
+                                        {
+                                            "parameter": "id",
+                                            "type": "number",
+                                            "required": true
+                                        }
+                                    ]
+                                },
+                                {
+                                    "filterBy": "id = :id",
+                                    "assignTo": "product"
+                                },
+                                {
+                                    "responseJson": {
+                                        "status": 200,
+                                        "message": "Show product by id: ${id} successfully",
+                                        "data": "${product}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "searchProducts",
+                            "method": "GET",
+                            "path": "/products/search",
+                            "queryParameters": {
+                                "code": {
+                                    "type": "string",
+                                    "required": false
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "required": false
+                                }
+                            },
+                            "payload": {},
+                            "logicPipeline": [
+                                {
+                                    "filterBy": "code ILIKE :code AND name ILIKE :name",
+                                    "orderBy": "code",
+                                    "orderByType": "asc",
+                                    "assignTo": "products"
+                                },
+                                {
+                                    "responseJson": {
+                                        "status": 200,
+                                        "message": "Search products successfully",
+                                        "data": "${products}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "createProduct",
+                            "method": "POST",
+                            "path": "/products",
+                            "queryParameters": {},
+                            "payload": {
+                                "code": "P001",
+                                "name": "Laptop",
+                                "price": 999.99
+                            },
+                            "logicPipeline": [
+                                {
+                                    "validatePayloads": [
+                                        {
+                                            "parameter": "code",
+                                            "type": "string",
+                                            "required": true
+                                        },
+                                        {
+                                            "parameter": "name",
+                                            "type": "string",
+                                            "required": true
+                                        },
+                                        {
+                                            "parameter": "price",
+                                            "type": "number",
+                                            "required": true
+                                        }
+                                    ]
+                                },
+                                {
+                                    "generateFields": [
+                                        {
+                                            "parameter": "id",
+                                            "type": "number",
+                                            "autogenerate": true
+                                        }
+                                    ]
+                                },
+                                {
+                                    "executeInsert": true,
+                                    "assignTo": "product"
+                                },
+                                {
+                                    "responseJson": {
+                                        "status": 201,
+                                        "message": "Product created successfully",
+                                        "data": "${product}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "updateProduct",
+                            "method": "PUT",
+                            "path": "/products/:id",
+                            "queryParameters": {},
+                            "payload": {
+                                "code": "P001",
+                                "name": "Laptop",
+                                "price": 899.99
+                            },
+                            "logicPipeline": [
+                                {
+                                    "validateParams": [
+                                        {
+                                            "parameter": "id",
+                                            "type": "number",
+                                            "required": true
+                                        }
+                                    ]
+                                },
+                                {
+                                    "validatePayloads": [
+                                        {
+                                            "parameter": "code",
+                                            "type": "string",
+                                            "required": true
+                                        },
+                                        {
+                                            "parameter": "name",
+                                            "type": "string",
+                                            "required": true
+                                        },
+                                        {
+                                            "parameter": "price",
+                                            "type": "number",
+                                            "required": true
+                                        }
+                                    ]
+                                },
+                                {
+                                    "filterBy": "id = :id"
+                                },
+                                {
+                                    "executeUpdate": true,
+                                    "assignTo": "product"
+                                },
+                                {
+                                    "responseJson": {
+                                        "status": 200,
+                                        "message": "Product updated successfully",
+                                        "data": "${product}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "deleteProduct",
+                            "method": "DELETE",
+                            "path": "/products/:id",
+                            "queryParameters": {},
+                            "payload": {},
+                            "logicPipeline": [
+                                {
+                                    "validateParams": [
+                                        {
+                                            "parameter": "id",
+                                            "type": "number",
+                                            "required": true
+                                        }
+                                    ]
+                                },
+                                {
+                                    "filterBy": "id = :id"
+                                },
+                                {
+                                    "executeDelete": true,
+                                    "assignTo": "product"
+                                },
+                                {
+                                    "responseJson": {
+                                        "status": 200,
+                                        "message": "Product deleted successfully",
+                                        "data": "${product}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            "workflows": [
+                {
+                    "pageName": "productListPage",
+                    "frontendURL": "/products",
+                    "pageAction": [
+                        {
+                            "type": "initialLoad",
+                            "steps": [
+                                {
+                                    "apiCall": {
+                                        "method": "GET",
+                                        "path": "/products"
+                                    },
+                                    "params": {},
+                                    "payload": {}
+                                },
+                                {
+                                    "responseMapping": {
+                                        "products": "${response.data}"
+                                    }
+                                },
+                                {
+                                    "renderUI": {
+                                        "component": "ProductListPage",
+                                        "props": {
+                                            "products": "${products}"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "onClickSearch",
+                            "steps": [
+                                {
+                                    "apiCall": {
+                                        "method": "GET",
+                                        "path": "/products/search"
+                                    },
+                                    "params": {
+                                        "code": "${searchCode}",
+                                        "name": "${searchName}"
+                                    },
+                                    "payload": {}
+                                },
+                                {
+                                    "responseMapping": {
+                                        "products": "${response.data}"
+                                    }
+                                },
+                                {
+                                    "renderUI": {
+                                        "component": "ProductListPage",
+                                        "props": {
+                                            "products": "${products}"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "onClickView",
+                            "steps": [
+                                {
+                                    "apiCall": {
+                                        "method": "GET",
+                                        "path": "/products/:id"
+                                    },
+                                    "params": {
+                                        "id": "${selectedProductId}"
+                                    },
+                                    "payload": {}
+                                },
+                                {
+                                    "responseMapping": {
+                                        "product": "${response.data}"
+                                    }
+                                },
+                                {
+                                    "renderUI": {
+                                        "component": "ViewProductModal",
+                                        "props": {
+                                            "product": "${product}"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "onClickCreate",
+                            "steps": [
+                                {
+                                    "apiCall": {
+                                        "method": "POST",
+                                        "path": "/products"
+                                    },
+                                    "params": {},
+                                    "payload": {
+                                        "code": "${newProductCode}",
+                                        "name": "${newProductName}",
+                                        "price": "${newProductPrice}"
+                                    }
+                                },
+                                {
+                                    "responseMapping": {
+                                        "product": "${response.data}"
+                                    }
+                                },
+                                {
+                                    "renderUI": {
+                                        "component": "ProductListPage",
+                                        "props": {
+                                            "products": "${products}"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "onClickUpdate",
+                            "steps": [
+                                {
+                                    "apiCall": {
+                                        "method": "PUT",
+                                        "path": "/products/:id"
+                                    },
+                                    "params": {
+                                        "id": "${selectedProductId}"
+                                    },
+                                    "payload": {
+                                        "code": "${updatedProductCode}",
+                                        "name": "${updatedProductName}",
+                                        "price": "${updatedProductPrice}"
+                                    }
+                                },
+                                {
+                                    "responseMapping": {
+                                        "product": "${response.data}"
+                                    }
+                                },
+                                {
+                                    "renderUI": {
+                                        "component": "ProductListPage",
+                                        "props": {
+                                            "products": "${products}"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "onClickDelete",
+                            "steps": [
+                                {
+                                    "apiCall": {
+                                        "method": "DELETE",
+                                        "path": "/products/:id"
+                                    },
+                                    "params": {
+                                        "id": "${selectedProductId}"
+                                    },
+                                    "payload": {}
+                                },
+                                {
+                                    "responseMapping": {
+                                        "product": "${response.data}"
+                                    }
+                                },
+                                {
+                                    "renderUI": {
+                                        "component": "ProductListPage",
+                                        "props": {
+                                            "products": "${products}"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "profiles": [
+        {
+            "profileId": 12345,
+            "type": "client",
+            "name": "Tech Solutions Inc.",
+            "description": "A leading provider of innovative technology solutions.",
+            "parentAgencyId": null,
+            "projects": [
+                {
+                    "id": 1,
+                    "name": "Simple CRUD Application",
+                    "description": "A simple CRUD application for managing user data.",
+                    "templateId": "simple-crud-app-v1",
+                    "data": {
+                        "products": [
+                            {
+                                "id": 1,
+                                "name": "Laptop",
+                                "price": 999.99
+                            },
+                            {
+                                "id": 2,
+                                "name": "Smartphone",
+                                "price": 699.99
+                            },
+                            {
+                                "id": 3,
+                                "name": "Tablet",
+                                "price": 399.99
+                            },
+                            {
+                                "id": 4,
+                                "name": "Headphones",
+                                "price": 199.99
+                            },
+                            {
+                                "id": 5,
+                                "name": "Smartwatch",
+                                "price": 249.99
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}
