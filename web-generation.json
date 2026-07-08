@@ -15,8 +15,178 @@
                     "type": "mainPage",
                     "name": "MainPage",
                     "description": "Show Main Page",
-                    "jsonSchema": {},
-                    "uiElements": []
+                    "jsonSchema": {
+                        "type": "object",
+                        "properties": {
+                            "appTitle": {
+                                "type": "string",
+                                "default": "ICS Backoffice",
+                                "description": "ชื่อระบบที่แสดงบน header"
+                            },
+                            "menuItems": {
+                                "type": "array",
+                                "description": "รายการเมนูฝั่งซ้าย สร้างจาก components ที่ type = page ของแต่ละ config ใน template",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": { "type": "string" },
+                                        "label": { "type": "string" },
+                                        "icon": { "type": "string" },
+                                        "componentName": {
+                                            "type": "string",
+                                            "description": "ชื่อ page component (ตรงกับ components[].name ที่ type = page) ที่จะ render ฝั่งขวาเมื่อเลือกเมนูนี้"
+                                        },
+                                        "path": { "type": "string" }
+                                    },
+                                    "required": ["id", "label", "componentName"]
+                                }
+                            },
+                            "selectedMenuId": {
+                                "type": ["string", "null"],
+                                "default": null,
+                                "description": "id ของเมนูที่กำลังถูกเลือกอยู่ในปัจจุบัน"
+                            },
+                            "breadcrumb": {
+                                "type": "array",
+                                "description": "breadcrumb path ที่ update ทุกครั้งที่เลือกเมนูฝั่งซ้าย",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "label": { "type": "string" },
+                                        "path": { "type": "string" }
+                                    },
+                                    "required": ["label"]
+                                },
+                                "default": [{ "label": "Home", "path": "/" }]
+                            },
+                            "isSidebarOpen": {
+                                "type": "boolean",
+                                "default": true,
+                                "description": "สถานะเปิด/ปิด left side menu — บน desktop default true (fixed), บน mobile/tablet default false (overlay)"
+                            },
+                            "viewport": {
+                                "type": "string",
+                                "enum": ["mobile", "tablet", "desktop"],
+                                "default": "desktop",
+                                "description": "breakpoint ปัจจุบัน ใช้ควบคุม responsive behavior ของ header และ sidebar"
+                            }
+                        },
+                        "required": ["menuItems", "breadcrumb"]
+                    },
+                    "uiElements": [
+                        {
+                            "elementType": "header",
+                            "name": "MainHeader",
+                            "sticky": true,
+                            "responsive": {
+                                "mobile": { "showHamburgerMenu": true, "showLogo": true, "showSearch": false },
+                                "tablet": { "showHamburgerMenu": true, "showLogo": true, "showSearch": true },
+                                "desktop": { "showHamburgerMenu": false, "showLogo": true, "showSearch": true }
+                            },
+                            "children": [
+                                {
+                                    "elementType": "button",
+                                    "name": "HamburgerMenuButton",
+                                    "icon": "menu",
+                                    "visibleOn": ["mobile", "tablet"],
+                                    "onClick": {
+                                        "action": "toggleSidebar",
+                                        "steps": [
+                                            { "setState": { "isSidebarOpen": "${!isSidebarOpen}" } }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "elementType": "text",
+                                    "name": "AppTitle",
+                                    "bind": "${appTitle}"
+                                },
+                                {
+                                    "elementType": "userMenu",
+                                    "name": "UserProfileMenu",
+                                    "props": { "showAvatar": true, "showLogout": true }
+                                }
+                            ]
+                        },
+                        {
+                            "elementType": "sidebar",
+                            "name": "LeftSideMenu",
+                            "position": "left",
+                            "responsive": {
+                                "mobile": { "mode": "overlay", "visible": "${isSidebarOpen}" },
+                                "tablet": { "mode": "overlay", "visible": "${isSidebarOpen}" },
+                                "desktop": { "mode": "fixed", "visible": true }
+                            },
+                            "dataSource": "${menuItems}",
+                            "itemTemplate": {
+                                "elementType": "menuItem",
+                                "bind": "item",
+                                "props": {
+                                    "label": "${item.label}",
+                                    "icon": "${item.icon}",
+                                    "active": "${item.id === selectedMenuId}"
+                                },
+                                "onClick": {
+                                    "action": "selectMenu",
+                                    "steps": [
+                                        { "setState": { "selectedMenuId": "${item.id}" } },
+                                        { "setState": { "breadcrumb": [{ "label": "Home", "path": "/" }, { "label": "${item.label}", "path": "${item.path}" }] } },
+                                        { "setState": { "isSidebarOpen": false }, "condition": "${viewport !== 'desktop'}" },
+                                        {
+                                            "renderUI": {
+                                                "target": "MainContentArea",
+                                                "component": "${item.componentName}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "elementType": "overlay",
+                            "name": "MobileSidebarBackdrop",
+                            "visibleOn": ["mobile", "tablet"],
+                            "visible": "${isSidebarOpen}",
+                            "onClick": {
+                                "action": "toggleSidebar",
+                                "steps": [
+                                    { "setState": { "isSidebarOpen": false } }
+                                ]
+                            }
+                        },
+                        {
+                            "elementType": "container",
+                            "name": "MainContentArea",
+                            "position": "right",
+                            "children": [
+                                {
+                                    "elementType": "breadcrumb",
+                                    "name": "ContentBreadcrumb",
+                                    "dataSource": "${breadcrumb}",
+                                    "separator": "/",
+                                    "itemTemplate": {
+                                        "elementType": "breadcrumbItem",
+                                        "bind": "crumb",
+                                        "props": {
+                                            "label": "${crumb.label}",
+                                            "path": "${crumb.path}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "elementType": "dynamicComponent",
+                                    "name": "PageContent",
+                                    "description": "แสดง page component ฝั่งขวาตาม selectedMenuId — component คือ page ของแต่ละ config ที่สร้างไว้ใน components list",
+                                    "component": "${selectedMenuId ? menuItems.find(m => m.id === selectedMenuId).componentName : defaultComponentName}",
+                                    "fallback": {
+                                        "elementType": "emptyState",
+                                        "name": "NoMenuSelectedState",
+                                        "message": "กรุณาเลือกเมนูฝั่งซ้ายเพื่อแสดงเนื้อหา"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
                     "type": "page",
