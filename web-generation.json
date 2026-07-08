@@ -192,29 +192,478 @@
                     "type": "page",
                     "name": "ProductListPage",
                     "description": "Show Product List Page",
-                    "jsonSchema": {},
-                    "uiElements": []
+                    "jsonSchema": {
+                        "type": "object",
+                        "properties": {
+                            "products": {
+                                "type": "array",
+                                "description": "รายการ product ที่แสดงในตาราง ผูกกับผลลัพธ์จาก workflow initialLoad / onClickSearch",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": { "type": "number" },
+                                        "code": { "type": "string" },
+                                        "name": { "type": "string" },
+                                        "price": { "type": "number" }
+                                    },
+                                    "required": ["id", "code", "name", "price"]
+                                },
+                                "default": []
+                            },
+                            "searchCode": {
+                                "type": "string",
+                                "default": "",
+                                "description": "คำค้นหาตาม code ใช้เป็น query parameter ของ onClickSearch"
+                            },
+                            "searchName": {
+                                "type": "string",
+                                "default": "",
+                                "description": "คำค้นหาตาม name ใช้เป็น query parameter ของ onClickSearch"
+                            },
+                            "selectedProductId": {
+                                "type": ["number", "null"],
+                                "default": null,
+                                "description": "id ของ product ที่ถูกเลือกสำหรับ View / Update / Delete"
+                            },
+                            "editingProductId": {
+                                "type": ["number", "null"],
+                                "default": null,
+                                "description": "id ของ row ที่กำลังอยู่ในโหมดแก้ไขแบบ inline ในตาราง"
+                            },
+                            "isCreateFormOpen": {
+                                "type": "boolean",
+                                "default": false,
+                                "description": "สถานะเปิด/ปิดฟอร์มสร้าง product ใหม่"
+                            },
+                            "newProductCode": { "type": "string", "default": "" },
+                            "newProductName": { "type": "string", "default": "" },
+                            "newProductPrice": { "type": "number", "default": 0 },
+                            "updatedProductCode": { "type": "string", "default": "" },
+                            "updatedProductName": { "type": "string", "default": "" },
+                            "updatedProductPrice": { "type": "number", "default": 0 },
+                            "isLoading": { "type": "boolean", "default": false },
+                            "isDeleteConfirmOpen": { "type": "boolean", "default": false }
+                        },
+                        "required": ["products"]
+                    },
+                    "uiElements": [
+                        {
+                            "elementType": "container",
+                            "name": "ProductListPageContainer",
+                            "children": [
+                                {
+                                    "elementType": "pageHeader",
+                                    "name": "ProductListPageHeader",
+                                    "props": { "title": "Products" },
+                                    "children": [
+                                        {
+                                            "elementType": "button",
+                                            "name": "CreateProductButton",
+                                            "label": "+ New Product",
+                                            "onClick": {
+                                                "action": "openCreateForm",
+                                                "steps": [
+                                                    { "setState": { "isCreateFormOpen": true, "newProductCode": "", "newProductName": "", "newProductPrice": 0 } }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "elementType": "searchBar",
+                                    "name": "ProductSearchBar",
+                                    "children": [
+                                        {
+                                            "elementType": "input",
+                                            "name": "SearchCodeInput",
+                                            "inputType": "text",
+                                            "placeholder": "Search by code",
+                                            "bind": "${searchCode}",
+                                            "onChange": { "steps": [{ "setState": { "searchCode": "${value}" } }] }
+                                        },
+                                        {
+                                            "elementType": "input",
+                                            "name": "SearchNameInput",
+                                            "inputType": "text",
+                                            "placeholder": "Search by name",
+                                            "bind": "${searchName}",
+                                            "onChange": { "steps": [{ "setState": { "searchName": "${value}" } }] }
+                                        },
+                                        {
+                                            "elementType": "button",
+                                            "name": "SearchButton",
+                                            "label": "Search",
+                                            "onClick": { "triggerWorkflow": "onClickSearch" }
+                                        },
+                                        {
+                                            "elementType": "button",
+                                            "name": "ClearSearchButton",
+                                            "label": "Clear",
+                                            "onClick": {
+                                                "action": "clearSearch",
+                                                "steps": [
+                                                    { "setState": { "searchCode": "", "searchName": "" } },
+                                                    { "triggerWorkflow": "initialLoad" }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "elementType": "form",
+                                    "name": "CreateProductForm",
+                                    "visible": "${isCreateFormOpen}",
+                                    "fields": [
+                                        { "elementType": "input", "name": "NewProductCodeInput", "label": "Code", "inputType": "text", "bind": "${newProductCode}", "required": true, "onChange": { "steps": [{ "setState": { "newProductCode": "${value}" } }] } },
+                                        { "elementType": "input", "name": "NewProductNameInput", "label": "Name", "inputType": "text", "bind": "${newProductName}", "required": true, "onChange": { "steps": [{ "setState": { "newProductName": "${value}" } }] } },
+                                        { "elementType": "input", "name": "NewProductPriceInput", "label": "Price", "inputType": "number", "bind": "${newProductPrice}", "required": true, "onChange": { "steps": [{ "setState": { "newProductPrice": "${value}" } }] } }
+                                    ],
+                                    "onSubmit": {
+                                        "action": "onClickCreate",
+                                        "steps": [
+                                            { "triggerWorkflow": "onClickCreate" },
+                                            { "setState": { "isCreateFormOpen": false, "newProductCode": "", "newProductName": "", "newProductPrice": 0 } }
+                                        ]
+                                    },
+                                    "onCancel": {
+                                        "steps": [
+                                            { "setState": { "isCreateFormOpen": false } }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "elementType": "table",
+                                    "name": "ProductTable",
+                                    "dataSource": "${products}",
+                                    "loading": "${isLoading}",
+                                    "emptyState": {
+                                        "elementType": "emptyState",
+                                        "message": "No products found"
+                                    },
+                                    "columns": [
+                                        { "key": "code", "label": "Code" },
+                                        { "key": "name", "label": "Name" },
+                                        { "key": "price", "label": "Price", "format": "currency" }
+                                    ],
+                                    "rowTemplate": {
+                                        "bind": "row",
+                                        "editing": "${editingProductId === row.id}",
+                                        "viewFields": [
+                                            { "elementType": "text", "name": "RowCode", "bind": "${row.code}" },
+                                            { "elementType": "text", "name": "RowName", "bind": "${row.name}" },
+                                            { "elementType": "text", "name": "RowPrice", "bind": "${row.price}", "format": "currency" }
+                                        ],
+                                        "editFields": [
+                                            { "elementType": "input", "name": "RowEditCode", "inputType": "text", "bind": "${updatedProductCode}", "onChange": { "steps": [{ "setState": { "updatedProductCode": "${value}" } }] } },
+                                            { "elementType": "input", "name": "RowEditName", "inputType": "text", "bind": "${updatedProductName}", "onChange": { "steps": [{ "setState": { "updatedProductName": "${value}" } }] } },
+                                            { "elementType": "input", "name": "RowEditPrice", "inputType": "number", "bind": "${updatedProductPrice}", "onChange": { "steps": [{ "setState": { "updatedProductPrice": "${value}" } }] } }
+                                        ],
+                                        "rowActions": [
+                                            {
+                                                "elementType": "button",
+                                                "name": "ViewProductButton",
+                                                "label": "View",
+                                                "visible": "${editingProductId !== row.id}",
+                                                "onClick": {
+                                                    "action": "onClickView",
+                                                    "steps": [
+                                                        { "setState": { "selectedProductId": "${row.id}" } },
+                                                        { "triggerWorkflow": "onClickView" }
+                                                    ]
+                                                }
+                                            },
+                                            {
+                                                "elementType": "button",
+                                                "name": "EditProductButton",
+                                                "label": "Edit",
+                                                "visible": "${editingProductId !== row.id}",
+                                                "onClick": {
+                                                    "action": "startEditProduct",
+                                                    "steps": [
+                                                        { "setState": { "editingProductId": "${row.id}", "selectedProductId": "${row.id}", "updatedProductCode": "${row.code}", "updatedProductName": "${row.name}", "updatedProductPrice": "${row.price}" } }
+                                                    ]
+                                                }
+                                            },
+                                            {
+                                                "elementType": "button",
+                                                "name": "SaveProductButton",
+                                                "label": "Save",
+                                                "visible": "${editingProductId === row.id}",
+                                                "onClick": {
+                                                    "action": "onClickUpdate",
+                                                    "steps": [
+                                                        { "triggerWorkflow": "onClickUpdate" },
+                                                        { "setState": { "editingProductId": null } }
+                                                    ]
+                                                }
+                                            },
+                                            {
+                                                "elementType": "button",
+                                                "name": "CancelEditProductButton",
+                                                "label": "Cancel",
+                                                "visible": "${editingProductId === row.id}",
+                                                "onClick": {
+                                                    "action": "cancelEditProduct",
+                                                    "steps": [
+                                                        { "setState": { "editingProductId": null } }
+                                                    ]
+                                                }
+                                            },
+                                            {
+                                                "elementType": "button",
+                                                "name": "DeleteProductButton",
+                                                "label": "Delete",
+                                                "visible": "${editingProductId !== row.id}",
+                                                "onClick": {
+                                                    "action": "confirmDeleteProduct",
+                                                    "steps": [
+                                                        { "setState": { "selectedProductId": "${row.id}", "isDeleteConfirmOpen": true } }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "elementType": "confirmDialog",
+                                    "name": "DeleteProductConfirmDialog",
+                                    "visible": "${isDeleteConfirmOpen}",
+                                    "message": "Are you sure you want to delete this product?",
+                                    "onConfirm": {
+                                        "action": "onClickDelete",
+                                        "steps": [
+                                            { "triggerWorkflow": "onClickDelete" },
+                                            { "setState": { "isDeleteConfirmOpen": false, "selectedProductId": null } }
+                                        ]
+                                    },
+                                    "onCancel": {
+                                        "steps": [
+                                            { "setState": { "isDeleteConfirmOpen": false } }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
                     "type": "modal",
                     "name": "ViewProductModal",
                     "description": "Show View Product Modal",
-                    "jsonSchema": {},
-                    "uiElements": []
+                    "jsonSchema": {
+                        "type": "object",
+                        "properties": {
+                            "isOpen": {
+                                "type": "boolean",
+                                "default": false,
+                                "description": "สถานะเปิด/ปิด modal — เปิดอัตโนมัติเมื่อ workflow onClickView ทำงานสำเร็จ"
+                            },
+                            "product": {
+                                "type": "object",
+                                "description": "ข้อมูล product ที่ถูกเลือกดู ผูกกับผลลัพธ์จาก workflow onClickView",
+                                "properties": {
+                                    "id": { "type": "number" },
+                                    "code": { "type": "string" },
+                                    "name": { "type": "string" },
+                                    "price": { "type": "number" }
+                                },
+                                "required": ["id", "code", "name", "price"]
+                            }
+                        },
+                        "required": ["product"]
+                    },
+                    "uiElements": [
+                        {
+                            "elementType": "overlay",
+                            "name": "ViewProductModalBackdrop",
+                            "visible": "${isOpen}",
+                            "onClick": {
+                                "action": "closeModal",
+                                "steps": [{ "setState": { "isOpen": false } }]
+                            }
+                        },
+                        {
+                            "elementType": "modal",
+                            "name": "ViewProductModalContainer",
+                            "visible": "${isOpen}",
+                            "size": "small",
+                            "children": [
+                                {
+                                    "elementType": "modalHeader",
+                                    "name": "ViewProductModalHeader",
+                                    "props": { "title": "Product Details" },
+                                    "children": [
+                                        {
+                                            "elementType": "button",
+                                            "name": "CloseButton",
+                                            "icon": "close",
+                                            "onClick": {
+                                                "action": "closeModal",
+                                                "steps": [{ "setState": { "isOpen": false } }]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "elementType": "modalBody",
+                                    "name": "ViewProductModalBody",
+                                    "children": [
+                                        { "elementType": "field", "name": "ProductCodeField", "label": "Code", "bind": "${product.code}" },
+                                        { "elementType": "field", "name": "ProductNameField", "label": "Name", "bind": "${product.name}" },
+                                        { "elementType": "field", "name": "ProductPriceField", "label": "Price", "bind": "${product.price}", "format": "currency" }
+                                    ]
+                                },
+                                {
+                                    "elementType": "modalFooter",
+                                    "name": "ViewProductModalFooter",
+                                    "children": [
+                                        {
+                                            "elementType": "button",
+                                            "name": "CloseModalButton",
+                                            "label": "Close",
+                                            "onClick": {
+                                                "action": "closeModal",
+                                                "steps": [{ "setState": { "isOpen": false } }]
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
                     "type": "global-alert",
                     "name": "InfoAlert",
                     "description": "Show Info Alert",
-                    "jsonSchema": {},
-                    "uiElements": []
+                    "jsonSchema": {
+                        "type": "object",
+                        "properties": {
+                            "isVisible": {
+                                "type": "boolean",
+                                "default": false,
+                                "description": "สถานะแสดง/ซ่อน alert — ถูก trigger จากผลลัพธ์ของ workflow ใดๆ (เช่น create/update/delete สำเร็จหรือ error)"
+                            },
+                            "alertType": {
+                                "type": "string",
+                                "enum": ["info", "success", "warning", "error"],
+                                "default": "info"
+                            },
+                            "message": {
+                                "type": "string",
+                                "default": "",
+                                "description": "ข้อความที่แสดง มักผูกกับ responseJson.message จาก backendServices"
+                            },
+                            "autoDismissMs": {
+                                "type": "number",
+                                "default": 3000,
+                                "description": "ระยะเวลาก่อนปิด alert อัตโนมัติ (ms) — 0 = ไม่ปิดอัตโนมัติ"
+                            }
+                        },
+                        "required": ["isVisible", "message"]
+                    },
+                    "uiElements": [
+                        {
+                            "elementType": "globalAlert",
+                            "name": "InfoAlertBanner",
+                            "position": "top-right",
+                            "visible": "${isVisible}",
+                            "props": {
+                                "type": "${alertType}"
+                            },
+                            "children": [
+                                { "elementType": "icon", "name": "AlertIcon", "bind": "${alertType}" },
+                                { "elementType": "text", "name": "AlertMessage", "bind": "${message}" },
+                                {
+                                    "elementType": "button",
+                                    "name": "DismissAlertButton",
+                                    "icon": "close",
+                                    "onClick": {
+                                        "action": "dismissAlert",
+                                        "steps": [{ "setState": { "isVisible": false } }]
+                                    }
+                                }
+                            ],
+                            "onMount": {
+                                "action": "autoDismiss",
+                                "condition": "${autoDismissMs > 0}",
+                                "steps": [
+                                    { "delay": "${autoDismissMs}" },
+                                    { "setState": { "isVisible": false } }
+                                ]
+                            }
+                        }
+                    ]
                 },
                 {
                     "type": "component",
                     "name": "CalendarComponent",
                     "description": "Show Calendar Component",
-                    "jsonSchema": {},
-                    "uiElements": []
+                    "jsonSchema": {
+                        "type": "object",
+                        "properties": {
+                            "selectedDate": {
+                                "type": ["string", "null"],
+                                "format": "date",
+                                "default": null
+                            },
+                            "view": {
+                                "type": "string",
+                                "enum": ["month", "year", "decade"],
+                                "default": "month"
+                            },
+                            "events": {
+                                "type": "array",
+                                "description": "รายการ event/marker ที่แสดงจุดบนปฏิทินในแต่ละวัน เช่น deployment date, task due date",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "date": { "type": "string", "format": "date" },
+                                        "label": { "type": "string" },
+                                        "type": { "type": "string", "enum": ["deployment", "task", "meeting"] }
+                                    },
+                                    "required": ["date"]
+                                },
+                                "default": []
+                            },
+                            "minDate": { "type": ["string", "null"], "format": "date", "default": null },
+                            "maxDate": { "type": ["string", "null"], "format": "date", "default": null }
+                        },
+                        "required": ["selectedDate"]
+                    },
+                    "uiElements": [
+                        {
+                            "elementType": "calendar",
+                            "name": "CalendarComponentView",
+                            "library": "react-calendar",
+                            "props": {
+                                "value": "${selectedDate}",
+                                "view": "${view}",
+                                "minDate": "${minDate}",
+                                "maxDate": "${maxDate}"
+                            },
+                            "tileContent": {
+                                "elementType": "eventMarker",
+                                "dataSource": "${events}",
+                                "matchBy": "date",
+                                "itemTemplate": {
+                                    "elementType": "dot",
+                                    "name": "EventDot",
+                                    "bind": "event",
+                                    "props": {
+                                        "color": "${event.type === 'deployment' ? 'blue' : event.type === 'meeting' ? 'purple' : 'green'}"
+                                    },
+                                    "tooltip": "${event.label}"
+                                }
+                            },
+                            "onChange": {
+                                "action": "selectDate",
+                                "steps": [
+                                    { "setState": { "selectedDate": "${value}" } }
+                                ]
+                            }
+                        }
+                    ]
                 }
             ],
             "backendServices": {
