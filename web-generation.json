@@ -14,7 +14,7 @@
                 {
                     "type": "mainPage",
                     "name": "MainPage",
-                    "description": "Show Main Page",
+                    "description": "Show Main Page — Next.js layout (header + left side menu) ที่ครอบทุก route จริงของระบบ ไม่ swap component ด้วย client state",
                     "jsonSchema": {
                         "type": "object",
                         "properties": {
@@ -25,30 +25,29 @@
                             },
                             "menuItems": {
                                 "type": "array",
-                                "description": "รายการเมนูฝั่งซ้าย สร้างจาก components ที่ type = page ของแต่ละ config ใน template",
+                                "description": "รายการเมนูฝั่งซ้าย — path คือ Next.js route จริง (เช่น /products) ที่มี page component ของตัวเองอยู่แล้วตาม App Router file-based routing",
                                 "items": {
                                     "type": "object",
                                     "properties": {
                                         "id": { "type": "string" },
                                         "label": { "type": "string" },
                                         "icon": { "type": "string" },
-                                        "componentName": {
+                                        "path": {
                                             "type": "string",
-                                            "description": "ชื่อ page component (ตรงกับ components[].name ที่ type = page) ที่จะ render ฝั่งขวาเมื่อเลือกเมนูนี้"
-                                        },
-                                        "path": { "type": "string" }
+                                            "description": "Next.js route path จริง เช่น /products — navigate ด้วย <Link>/router.push ไม่ใช่ client-state swap"
+                                        }
                                     },
-                                    "required": ["id", "label", "componentName"]
+                                    "required": ["id", "label", "path"]
                                 }
                             },
-                            "selectedMenuId": {
-                                "type": ["string", "null"],
-                                "default": null,
-                                "description": "id ของเมนูที่กำลังถูกเลือกอยู่ในปัจจุบัน"
+                            "currentPath": {
+                                "type": "string",
+                                "default": "/",
+                                "description": "pathname ปัจจุบันจาก Next.js usePathname() — เป็น source of truth เดียวสำหรับ active menu item และ breadcrumb (ไม่มี selectedMenuId แยกต่างหาก เพื่อไม่ให้ state สอง source ขัดกันเมื่อผู้ใช้กด back/forward หรือพิมพ์ URL เอง)"
                             },
                             "breadcrumb": {
                                 "type": "array",
-                                "description": "breadcrumb path ที่ update ทุกครั้งที่เลือกเมนูฝั่งซ้าย",
+                                "description": "คำนวณจาก currentPath โดยจับคู่กับ menuItems (Home + เมนูที่ path ตรง/เป็น prefix ของ currentPath) — ไม่ set ตรงๆ จาก onClick อีกต่อไป เพื่อให้ตรงกับ URL เสมอแม้ผู้ใช้ deep-link เข้ามาโดยตรง",
                                 "items": {
                                     "type": "object",
                                     "properties": {
@@ -57,7 +56,7 @@
                                     },
                                     "required": ["label"]
                                 },
-                                "default": [{ "label": "Home", "path": "/" }]
+                                "derivedFrom": "currentPath + menuItems"
                             },
                             "isSidebarOpen": {
                                 "type": "boolean",
@@ -71,7 +70,7 @@
                                 "description": "breakpoint ปัจจุบัน ใช้ควบคุม responsive behavior ของ header และ sidebar"
                             }
                         },
-                        "required": ["menuItems", "breadcrumb"]
+                        "required": ["menuItems", "currentPath"]
                     },
                     "uiElements": [
                         {
@@ -121,23 +120,18 @@
                             "itemTemplate": {
                                 "elementType": "menuItem",
                                 "bind": "item",
+                                "wrapper": "nextLink",
                                 "props": {
                                     "label": "${item.label}",
                                     "icon": "${item.icon}",
-                                    "active": "${item.id === selectedMenuId}"
+                                    "href": "${item.path}",
+                                    "active": "${item.path === currentPath}"
                                 },
                                 "onClick": {
-                                    "action": "selectMenu",
+                                    "action": "navigateToMenu",
+                                    "description": "ปล่อยให้ Next.js <Link> จัดการ navigation จริง ที่นี่แค่ปิด sidebar บนจอเล็กหลังเลือกเมนู",
                                     "steps": [
-                                        { "setState": { "selectedMenuId": "${item.id}" } },
-                                        { "setState": { "breadcrumb": [{ "label": "Home", "path": "/" }, { "label": "${item.label}", "path": "${item.path}" }] } },
-                                        { "setState": { "isSidebarOpen": false }, "condition": "${viewport !== 'desktop'}" },
-                                        {
-                                            "renderUI": {
-                                                "target": "MainContentArea",
-                                                "component": "${item.componentName}"
-                                            }
-                                        }
+                                        { "setState": { "isSidebarOpen": false }, "condition": "${viewport !== 'desktop'}" }
                                     ]
                                 }
                             }
@@ -174,15 +168,9 @@
                                     }
                                 },
                                 {
-                                    "elementType": "dynamicComponent",
-                                    "name": "PageContent",
-                                    "description": "แสดง page component ฝั่งขวาตาม selectedMenuId — component คือ page ของแต่ละ config ที่สร้างไว้ใน components list",
-                                    "component": "${selectedMenuId ? menuItems.find(m => m.id === selectedMenuId).componentName : defaultComponentName}",
-                                    "fallback": {
-                                        "elementType": "emptyState",
-                                        "name": "NoMenuSelectedState",
-                                        "message": "กรุณาเลือกเมนูฝั่งซ้ายเพื่อแสดงเนื้อหา"
-                                    }
+                                    "elementType": "pageSlot",
+                                    "name": "MainContentSlot",
+                                    "description": "Next.js App Router layout children slot — Next.js resolve page component จาก currentPath เองตาม file-based routing (เช่น app/products/page.tsx สำหรับ /products) ไม่ต้องมี logic เลือก component ในระดับ UI schema"
                                 }
                             ]
                         }
@@ -672,7 +660,7 @@
                         {
                             "name": "getProducts",
                             "method": "GET",
-                            "path": "/products",
+                            "path": "/api/products",
                             "queryParameters": {},
                             "payload": {},
                             "logicPipeline": [
@@ -696,7 +684,7 @@
                         {
                             "name": "getProductsById",
                             "method": "GET",
-                            "path": "/products/:id",
+                            "path": "/api/products/:id",
                             "queryParameters": {},
                             "payload": {},
                             "logicPipeline": [
@@ -725,7 +713,7 @@
                         {
                             "name": "searchProducts",
                             "method": "GET",
-                            "path": "/products/search",
+                            "path": "/api/products/search",
                             "queryParameters": {
                                 "code": {
                                     "type": "string",
@@ -739,7 +727,14 @@
                             "payload": {},
                             "logicPipeline": [
                                 {
-                                    "filterBy": "code ILIKE :code AND name ILIKE :name",
+                                    "filterBy": {
+                                        "combinator": "AND",
+                                        "description": "แต่ละ condition จะถูกข้ามไปถ้า query parameter ที่ผูกไว้เป็นค่าว่าง/ไม่ถูกส่งมา (ป้องกันปัญหา ILIKE '' ที่ไม่ match อะไรเลยเมื่อผู้ใช้กรอกแค่ code หรือ name อย่างใดอย่างหนึ่ง)",
+                                        "conditions": [
+                                            { "field": "code", "operator": "ILIKE", "value": "%${code}%", "skipIfEmpty": true },
+                                            { "field": "name", "operator": "ILIKE", "value": "%${name}%", "skipIfEmpty": true }
+                                        ]
+                                    },
                                     "orderBy": "code",
                                     "orderByType": "asc",
                                     "assignTo": "products"
@@ -756,7 +751,7 @@
                         {
                             "name": "createProduct",
                             "method": "POST",
-                            "path": "/products",
+                            "path": "/api/products",
                             "queryParameters": {},
                             "payload": {
                                 "code": "P001",
@@ -808,7 +803,7 @@
                         {
                             "name": "updateProduct",
                             "method": "PUT",
-                            "path": "/products/:id",
+                            "path": "/api/products/:id",
                             "queryParameters": {},
                             "payload": {
                                 "code": "P001",
@@ -863,7 +858,7 @@
                         {
                             "name": "deleteProduct",
                             "method": "DELETE",
-                            "path": "/products/:id",
+                            "path": "/api/products/:id",
                             "queryParameters": {},
                             "payload": {},
                             "logicPipeline": [
@@ -906,10 +901,19 @@
                                 {
                                     "apiCall": {
                                         "method": "GET",
-                                        "path": "/products"
+                                        "path": "/api/products"
                                     },
                                     "params": {},
-                                    "payload": {}
+                                    "payload": {},
+                                    "onError": [
+                                        { "responseMapping": { "errorMessage": "${response.error.message}" } },
+                                        {
+                                            "renderUI": {
+                                                "component": "InfoAlert",
+                                                "props": { "isVisible": true, "alertType": "error", "message": "${errorMessage}" }
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "responseMapping": {
@@ -932,13 +936,22 @@
                                 {
                                     "apiCall": {
                                         "method": "GET",
-                                        "path": "/products/search"
+                                        "path": "/api/products/search"
                                     },
                                     "params": {
                                         "code": "${searchCode}",
                                         "name": "${searchName}"
                                     },
-                                    "payload": {}
+                                    "payload": {},
+                                    "onError": [
+                                        { "responseMapping": { "errorMessage": "${response.error.message}" } },
+                                        {
+                                            "renderUI": {
+                                                "component": "InfoAlert",
+                                                "props": { "isVisible": true, "alertType": "error", "message": "${errorMessage}" }
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "responseMapping": {
@@ -961,12 +974,21 @@
                                 {
                                     "apiCall": {
                                         "method": "GET",
-                                        "path": "/products/:id"
+                                        "path": "/api/products/:id"
                                     },
                                     "params": {
                                         "id": "${selectedProductId}"
                                     },
-                                    "payload": {}
+                                    "payload": {},
+                                    "onError": [
+                                        { "responseMapping": { "errorMessage": "${response.error.message}" } },
+                                        {
+                                            "renderUI": {
+                                                "component": "InfoAlert",
+                                                "props": { "isVisible": true, "alertType": "error", "message": "${errorMessage}" }
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "responseMapping": {
@@ -977,6 +999,7 @@
                                     "renderUI": {
                                         "component": "ViewProductModal",
                                         "props": {
+                                            "isOpen": true,
                                             "product": "${product}"
                                         }
                                     }
@@ -989,18 +1012,42 @@
                                 {
                                     "apiCall": {
                                         "method": "POST",
-                                        "path": "/products"
+                                        "path": "/api/products"
                                     },
                                     "params": {},
                                     "payload": {
                                         "code": "${newProductCode}",
                                         "name": "${newProductName}",
                                         "price": "${newProductPrice}"
-                                    }
+                                    },
+                                    "onError": [
+                                        { "responseMapping": { "errorMessage": "${response.error.message}" } },
+                                        {
+                                            "renderUI": {
+                                                "component": "InfoAlert",
+                                                "props": { "isVisible": true, "alertType": "error", "message": "${errorMessage}" }
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "responseMapping": {
-                                        "product": "${response.data}"
+                                        "product": "${response.data}",
+                                        "successMessage": "${response.message}"
+                                    }
+                                },
+                                {
+                                    "apiCall": {
+                                        "method": "GET",
+                                        "path": "/api/products"
+                                    },
+                                    "params": {},
+                                    "payload": {},
+                                    "description": "โหลดรายการ product ใหม่หลัง create สำเร็จ เพื่อให้ตารางแสดงรายการล่าสุด"
+                                },
+                                {
+                                    "responseMapping": {
+                                        "products": "${response.data}"
                                     }
                                 },
                                 {
@@ -1009,6 +1056,12 @@
                                         "props": {
                                             "products": "${products}"
                                         }
+                                    }
+                                },
+                                {
+                                    "renderUI": {
+                                        "component": "InfoAlert",
+                                        "props": { "isVisible": true, "alertType": "success", "message": "${successMessage}" }
                                     }
                                 }
                             ]
@@ -1019,7 +1072,7 @@
                                 {
                                     "apiCall": {
                                         "method": "PUT",
-                                        "path": "/products/:id"
+                                        "path": "/api/products/:id"
                                     },
                                     "params": {
                                         "id": "${selectedProductId}"
@@ -1028,11 +1081,35 @@
                                         "code": "${updatedProductCode}",
                                         "name": "${updatedProductName}",
                                         "price": "${updatedProductPrice}"
-                                    }
+                                    },
+                                    "onError": [
+                                        { "responseMapping": { "errorMessage": "${response.error.message}" } },
+                                        {
+                                            "renderUI": {
+                                                "component": "InfoAlert",
+                                                "props": { "isVisible": true, "alertType": "error", "message": "${errorMessage}" }
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "responseMapping": {
-                                        "product": "${response.data}"
+                                        "product": "${response.data}",
+                                        "successMessage": "${response.message}"
+                                    }
+                                },
+                                {
+                                    "apiCall": {
+                                        "method": "GET",
+                                        "path": "/api/products"
+                                    },
+                                    "params": {},
+                                    "payload": {},
+                                    "description": "โหลดรายการ product ใหม่หลัง update สำเร็จ เพื่อให้ตารางแสดงข้อมูลล่าสุด"
+                                },
+                                {
+                                    "responseMapping": {
+                                        "products": "${response.data}"
                                     }
                                 },
                                 {
@@ -1041,6 +1118,12 @@
                                         "props": {
                                             "products": "${products}"
                                         }
+                                    }
+                                },
+                                {
+                                    "renderUI": {
+                                        "component": "InfoAlert",
+                                        "props": { "isVisible": true, "alertType": "success", "message": "${successMessage}" }
                                     }
                                 }
                             ]
@@ -1051,16 +1134,40 @@
                                 {
                                     "apiCall": {
                                         "method": "DELETE",
-                                        "path": "/products/:id"
+                                        "path": "/api/products/:id"
                                     },
                                     "params": {
                                         "id": "${selectedProductId}"
                                     },
-                                    "payload": {}
+                                    "payload": {},
+                                    "onError": [
+                                        { "responseMapping": { "errorMessage": "${response.error.message}" } },
+                                        {
+                                            "renderUI": {
+                                                "component": "InfoAlert",
+                                                "props": { "isVisible": true, "alertType": "error", "message": "${errorMessage}" }
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "responseMapping": {
-                                        "product": "${response.data}"
+                                        "product": "${response.data}",
+                                        "successMessage": "${response.message}"
+                                    }
+                                },
+                                {
+                                    "apiCall": {
+                                        "method": "GET",
+                                        "path": "/api/products"
+                                    },
+                                    "params": {},
+                                    "payload": {},
+                                    "description": "โหลดรายการ product ใหม่หลัง delete สำเร็จ เพื่อให้ตารางไม่แสดง row ที่ถูกลบไปแล้ว"
+                                },
+                                {
+                                    "responseMapping": {
+                                        "products": "${response.data}"
                                     }
                                 },
                                 {
@@ -1069,6 +1176,12 @@
                                         "props": {
                                             "products": "${products}"
                                         }
+                                    }
+                                },
+                                {
+                                    "renderUI": {
+                                        "component": "InfoAlert",
+                                        "props": { "isVisible": true, "alertType": "success", "message": "${successMessage}" }
                                     }
                                 }
                             ]
