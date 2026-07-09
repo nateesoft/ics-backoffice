@@ -5,6 +5,7 @@ import FlowBreadcrumb from '@/components/flow-generate/FlowBreadcrumb';
 import { FlowUiItem, UI_TYPES, PAGE_KINDS, UiType, PageKind } from '@/types/flowUi';
 import { flowUiStore } from '@/lib/flowUiStore';
 import { flowProjectsStore } from '@/lib/flowItemsStore';
+import RoleTagInput from '@/components/flow-generate/RoleTagInput';
 
 const inputCls = "w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm bg-white";
 const labelCls = "block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide";
@@ -20,6 +21,7 @@ export default function FlowUiDetailPage() {
   const [uiType, setUiType] = useState<UiType>('Page');
   const [pageKind, setPageKind] = useState<PageKind>('Main Page');
   const [uiPath, setUiPath] = useState('');
+  const [roles, setRoles] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
 
@@ -32,6 +34,7 @@ export default function FlowUiDetailPage() {
       setUiType(u.uiType);
       setPageKind(u.pageKind ?? 'Main Page');
       setUiPath(u.uiPath ?? '');
+      setRoles(u.roles ?? []);
       const project = flowProjectsStore.getById(u.projectId);
       setProjectName(project ? project.name : 'Unknown Project');
     }
@@ -51,6 +54,7 @@ export default function FlowUiDetailPage() {
       uiType,
       pageKind: showPageKind ? pageKind : null,
       uiPath: showUiPath ? uiPath.trim() : null,
+      roles: showPageKind ? roles : [],
     });
     if (updated) {
       setUi(updated);
@@ -121,6 +125,8 @@ export default function FlowUiDetailPage() {
             <input type="text" className={`${inputCls} font-mono`} value={uiPath} onChange={e => setUiPath(e.target.value)} />
           </div>
         )}
+
+        {showPageKind && <RoleTagInput roles={roles} onChange={setRoles} />}
 
         {error && (
           <div className="bg-red-50 text-red-600 text-sm px-3 py-2 rounded-lg border border-red-100">{error}</div>

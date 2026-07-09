@@ -3,6 +3,7 @@ export type PageKind = 'Main Page' | 'Page Content';
 
 export const UI_TYPES: UiType[] = ['Page', 'Component'];
 export const PAGE_KINDS: PageKind[] = ['Main Page', 'Page Content'];
+export const PRESET_ROLES = ['User', 'Admin', 'Manager'];
 
 export interface FlowUiItem {
   id: string;
@@ -12,6 +13,7 @@ export interface FlowUiItem {
   uiType: UiType;
   pageKind: PageKind | null;
   uiPath: string | null;
+  roles: string[];
   createdAt: string;
   updatedAt: string;
 }

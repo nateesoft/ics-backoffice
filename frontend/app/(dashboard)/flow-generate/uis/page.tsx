@@ -88,6 +88,13 @@ export default function FlowGenerateUisPage() {
               </div>
               <h3 className="font-semibold text-slate-800 truncate">{u.name}</h3>
               <p className="text-sm text-slate-500 line-clamp-2 flex-1">{u.description || 'ไม่มีรายละเอียด'}</p>
+              {u.roles && u.roles.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {u.roles.map(role => (
+                    <span key={role} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600">{role}</span>
+                  ))}
+                </div>
+              )}
               <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-50">
                 <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 font-medium truncate">
                   {projectNames[u.projectId] ?? 'Unknown Project'}

@@ -1,4 +1,4 @@
-export type FlowCanvasRefType = 'ui' | 'api' | 'condition';
+export type FlowCanvasRefType = 'ui' | 'api' | 'condition' | 'actor';
 
 export interface FlowCanvasNodeData {
   id: string;
@@ -6,6 +6,7 @@ export interface FlowCanvasNodeData {
   refId: string | null;
   position: { x: number; y: number };
   label?: string;
+  roles?: string[];
 }
 
 export interface FlowCanvasEdgeData {

@@ -17,7 +17,8 @@ function readAll(): FlowUiItem[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const items: FlowUiItem[] = raw ? JSON.parse(raw) : [];
+    return items.map(item => ({ ...item, roles: item.roles ?? [] }));
   } catch {
     return [];
   }
@@ -34,6 +35,7 @@ type CreateUiData = {
   uiType: FlowUiItem['uiType'];
   pageKind: FlowUiItem['pageKind'];
   uiPath: FlowUiItem['uiPath'];
+  roles: FlowUiItem['roles'];
 };
 
 export const flowUiStore = {

@@ -5,6 +5,7 @@ import { FlowUiItem, UI_TYPES, PAGE_KINDS, UiType, PageKind } from '@/types/flow
 import { FlowProject } from '@/types/flowProject';
 import { flowProjectsStore } from '@/lib/flowItemsStore';
 import { flowUiStore } from '@/lib/flowUiStore';
+import RoleTagInput from './RoleTagInput';
 
 interface NewUiModalProps {
   onClose: () => void;
@@ -22,6 +23,7 @@ export default function NewUiModal({ onClose, onCreated }: NewUiModalProps) {
   const [uiType, setUiType] = useState<UiType>('Page');
   const [pageKind, setPageKind] = useState<PageKind>('Main Page');
   const [uiPath, setUiPath] = useState('');
+  const [roles, setRoles] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [created, setCreated] = useState<FlowUiItem | null>(null);
 
@@ -44,6 +46,7 @@ export default function NewUiModal({ onClose, onCreated }: NewUiModalProps) {
       uiType,
       pageKind: showPageKind ? pageKind : null,
       uiPath: showUiPath ? uiPath.trim() : null,
+      roles: showPageKind ? roles : [],
     });
     setCreated(ui);
   }
@@ -142,6 +145,8 @@ export default function NewUiModal({ onClose, onCreated }: NewUiModalProps) {
             />
           </div>
         )}
+
+        {showPageKind && <RoleTagInput roles={roles} onChange={setRoles} />}
 
         {error && (
           <div className="bg-red-50 text-red-600 text-sm px-3 py-2 rounded-lg border border-red-100">{error}</div>
