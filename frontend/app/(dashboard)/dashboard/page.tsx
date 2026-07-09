@@ -117,7 +117,10 @@ function IssueCard({ issue, onView, ghost }: { issue: Issue; onView?: () => void
         transition-shadow`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <span className="text-sm font-medium text-slate-800 leading-tight">{issue.projectName}</span>
+        <div className="min-w-0">
+          <span className="text-[10px] font-mono text-slate-400 mr-1.5 select-text">#{issue.id}</span>
+          <span className="text-sm font-medium text-slate-800 leading-tight">{issue.projectName}</span>
+        </div>
         <span className={`text-xs px-2 py-0.5 rounded-full border flex-shrink-0 ${PRIORITY_COLORS[issue.priority]}`}>{issue.priority}</span>
       </div>
       {issue.tags && issue.tags.length > 0 && (

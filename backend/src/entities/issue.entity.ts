@@ -22,6 +22,7 @@ export enum TaskStatus {
   NEW = 'New',
   TODO = 'Todo',
   IN_PROGRESS = 'InProgress',
+  REVIEW = 'Review',
   TEST = 'Test',
   DONE = 'Done',
 }

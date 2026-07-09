@@ -1,7 +1,7 @@
 export type CodeType = 'Application' | 'Web Application' | 'Service Support';
 export type Priority = 'Critical' | 'High' | 'Medium' | 'Low';
 export type WorkPeriodUnit = 'Days' | 'Hours';
-export type TaskStatus = 'New' | 'Todo' | 'InProgress' | 'Test' | 'Done';
+export type TaskStatus = 'New' | 'Todo' | 'InProgress' | 'Review' | 'Test' | 'Done';
 export type DeploymentStatus = 'Wait Approve' | 'Wait Deploy' | 'Deployed';
 export type IssueTag = 'Feature' | 'Bug' | 'Work' | 'Story' | 'Job' | 'Service';
 
@@ -37,7 +37,7 @@ export type CreateIssueDto = Omit<Issue, 'id' | 'isCancelled' | 'createdAt' | 'u
 export const CODE_TYPES: CodeType[] = ['Application', 'Web Application', 'Service Support'];
 export const PRIORITIES: Priority[] = ['Critical', 'High', 'Medium', 'Low'];
 export const WORK_PERIOD_UNITS: WorkPeriodUnit[] = ['Days', 'Hours'];
-export const TASK_STATUSES: TaskStatus[] = ['New', 'Todo', 'InProgress', 'Test', 'Done'];
+export const TASK_STATUSES: TaskStatus[] = ['New', 'Todo', 'InProgress', 'Review', 'Test', 'Done'];
 export const DEPLOYMENT_STATUSES: DeploymentStatus[] = ['Wait Approve', 'Wait Deploy', 'Deployed'];
 export const ISSUE_TAGS: IssueTag[] = ['Feature', 'Bug', 'Work', 'Story', 'Job', 'Service'];
 
@@ -61,6 +61,7 @@ export const STATUS_COLORS: Record<TaskStatus, string> = {
   New: 'bg-gray-100 text-gray-700',
   Todo: 'bg-blue-100 text-blue-700',
   InProgress: 'bg-purple-100 text-purple-700',
+  Review: 'bg-pink-100 text-pink-700',
   Test: 'bg-yellow-100 text-yellow-700',
   Done: 'bg-green-100 text-green-700',
 };
