@@ -1,29 +1,41 @@
 'use client';
-import { useState } from 'react';
-import Modal from '@/components/ui/Modal';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import FlowBreadcrumb from '@/components/flow-generate/FlowBreadcrumb';
 import {
   FlowProject, CssFramework, SupportedLanguage, FrontendFramework, BackendFramework, DatabaseType, ThemeMode,
   CSS_FRAMEWORKS, SUPPORTED_LANGUAGES, FRONTEND_FRAMEWORKS, BACKEND_FRAMEWORKS, DATABASES, THEMES,
   CURRENCY_FORMATS, DATE_FORMATS,
 } from '@/types/flowProject';
-import { FLOW_TEMPLATES, getFlowTemplate } from '@/lib/flowTemplates';
+import { getFlowTemplate } from '@/lib/flowTemplates';
 import { FlowItemsStore } from '@/lib/flowItemsStore';
-
-interface NewProjectModalProps {
-  store: FlowItemsStore;
-  modalTitle?: string;
-  onClose: () => void;
-  onCreated: (project: FlowProject) => void;
-}
 
 const inputCls = "w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm bg-white";
 const labelCls = "block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide";
 
-export default function NewProjectModal({ store, modalTitle = 'New Project', onClose, onCreated }: NewProjectModalProps) {
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
+interface FlowItemDetailPageProps {
+  store: FlowItemsStore;
+  basePath: string;
+  breadcrumbBase: BreadcrumbItem[];
+  pageTitle?: string;
+}
+
+export default function FlowItemDetailPage({
+  store,
+  basePath,
+  breadcrumbBase,
+  pageTitle = 'แก้ไขรายละเอียดโปรเจค',
+}: FlowItemDetailPageProps) {
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const [project, setProject] = useState<FlowProject | null | undefined>(undefined);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [templateId, setTemplateId] = useState('');
-  const [showTemplates, setShowTemplates] = useState(false);
   const [cssFramework, setCssFramework] = useState<CssFramework>('tailwind');
   const [supportedLanguages, setSupportedLanguages] = useState<SupportedLanguage[]>(['en', 'th']);
   const [defaultLanguage, setDefaultLanguage] = useState<SupportedLanguage>('en');
@@ -33,10 +45,25 @@ export default function NewProjectModal({ store, modalTitle = 'New Project', onC
   const [backendFramework, setBackendFramework] = useState<BackendFramework>('NestJS');
   const [database, setDatabase] = useState<DatabaseType>('PostgreSQL');
   const [theme, setTheme] = useState<ThemeMode>('light');
-  const [error, setError] = useState('');
-  const [created, setCreated] = useState<FlowProject | null>(null);
+  const [saved, setSaved] = useState(false);
 
-  const selectedTemplate = templateId ? getFlowTemplate(templateId) : null;
+  useEffect(() => {
+    const p = store.getById(params.id);
+    setProject(p);
+    if (p) {
+      setName(p.name);
+      setDescription(p.description);
+      setCssFramework(p.cssFramework);
+      setSupportedLanguages(p.supportedLanguages);
+      setDefaultLanguage(p.defaultLanguage);
+      setFormatDate(p.formatDate);
+      setCurrencyFormat(p.currencyFormat);
+      setFrontendFramework(p.frontendFramework);
+      setBackendFramework(p.backendFramework);
+      setDatabase(p.database);
+      setTheme(p.theme);
+    }
+  }, [store, params.id]);
 
   function toggleLanguage(lang: SupportedLanguage) {
     setSupportedLanguages(prev => {
@@ -48,13 +75,10 @@ export default function NewProjectModal({ store, modalTitle = 'New Project', onC
   }
 
   function handleSave() {
-    if (!name.trim()) { setError('กรุณากรอกชื่อโปรเจค'); return; }
-    if (!templateId) { setError('กรุณาเลือก Template'); return; }
-    setError('');
-    const project = store.create({
+    if (!project || !name.trim()) return;
+    const updated = store.update(project.id, {
       name: name.trim(),
       description: description.trim(),
-      templateId,
       cssFramework,
       supportedLanguages,
       defaultLanguage,
@@ -65,61 +89,56 @@ export default function NewProjectModal({ store, modalTitle = 'New Project', onC
       database,
       theme,
     });
-    setCreated(project);
+    if (updated) {
+      setProject(updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    }
   }
 
-  if (created) {
+  if (project === undefined) return null;
+
+  if (project === null) {
     return (
-      <Modal title="สร้างโปรเจคสำเร็จ" onClose={() => onCreated(created)} size="md">
-        <div className="flex flex-col items-center gap-3 py-4 text-center">
-          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-            <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <p className="text-sm font-medium text-slate-700">
-            สร้างโปรเจค &ldquo;{created.name}&rdquo; สำเร็จแล้ว
-          </p>
-          <p className="text-xs text-slate-400">กดปุ่มด้านล่างเพื่อเข้าไปยังหน้ารายละเอียดโปรเจค</p>
+      <div className="space-y-5">
+        <FlowBreadcrumb items={[...breadcrumbBase, { label: 'Not Found' }]} />
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-3 bg-white rounded-2xl border border-slate-100">
+          <h2 className="text-base font-semibold text-slate-700">ไม่พบโปรเจคนี้</h2>
           <button
-            onClick={() => onCreated(created)}
-            className="mt-2 px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition"
+            onClick={() => router.push(basePath)}
+            className="mt-1 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition"
           >
-            ไปยังหน้าโปรเจค
+            กลับไปหน้ารายการโปรเจค
           </button>
         </div>
-      </Modal>
+      </div>
     );
   }
 
-  return (
-    <Modal title={modalTitle} onClose={onClose} size="md">
-      <div className="space-y-4">
-        <div>
-          <label className={labelCls}>Project ID</label>
-          <input type="text" className={`${inputCls} bg-slate-50 text-slate-400`} value="จะถูกสร้างอัตโนมัติ (UUID)" disabled />
-        </div>
+  const template = getFlowTemplate(project.templateId);
 
+  return (
+    <div className="space-y-5 max-w-2xl">
+      <FlowBreadcrumb items={[...breadcrumbBase, { label: project.name }]} />
+
+      <div>
+        <h1 className="text-xl font-bold text-slate-800">{pageTitle}</h1>
+        <p className="text-slate-500 text-sm mt-0.5">Project ID: <span className="font-mono">{project.id}</span></p>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
         <div>
           <label className={labelCls}>ชื่อโปรเจค</label>
-          <input
-            type="text"
-            className={inputCls}
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="เช่น Inventory Management"
-            autoFocus
-          />
+          <input type="text" className={inputCls} value={name} onChange={e => setName(e.target.value)} />
         </div>
 
         <div>
           <label className={labelCls}>รายละเอียด</label>
           <textarea
             className={`${inputCls} resize-none`}
-            rows={3}
+            rows={4}
             value={description}
             onChange={e => setDescription(e.target.value)}
-            placeholder="อธิบายรายละเอียดโปรเจค..."
           />
         </div>
 
@@ -192,56 +211,24 @@ export default function NewProjectModal({ store, modalTitle = 'New Project', onC
         </div>
 
         <div>
-          <label className={labelCls}>Template สำหรับ Clone</label>
-          <div className="flex items-center gap-2">
-            <div className={`${inputCls} bg-slate-50 flex-1 truncate`}>
-              {selectedTemplate ? (
-                <span className="text-slate-700">{selectedTemplate.name} <span className="text-slate-400">({selectedTemplate.templateId})</span></span>
-              ) : (
-                <span className="text-slate-400">ยังไม่ได้เลือก Template</span>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowTemplates(v => !v)}
-              className="px-3 py-2 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 text-sm font-medium hover:bg-indigo-100 transition flex-shrink-0"
-            >
-              Browse
-            </button>
+          <label className={labelCls}>Template ที่ Clone มา</label>
+          <div className="px-3 py-2 rounded-lg border border-slate-100 bg-slate-50">
+            <p className="text-sm font-medium text-slate-700">{template ? template.name : project.templateId}</p>
+            {template && <p className="text-xs text-slate-500 mt-0.5">{template.description}</p>}
           </div>
-
-          {showTemplates && (
-            <div className="mt-2 border border-slate-200 rounded-lg divide-y divide-slate-100 max-h-56 overflow-y-auto">
-              {FLOW_TEMPLATES.map(t => (
-                <button
-                  key={t.templateId}
-                  type="button"
-                  onClick={() => { setTemplateId(t.templateId); setShowTemplates(false); }}
-                  className={`w-full text-left px-3 py-2.5 hover:bg-indigo-50 transition ${templateId === t.templateId ? 'bg-indigo-50' : ''}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${templateId === t.templateId ? 'bg-indigo-500' : 'bg-slate-300'}`} />
-                    <span className="text-sm font-medium text-slate-800">{t.name}</span>
-                    <span className="text-xs text-slate-400">{t.templateId}</span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-0.5 ml-4">{t.description}</p>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
-        {error && (
-          <div className="bg-red-50 text-red-600 text-sm px-3 py-2 rounded-lg border border-red-100">{error}</div>
-        )}
-
-        <div className="flex justify-end gap-3 pt-1 border-t border-slate-100">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium hover:bg-slate-50 transition">Cancel</button>
-          <button type="button" onClick={handleSave} className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition">
+        <div className="flex items-center justify-end gap-3 pt-1 border-t border-slate-100">
+          {saved && <span className="text-sm text-green-600 font-medium">บันทึกแล้ว</span>}
+          <button
+            onClick={handleSave}
+            disabled={!name.trim()}
+            className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition disabled:opacity-40"
+          >
             บันทึก
           </button>
         </div>
       </div>
-    </Modal>
+    </div>
   );
 }
