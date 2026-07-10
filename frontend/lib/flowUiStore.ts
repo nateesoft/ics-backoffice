@@ -1,5 +1,5 @@
 'use client';
-import { FlowUiItem } from '@/types/flowUi';
+import { FlowUiItem, DEFAULT_JSON_SCHEMA, DEFAULT_UI_SCHEMA, DEFAULT_FORM_DATA } from '@/types/flowUi';
 
 const STORAGE_KEY = 'ics-backoffice:flow-generate-uis-v2';
 
@@ -18,7 +18,13 @@ function readAll(): FlowUiItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const items: FlowUiItem[] = raw ? JSON.parse(raw) : [];
-    return items.map(item => ({ ...item, roles: item.roles ?? [] }));
+    return items.map(item => ({
+      ...item,
+      roles: item.roles ?? [],
+      schema: item.schema ?? DEFAULT_JSON_SCHEMA,
+      uiSchema: item.uiSchema ?? DEFAULT_UI_SCHEMA,
+      data: item.data ?? DEFAULT_FORM_DATA,
+    }));
   } catch {
     return [];
   }
@@ -36,6 +42,9 @@ type CreateUiData = {
   pageKind: FlowUiItem['pageKind'];
   uiPath: FlowUiItem['uiPath'];
   roles: FlowUiItem['roles'];
+  schema?: FlowUiItem['schema'];
+  uiSchema?: FlowUiItem['uiSchema'];
+  data?: FlowUiItem['data'];
 };
 
 export const flowUiStore = {
@@ -53,7 +62,15 @@ export const flowUiStore = {
 
   create(data: CreateUiData): FlowUiItem {
     const now = new Date().toISOString();
-    const item: FlowUiItem = { id: generateId(), ...data, createdAt: now, updatedAt: now };
+    const item: FlowUiItem = {
+      id: generateId(),
+      schema: DEFAULT_JSON_SCHEMA,
+      uiSchema: DEFAULT_UI_SCHEMA,
+      data: DEFAULT_FORM_DATA,
+      ...data,
+      createdAt: now,
+      updatedAt: now,
+    };
     writeAll([...readAll(), item]);
     return item;
   },

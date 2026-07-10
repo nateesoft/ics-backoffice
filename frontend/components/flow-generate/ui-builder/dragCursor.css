@@ -1,0 +1,7 @@
+/* While dragging a builder element, force the "move" cursor everywhere — dnd-kit doesn't set a
+   global cursor on its own, so without this the cursor reverts to whatever's under the pointer
+   (button, input, etc.) as soon as it leaves the dragged item. */
+body.ui-builder-dragging,
+body.ui-builder-dragging * {
+  cursor: move !important;
+}
