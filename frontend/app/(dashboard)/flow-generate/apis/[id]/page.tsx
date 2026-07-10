@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import FlowBreadcrumb from '@/components/flow-generate/FlowBreadcrumb';
 import { METHOD_COLORS } from '@/components/flow-generate/methodBadge';
-import { FlowApiItem, HTTP_METHODS, API_AUTH_TYPES, API_KINDS, HttpMethod, ApiAuthType, ApiKind } from '@/types/flowApi';
+import ApiStepBuilder from '@/components/flow-generate/ApiStepBuilder';
+import { FlowApiItem, HTTP_METHODS, API_AUTH_TYPES, API_KINDS, HttpMethod, ApiAuthType, ApiKind, ApiStep } from '@/types/flowApi';
 import { flowApiStore } from '@/lib/flowApiStore';
 import { flowProjectsStore } from '@/lib/flowItemsStore';
 
@@ -28,6 +29,8 @@ export default function FlowApiDetailPage() {
   const [payload, setPayload] = useState('');
   const [authType, setAuthType] = useState<ApiAuthType>('None');
   const [apiType, setApiType] = useState<ApiKind>('REST API');
+  const [sampleData, setSampleData] = useState('');
+  const [steps, setSteps] = useState<ApiStep[]>([]);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
 
@@ -42,6 +45,8 @@ export default function FlowApiDetailPage() {
       setPayload(a.payload);
       setAuthType(a.authType);
       setApiType(a.apiType);
+      setSampleData(a.sampleData);
+      setSteps(a.steps);
       const project = flowProjectsStore.getById(a.projectId);
       setProjectName(project ? project.name : 'Unknown Project');
     }
@@ -61,6 +66,8 @@ export default function FlowApiDetailPage() {
       payload: payload.trim(),
       authType,
       apiType,
+      sampleData,
+      steps,
     });
     if (updated) {
       setApi(updated);
@@ -89,66 +96,19 @@ export default function FlowApiDetailPage() {
   }
 
   return (
-    <div className="space-y-5 max-w-2xl">
+    <div className="space-y-5">
       <FlowBreadcrumb items={[{ label: 'Flow Generate', href: '/flow-generate' }, { label: 'APIs', href: '/flow-generate/apis' }, { label: api.name }]} />
 
-      <div>
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold text-slate-800">แก้ไขรายละเอียด API</h1>
-          <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${METHOD_COLORS[api.method]}`}>{api.method}</span>
-        </div>
-        <p className="text-slate-500 text-sm mt-0.5">Project: <span className="font-medium text-slate-600">{projectName}</span></p>
-        <p className="text-slate-400 text-xs mt-0.5">API ID: <span className="font-mono">{api.id}</span></p>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <label className={labelCls}>API Name</label>
-          <input type="text" className={inputCls} value={name} onChange={e => setName(e.target.value)} />
-        </div>
-
-        <div>
-          <label className={labelCls}>รายละเอียด</label>
-          <textarea className={`${inputCls} resize-none`} rows={3} value={description} onChange={e => setDescription(e.target.value)} />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={labelCls}>Method</label>
-            <select className={inputCls} value={method} onChange={e => setMethod(e.target.value as HttpMethod)}>
-              {HTTP_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-slate-800">แก้ไขรายละเอียด API</h1>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${METHOD_COLORS[api.method]}`}>{api.method}</span>
           </div>
-          <div>
-            <label className={labelCls}>ประเภท API</label>
-            <select className={inputCls} value={apiType} onChange={e => setApiType(e.target.value as ApiKind)}>
-              {API_KINDS.map(k => <option key={k} value={k}>{k}</option>)}
-            </select>
-          </div>
+          <p className="text-slate-500 text-sm mt-0.5">Project: <span className="font-medium text-slate-600">{projectName}</span></p>
+          <p className="text-slate-400 text-xs mt-0.5">API ID: <span className="font-mono">{api.id}</span></p>
         </div>
-
-        <div>
-          <label className={labelCls}>Path</label>
-          <input type="text" className={`${inputCls} font-mono`} value={path} onChange={e => setPath(e.target.value)} />
-        </div>
-
-        <div>
-          <label className={labelCls}>Payload (JSON)</label>
-          <textarea className={`${inputCls} resize-none font-mono`} rows={4} value={payload} onChange={e => setPayload(e.target.value)} />
-        </div>
-
-        <div>
-          <label className={labelCls}>Authentication</label>
-          <select className={inputCls} value={authType} onChange={e => setAuthType(e.target.value as ApiAuthType)}>
-            {API_AUTH_TYPES.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 text-red-600 text-sm px-3 py-2 rounded-lg border border-red-100">{error}</div>
-        )}
-
-        <div className="flex items-center justify-end gap-3 pt-1 border-t border-slate-100">
+        <div className="flex items-center gap-3 shrink-0">
           {saved && <span className="text-sm text-green-600 font-medium">บันทึกแล้ว</span>}
           <button
             onClick={handleSave}
@@ -158,6 +118,68 @@ export default function FlowApiDetailPage() {
             บันทึก
           </button>
         </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 text-red-600 text-sm px-3 py-2 rounded-lg border border-red-100">{error}</div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+        <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
+          <div>
+            <h2 className="text-sm font-bold text-slate-700">Information</h2>
+            <p className="text-slate-400 text-xs mt-0.5">ข้อมูลพื้นฐานของ API เส้นนี้</p>
+          </div>
+
+          <div>
+            <label className={labelCls}>API Name</label>
+            <input type="text" className={inputCls} value={name} onChange={e => setName(e.target.value)} />
+          </div>
+
+          <div>
+            <label className={labelCls}>รายละเอียด</label>
+            <textarea className={`${inputCls} resize-none`} rows={3} value={description} onChange={e => setDescription(e.target.value)} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Method</label>
+              <select className={inputCls} value={method} onChange={e => setMethod(e.target.value as HttpMethod)}>
+                {HTTP_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>ประเภท API</label>
+              <select className={inputCls} value={apiType} onChange={e => setApiType(e.target.value as ApiKind)}>
+                {API_KINDS.map(k => <option key={k} value={k}>{k}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className={labelCls}>Path</label>
+            <input type="text" className={`${inputCls} font-mono`} value={path} onChange={e => setPath(e.target.value)} />
+          </div>
+
+          <div>
+            <label className={labelCls}>Payload (JSON)</label>
+            <textarea className={`${inputCls} resize-none font-mono`} rows={4} value={payload} onChange={e => setPayload(e.target.value)} />
+          </div>
+
+          <div>
+            <label className={labelCls}>Authentication</label>
+            <select className={inputCls} value={authType} onChange={e => setAuthType(e.target.value as ApiAuthType)}>
+              {API_AUTH_TYPES.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <ApiStepBuilder
+          sampleData={sampleData}
+          onSampleDataChange={setSampleData}
+          steps={steps}
+          onStepsChange={setSteps}
+        />
       </div>
     </div>
   );

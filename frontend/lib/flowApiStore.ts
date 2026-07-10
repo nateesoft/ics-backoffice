@@ -13,11 +13,17 @@ function generateId(): string {
   });
 }
 
+// Backfills fields added after some items were already persisted (e.g. sampleData/steps).
+function normalize(item: FlowApiItem): FlowApiItem {
+  return { ...item, sampleData: item.sampleData ?? '', steps: item.steps ?? [] };
+}
+
 function readAll(): FlowApiItem[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const items: FlowApiItem[] = raw ? JSON.parse(raw) : [];
+    return items.map(normalize);
   } catch {
     return [];
   }
@@ -36,6 +42,8 @@ type CreateApiData = {
   payload: string;
   authType: FlowApiItem['authType'];
   apiType: FlowApiItem['apiType'];
+  sampleData?: string;
+  steps?: FlowApiItem['steps'];
 };
 
 export const flowApiStore = {
@@ -53,7 +61,14 @@ export const flowApiStore = {
 
   create(data: CreateApiData): FlowApiItem {
     const now = new Date().toISOString();
-    const item: FlowApiItem = { id: generateId(), ...data, createdAt: now, updatedAt: now };
+    const item: FlowApiItem = {
+      id: generateId(),
+      sampleData: '',
+      steps: [],
+      ...data,
+      createdAt: now,
+      updatedAt: now,
+    };
     writeAll([...readAll(), item]);
     return item;
   },
