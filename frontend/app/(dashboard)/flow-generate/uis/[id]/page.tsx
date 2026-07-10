@@ -164,6 +164,7 @@ export default function FlowUiDetailPage() {
         uiSchema={uiSchema}
         data={data}
         projectId={ui.projectId}
+        currentUiId={ui.id}
         onSchemaChange={setSchema}
         onUiSchemaChange={setUiSchema}
         onDataChange={setData}

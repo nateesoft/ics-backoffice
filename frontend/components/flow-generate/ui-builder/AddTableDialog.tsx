@@ -24,11 +24,71 @@ interface ColumnDraft {
 
 const inputCls = "w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm bg-white";
 const labelCls = "block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide";
+const columnGridCls = "grid grid-cols-[1fr_1fr_7rem_1.5rem] gap-2 items-center";
 
 function isTableProperty(prop: JsonSchema7 | undefined): boolean {
   if (!prop || prop.type !== 'array') return false;
   const items = prop.items;
   return !!items && !Array.isArray(items) && items.type === 'object';
+}
+
+function columnsFromProperty(prop: JsonSchema7 | undefined): ColumnDraft[] {
+  const items = prop?.items;
+  if (!items || Array.isArray(items) || !items.properties) return [];
+  return Object.entries(items.properties).map(([key, colSchema]) => {
+    const type = (colSchema as JsonSchema7).type;
+    return {
+      key,
+      title: (colSchema as JsonSchema7).title ?? '',
+      type: (Array.isArray(type) ? type[0] : type) ?? 'string',
+    };
+  });
+}
+
+const SAMPLE_ROW_COUNT = 2;
+
+// Dummy content per column type, so the preview table looks like real data instead of blanks.
+function sampleValue(type: string, rowIndex: number): string {
+  if (type === 'boolean') return rowIndex === 0 ? '☑' : '☐';
+  if (type === 'number') return (rowIndex === 0 ? 12.5 : 8).toString();
+  if (type === 'integer') return (rowIndex === 0 ? 2 : 5).toString();
+  return rowIndex === 0 ? 'ตัวอย่าง A' : 'ตัวอย่าง B';
+}
+
+function TablePreview({ columns }: { columns: ColumnDraft[] }) {
+  if (columns.length === 0) {
+    return (
+      <p className="text-xs text-slate-400 border border-dashed border-slate-200 rounded-lg px-3 py-4 text-center">
+        ยังไม่มี column — กด &ldquo;+ เพิ่ม column&rdquo; ด้านบนเพื่อเริ่มออกแบบตาราง
+      </p>
+    );
+  }
+  return (
+    <div className="border border-slate-200 rounded-lg overflow-x-auto">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="bg-slate-50">
+            {columns.map((col, i) => (
+              <th key={i} className="px-2.5 py-1.5 text-left font-semibold text-slate-600 border-b border-slate-200 whitespace-nowrap">
+                {col.title || col.key || `Column ${i + 1}`}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: SAMPLE_ROW_COUNT }).map((_, r) => (
+            <tr key={r}>
+              {columns.map((col, i) => (
+                <td key={i} className="px-2.5 py-1.5 border-b border-slate-100 text-slate-400 whitespace-nowrap">
+                  {sampleValue(col.type, r)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 export default function AddTableDialog({ schema, onCancel, onConfirm }: AddTableDialogProps) {
@@ -116,11 +176,17 @@ export default function AddTableDialog({ schema, onCancel, onConfirm }: AddTable
         </div>
 
         {mode === 'existing' ? (
-          <div>
-            <label className={labelCls}>Field (schema property)</label>
-            <select className={inputCls} value={selectedKey} onChange={e => setSelectedKey(e.target.value)}>
-              {propertyKeys.map(key => <option key={key} value={key}>{key}</option>)}
-            </select>
+          <div className="space-y-3">
+            <div>
+              <label className={labelCls}>Field (schema property)</label>
+              <select className={inputCls} value={selectedKey} onChange={e => setSelectedKey(e.target.value)}>
+                {propertyKeys.map(key => <option key={key} value={key}>{key}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>ตัวอย่างตาราง (Preview)</label>
+              <TablePreview columns={columnsFromProperty(properties[selectedKey])} />
+            </div>
           </div>
         ) : (
           <div className="space-y-3">
@@ -134,31 +200,37 @@ export default function AddTableDialog({ schema, onCancel, onConfirm }: AddTable
             </div>
 
             <div>
-              <label className={labelCls}>Columns</label>
+              <label className={labelCls}>Columns — แต่ละแถวคือ 1 คอลัมน์ของตาราง</label>
               <div className="space-y-2">
+                <div className={`${columnGridCls} px-0.5`}>
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Key (ชื่อ field)</span>
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Label (หัวตาราง)</span>
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">ประเภท</span>
+                  <span />
+                </div>
                 {columns.map((col, i) => (
-                  <div key={i} className="flex gap-2 items-center">
+                  <div key={i} className={columnGridCls}>
                     <input
                       type="text"
                       className={`${inputCls} font-mono`}
                       value={col.key}
                       onChange={e => updateColumn(i, { key: e.target.value })}
-                      placeholder="key"
+                      placeholder="เช่น quantity"
                     />
                     <input
                       type="text"
                       className={inputCls}
                       value={col.title}
                       onChange={e => updateColumn(i, { title: e.target.value })}
-                      placeholder="Label"
+                      placeholder="เช่น จำนวน"
                     />
-                    <select className={`${inputCls} w-28 flex-shrink-0`} value={col.type} onChange={e => updateColumn(i, { type: e.target.value })}>
+                    <select className={inputCls} value={col.type} onChange={e => updateColumn(i, { type: e.target.value })}>
                       {COLUMN_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                     <button
                       type="button"
                       onClick={() => removeColumn(i)}
-                      className="text-slate-400 hover:text-red-600 px-1 text-sm leading-none flex-shrink-0"
+                      className="text-slate-400 hover:text-red-600 px-1 text-sm leading-none justify-self-center"
                       title="ลบ column"
                     >
                       ✕
@@ -173,6 +245,11 @@ export default function AddTableDialog({ schema, onCancel, onConfirm }: AddTable
               >
                 + เพิ่ม column
               </button>
+            </div>
+
+            <div>
+              <label className={labelCls}>ตัวอย่างตาราง (Preview)</label>
+              <TablePreview columns={columns} />
             </div>
           </div>
         )}

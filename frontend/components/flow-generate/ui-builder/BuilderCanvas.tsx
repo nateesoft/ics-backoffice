@@ -9,6 +9,7 @@ import Palette from './Palette';
 import PropertiesPanel from './PropertiesPanel';
 import AddControlDialog, { ControlPreset } from './AddControlDialog';
 import AddTableDialog from './AddTableDialog';
+import { flowUiStore } from '@/lib/flowUiStore';
 import './dragCursor.css';
 import {
   BuilderNode,
@@ -24,6 +25,7 @@ import {
   isContainer,
   isControlWidget,
   resolveControlWidgetKind,
+  mergeComponentIntoTree,
   containerId,
   itemId,
   parseContainerId,
@@ -41,6 +43,7 @@ interface BuilderCanvasProps {
   schema: JsonSchema7;
   uiSchema: BuilderNode;
   projectId?: string;
+  currentUiId?: string;
   onSchemaChange: (schema: JsonSchema7) => void;
   onUiSchemaChange: (uiSchema: BuilderNode) => void;
 }
@@ -267,7 +270,7 @@ const PALETTE_MIN_WIDTH = 180;
 const PALETTE_MAX_WIDTH = 420;
 const PALETTE_DEFAULT_WIDTH = 240;
 
-export default function BuilderCanvas({ schema, uiSchema, projectId, onSchemaChange, onUiSchemaChange }: BuilderCanvasProps) {
+export default function BuilderCanvas({ schema, uiSchema, projectId, currentUiId, onSchemaChange, onUiSchemaChange }: BuilderCanvasProps) {
   const [pendingControlDrop, setPendingControlDrop] = useState<PendingControlDrop | null>(null);
   const [selectedPath, setSelectedPath] = useState<number[] | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
@@ -315,6 +318,30 @@ export default function BuilderCanvas({ schema, uiSchema, projectId, onSchemaCha
     const activeId = String(event.active.id);
     const overId = event.over ? String(event.over.id) : null;
     if (!overId) return;
+
+    if (activeId.startsWith('component:')) {
+      const componentId = event.active.data.current?.componentId as string | undefined;
+      const overContainerPath = parseContainerId(overId);
+      const overItemPath = parseItemId(overId);
+      let targetContainerPath: number[];
+      let insertIndex: number | undefined;
+      if (overContainerPath) {
+        targetContainerPath = overContainerPath;
+        insertIndex = undefined;
+      } else if (overItemPath) {
+        targetContainerPath = parentPath(overItemPath);
+        insertIndex = lastIndex(overItemPath) + 1;
+      } else {
+        return;
+      }
+
+      const component = componentId ? flowUiStore.getById(componentId) : null;
+      if (!component) return;
+      const merged = mergeComponentIntoTree(schema, component.schema, component.uiSchema, component.name);
+      onSchemaChange(merged.schema);
+      onUiSchemaChange(addNodeAtPath(uiSchema, targetContainerPath, insertIndex, merged.node));
+      return;
+    }
 
     if (activeId.startsWith('palette:')) {
       const elementType = event.active.data.current?.elementType as BuilderElementType;
@@ -406,7 +433,7 @@ export default function BuilderCanvas({ schema, uiSchema, projectId, onSchemaCha
             title="ลากเพื่อปรับขนาด"
           />
           <div style={{ width: paletteWidth }} className="flex-shrink-0 pl-3">
-            <Palette />
+            <Palette projectId={projectId} excludeUiId={currentUiId} />
           </div>
         </div>
       </DndContext>

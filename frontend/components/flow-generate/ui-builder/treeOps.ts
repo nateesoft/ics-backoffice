@@ -205,3 +205,52 @@ export function tryGetNodeAtPath(root: BuilderNode, path: number[]): BuilderNode
     return null;
   }
 }
+
+// Dragging a saved Component (a FlowUiItem with uiType 'Component') from the palette embeds a
+// snapshot/copy of it — not a live reference. Its schema properties are merged into the target
+// schema (renaming on key collision) and its uischema tree is remapped to the new keys, then
+// wrapped in a labeled Group so the embedded block stays visually identifiable and movable as
+// one unit.
+export function mergeComponentIntoTree(
+  targetSchema: JsonSchema7,
+  componentSchema: JsonSchema7,
+  componentUiSchema: BuilderNode,
+  componentName: string
+): { schema: JsonSchema7; node: BuilderNode } {
+  const usedKeys = new Set(Object.keys(targetSchema.properties ?? {}));
+  const keyMap: Record<string, string> = {};
+  const mergedProperties: Record<string, JsonSchema7> = { ...(targetSchema.properties ?? {}) };
+  const mergedRequired: string[] = [...(targetSchema.required ?? [])];
+
+  for (const [key, propSchema] of Object.entries(componentSchema.properties ?? {})) {
+    let newKey = key;
+    let suffix = 2;
+    while (usedKeys.has(newKey)) { newKey = `${key}_${suffix}`; suffix++; }
+    usedKeys.add(newKey);
+    keyMap[key] = newKey;
+    mergedProperties[newKey] = propSchema as JsonSchema7;
+    if ((componentSchema.required ?? []).includes(key)) mergedRequired.push(newKey);
+  }
+
+  function remapScopes(node: BuilderNode): BuilderNode {
+    const clone: BuilderNode = { ...node };
+    if (clone.scope?.startsWith('#/properties/')) {
+      const key = clone.scope.slice('#/properties/'.length);
+      if (keyMap[key]) clone.scope = `#/properties/${keyMap[key]}`;
+    }
+    if (clone.elements) clone.elements = clone.elements.map(remapScopes);
+    return clone;
+  }
+
+  const remappedRoot = remapScopes(structuredClone(componentUiSchema));
+
+  return {
+    schema: {
+      ...targetSchema,
+      type: targetSchema.type ?? 'object',
+      properties: mergedProperties,
+      ...(mergedRequired.length ? { required: mergedRequired } : {}),
+    },
+    node: { type: 'Group', label: componentName, elements: [remappedRoot] },
+  };
+}
