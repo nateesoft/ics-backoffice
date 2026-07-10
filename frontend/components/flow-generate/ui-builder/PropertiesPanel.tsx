@@ -1,10 +1,13 @@
 'use client';
+import { useState } from 'react';
 import type { JsonSchema7 } from '@jsonforms/core';
 import type { UiSchemaNode } from '@/types/flowUi';
+import ActionPickerModal from './ActionPickerModal';
 
 interface PropertiesPanelProps {
   schema: JsonSchema7;
   node: UiSchemaNode;
+  projectId?: string;
   onSchemaChange: (schema: JsonSchema7) => void;
   onUpdateNode: (updater: (node: UiSchemaNode) => void) => void;
 }
@@ -52,12 +55,14 @@ function styleObjectToCssText(style: unknown): string {
   return Object.entries(style as Record<string, string>).map(([k, v]) => `${camelToKebab(k)}: ${v};`).join('\n');
 }
 
-export default function PropertiesPanel({ schema, node, onSchemaChange, onUpdateNode }: PropertiesPanelProps) {
+export default function PropertiesPanel({ schema, node, projectId, onSchemaChange, onUpdateNode }: PropertiesPanelProps) {
+  const [actionPickerOpen, setActionPickerOpen] = useState(false);
   const propKey = node.type === 'Control' ? propKeyFromScope(node.scope) : undefined;
   const prop = propKey ? schema.properties?.[propKey] : undefined;
   const isEnum = Boolean(prop && Array.isArray(prop.enum));
   const isBoolean = prop?.type === 'boolean';
   const isArray = prop?.type === 'array';
+  const isPlainStringInput = prop?.type === 'string' && !isEnum && prop?.format !== 'date' && !node.options?.multi;
   const required = Boolean(propKey && (schema.required ?? []).includes(propKey));
   const isFlexContainer = FLEX_CONTAINER_TYPES.includes(node.type);
 
@@ -131,6 +136,21 @@ export default function PropertiesPanel({ schema, node, onSchemaChange, onUpdate
             </>
           )}
 
+          {isPlainStringInput && (
+            <div>
+              <label className={labelCls}>Type</label>
+              <select
+                className={inputCls}
+                value={(node.options?.inputType as string) ?? 'text'}
+                onChange={e => updateOption('inputType', e.target.value === 'text' ? undefined : e.target.value)}
+              >
+                <option value="text">Text</option>
+                <option value="number">Number</option>
+                <option value="password">Password</option>
+              </select>
+            </div>
+          )}
+
           {isBoolean && (
             <p className="text-[11px] text-slate-400">แสดงเป็น checkbox โดยอัตโนมัติ (type: boolean)</p>
           )}
@@ -160,6 +180,51 @@ export default function PropertiesPanel({ schema, node, onSchemaChange, onUpdate
             <label className={labelCls}>Text</label>
             <input type="text" className={inputCls} value={node.text ?? ''} onChange={e => onUpdateNode(n => { n.text = e.target.value; })} />
           </div>
+          <div>
+            <label className={labelCls}>Type</label>
+            <select
+              className={inputCls}
+              value={(node.options?.type as string) ?? 'button'}
+              onChange={e => updateOption('type', e.target.value === 'button' ? undefined : e.target.value)}
+            >
+              <option value="button">Button</option>
+              <option value="file">File</option>
+              <option value="action">Action</option>
+            </select>
+          </div>
+
+          {node.options?.type === 'action' && (
+            <div>
+              <label className={labelCls}>Action</label>
+              <div className="flex gap-1.5">
+                <input
+                  type="text"
+                  className={`${inputCls} font-mono flex-1`}
+                  value={(node.options?.action as string) ?? ''}
+                  onChange={e => updateOption('action', e.target.value || undefined)}
+                  placeholder="${ServiceName:methodName}"
+                />
+                <button
+                  type="button"
+                  onClick={() => setActionPickerOpen(true)}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition whitespace-nowrap"
+                >
+                  Browse
+                </button>
+              </div>
+              {actionPickerOpen && (
+                <ActionPickerModal
+                  projectId={projectId}
+                  onClose={() => setActionPickerOpen(false)}
+                  onSelect={api => {
+                    updateOption('action', `\${${api.name}}`);
+                    setActionPickerOpen(false);
+                  }}
+                />
+              )}
+            </div>
+          )}
+
           <div>
             <label className={labelCls}>Style</label>
             <select

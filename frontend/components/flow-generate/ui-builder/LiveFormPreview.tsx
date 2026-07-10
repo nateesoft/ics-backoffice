@@ -4,9 +4,10 @@ import { vanillaCells, vanillaRenderers } from '@jsonforms/vanilla-renderers';
 import type { JsonSchema7 } from '@jsonforms/core';
 import type { UiSchemaNode } from '@/types/flowUi';
 import { customRenderers } from './customRenderers';
+import { customControlRenderers } from './customControlRenderers';
 import './jsonforms-vanilla.css';
 
-const renderers = [...vanillaRenderers, ...customRenderers];
+const renderers = [...vanillaRenderers, ...customRenderers, ...customControlRenderers];
 
 interface LiveFormPreviewProps {
   schema: JsonSchema7;

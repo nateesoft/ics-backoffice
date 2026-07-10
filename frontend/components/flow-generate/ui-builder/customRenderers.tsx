@@ -11,6 +11,7 @@
 // `options.className` or `options.style` is present, the wrapper renders a styled `<div>` and
 // re-dispatches to the normal renderer with those two keys stripped (so the wrapper's own
 // tester no longer matches on the redispatch, avoiding infinite recursion).
+import { useRef, useState } from 'react';
 import type { JsonFormsProps, JsonSchema, LayoutProps, RankedTester, UISchemaElement } from '@jsonforms/core';
 import { rankWith, uiTypeIs } from '@jsonforms/core';
 import { JsonFormsDispatch, useJsonForms, withJsonFormsLayoutProps, withJsonFormsRendererProps } from '@jsonforms/react';
@@ -121,15 +122,54 @@ function VerticalLayoutComponent(props: LayoutProps) {
   return <PlainFlexContainer {...props} defaultDirection="column" />;
 }
 
+// `options.type` distinguishes 'button' (plain), 'file' (opens a native file picker), and
+// 'action' (calls an API already defined in the project's Flow Generate > APIs menu).
+// `options.action` (for 'action') holds a reference like "${LoginService:validateLogin}" —
+// picked via the PropertiesPanel's API browser — shown here as a read-only badge, never
+// invoked live from this preview (it's a design-time form builder; downstream codegen is
+// expected to read `action` to wire up the real call).
+type ButtonType = 'button' | 'file' | 'action';
+type ButtonOptions = { variant?: string; type?: ButtonType; action?: string; className?: string; style?: React.CSSProperties };
+
+function ActionInfoBadge({ action }: { action?: string }) {
+  if (!action) return null;
+  return <div className="text-[10px] font-mono text-slate-400">{action}</div>;
+}
+
+function FileButtonComponent({ text, className, style }: { text: string; className: string; style?: React.CSSProperties }) {
+  const [fileName, setFileName] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  return (
+    <div className="inline-flex items-center gap-2">
+      <button type="button" className={className} style={style} onClick={() => inputRef.current?.click()}>{text}</button>
+      <input ref={inputRef} type="file" className="hidden" onChange={e => setFileName(e.target.files?.[0]?.name ?? '')} />
+      {fileName && <span className="text-xs text-slate-500">{fileName}</span>}
+    </div>
+  );
+}
+
 function ButtonComponent({ uischema, visible }: LayoutProps) {
   if (!visible) return null;
-  const node = uischema as { text?: string; options?: { variant?: string; className?: string; style?: React.CSSProperties } };
-  const text = node.text || 'Submit';
+  const node = uischema as { text?: string; options?: ButtonOptions };
+  const buttonType = node.options?.type ?? 'button';
+  const text = node.text || (buttonType === 'file' ? 'Upload File' : 'Submit');
   const variant = node.options?.variant === 'secondary' ? 'secondary' : 'primary';
   const baseClassName = variant === 'primary'
     ? 'px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition'
     : 'px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50 transition';
   const className = [baseClassName, node.options?.className].filter(Boolean).join(' ');
+
+  if (buttonType === 'file') {
+    return <FileButtonComponent text={text} className={className} style={node.options?.style} />;
+  }
+  if (buttonType === 'action' && node.options?.action) {
+    return (
+      <div className="inline-flex flex-col items-start gap-1">
+        <button type="button" className={className} style={node.options?.style}>{text}</button>
+        <ActionInfoBadge action={node.options?.action} />
+      </div>
+    );
+  }
   return <button type="button" className={className} style={node.options?.style}>{text}</button>;
 }
 

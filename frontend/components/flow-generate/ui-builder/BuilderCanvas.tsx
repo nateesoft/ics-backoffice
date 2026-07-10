@@ -40,6 +40,7 @@ import {
 interface BuilderCanvasProps {
   schema: JsonSchema7;
   uiSchema: BuilderNode;
+  projectId?: string;
   onSchemaChange: (schema: JsonSchema7) => void;
   onUiSchemaChange: (uiSchema: BuilderNode) => void;
 }
@@ -266,7 +267,7 @@ const PALETTE_MIN_WIDTH = 180;
 const PALETTE_MAX_WIDTH = 420;
 const PALETTE_DEFAULT_WIDTH = 240;
 
-export default function BuilderCanvas({ schema, uiSchema, onSchemaChange, onUiSchemaChange }: BuilderCanvasProps) {
+export default function BuilderCanvas({ schema, uiSchema, projectId, onSchemaChange, onUiSchemaChange }: BuilderCanvasProps) {
   const [pendingControlDrop, setPendingControlDrop] = useState<PendingControlDrop | null>(null);
   const [selectedPath, setSelectedPath] = useState<number[] | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
@@ -436,6 +437,7 @@ export default function BuilderCanvas({ schema, uiSchema, onSchemaChange, onUiSc
             key={pathKey(selectedPath)}
             schema={schema}
             node={selectedNode}
+            projectId={projectId}
             onSchemaChange={onSchemaChange}
             onUpdateNode={updater => onUiSchemaChange(updateNodeAtPath(uiSchema, selectedPath, updater))}
           />
