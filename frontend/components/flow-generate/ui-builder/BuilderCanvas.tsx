@@ -4,6 +4,7 @@ import { DndContext, DragEndEvent, PointerSensor, useDroppable, useSensor, useSe
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { JsonSchema7 } from '@jsonforms/core';
+import type { PageKind } from '@/types/flowUi';
 import Modal from '@/components/ui/Modal';
 import Palette from './Palette';
 import PropertiesPanel from './PropertiesPanel';
@@ -18,6 +19,7 @@ import {
   addNodeAtPath,
   removeNodeAtPath,
   reorderWithinContainer,
+  setContentSlot,
   updateNodeAtPath,
   createDefaultNode,
   createDefaultCategory,
@@ -44,6 +46,7 @@ interface BuilderCanvasProps {
   uiSchema: BuilderNode;
   projectId?: string;
   currentUiId?: string;
+  pageKind?: PageKind | null;
   onSchemaChange: (schema: JsonSchema7) => void;
   onUiSchemaChange: (uiSchema: BuilderNode) => void;
 }
@@ -270,9 +273,10 @@ const PALETTE_MIN_WIDTH = 180;
 const PALETTE_MAX_WIDTH = 420;
 const PALETTE_DEFAULT_WIDTH = 240;
 
-export default function BuilderCanvas({ schema, uiSchema, projectId, currentUiId, onSchemaChange, onUiSchemaChange }: BuilderCanvasProps) {
+export default function BuilderCanvas({ schema, uiSchema, projectId, currentUiId, pageKind, onSchemaChange, onUiSchemaChange }: BuilderCanvasProps) {
   const [pendingControlDrop, setPendingControlDrop] = useState<PendingControlDrop | null>(null);
   const [selectedPath, setSelectedPath] = useState<number[] | null>(null);
+  const isMainPage = pageKind === 'Main Page';
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   const [paletteWidth, setPaletteWidth] = useState(PALETTE_DEFAULT_WIDTH);
@@ -465,6 +469,10 @@ export default function BuilderCanvas({ schema, uiSchema, projectId, currentUiId
             schema={schema}
             node={selectedNode}
             projectId={projectId}
+            excludeUiId={currentUiId}
+            isMainPage={isMainPage}
+            isContentSlot={selectedNode.options?.slot === 'content'}
+            onToggleContentSlot={next => onUiSchemaChange(setContentSlot(uiSchema, next ? selectedPath : null))}
             onSchemaChange={onSchemaChange}
             onUpdateNode={updater => onUiSchemaChange(updateNodeAtPath(uiSchema, selectedPath, updater))}
           />

@@ -20,6 +20,21 @@ export interface UiSchemaNode {
   options?: Record<string, unknown>;
 }
 
+// A single step in a Button/Control action sequence — e.g. "open the Logout Confirm modal, then
+// close it" or "call the Logout API, then navigate to /login". `apiRef`/`uiRef`/`path` are only
+// ever read for the step kind that uses them.
+export type UiActionStepKind = 'callApi' | 'openModal' | 'closeModal' | 'navigate';
+
+export interface UiActionStep {
+  id: string;
+  kind: UiActionStepKind;
+  apiRef?: string; // callApi -> FlowApiItem.name, "${ApiName}" convention (same as legacy options.action)
+  uiRef?: string;  // openModal -> FlowUiItem.id
+  path?: string;   // navigate -> uiPath
+}
+
+export const UI_ACTION_STEP_KINDS: UiActionStepKind[] = ['callApi', 'openModal', 'closeModal', 'navigate'];
+
 export const DEFAULT_JSON_SCHEMA: JsonSchema7 = { type: 'object', properties: {} };
 export const DEFAULT_UI_SCHEMA: UiSchemaNode = { type: 'VerticalLayout', elements: [] };
 export const DEFAULT_FORM_DATA: Record<string, unknown> = {};

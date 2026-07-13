@@ -15,6 +15,8 @@ import { useRef, useState } from 'react';
 import type { JsonFormsProps, JsonSchema, LayoutProps, RankedTester, UISchemaElement } from '@jsonforms/core';
 import { rankWith, uiTypeIs } from '@jsonforms/core';
 import { JsonFormsDispatch, useJsonForms, withJsonFormsLayoutProps, withJsonFormsRendererProps } from '@jsonforms/react';
+import type { UiActionStep } from '@/types/flowUi';
+import { useActionRunner } from './actionRunner';
 
 type FlexDirection = 'row' | 'column';
 type AlignItems = 'flex-start' | 'center' | 'flex-end' | 'stretch';
@@ -123,17 +125,37 @@ function VerticalLayoutComponent(props: LayoutProps) {
 }
 
 // `options.type` distinguishes 'button' (plain), 'file' (opens a native file picker), and
-// 'action' (calls an API already defined in the project's Flow Generate > APIs menu).
-// `options.action` (for 'action') holds a reference like "${LoginService:validateLogin}" —
-// picked via the PropertiesPanel's API browser — shown here as a read-only badge, never
-// invoked live from this preview (it's a design-time form builder; downstream codegen is
-// expected to read `action` to wire up the real call).
+// 'action'. An 'action' button runs either a single API reference (`options.action`, legacy
+// "${ApiName}" mode, `options.actionMode` unset/'api') or an ordered `options.actionSteps`
+// sequence (`options.actionMode === 'steps'`) — see PropertiesPanel.tsx / ActionStepsEditor.tsx.
+// Both are executed live via the ActionRunnerContext provided by LiveFormPreview.tsx: callApi
+// steps are simulated (toast), openModal/closeModal steps actually push/pop a nested preview
+// modal, matching e.g. "click Logout -> open the Logout Confirm modal we designed".
 type ButtonType = 'button' | 'file' | 'action';
-type ButtonOptions = { variant?: string; type?: ButtonType; action?: string; className?: string; style?: React.CSSProperties };
+type ButtonOptions = {
+  variant?: string;
+  type?: ButtonType;
+  action?: string;
+  actionMode?: 'api' | 'steps';
+  actionSteps?: UiActionStep[];
+  className?: string;
+  style?: React.CSSProperties;
+};
 
-function ActionInfoBadge({ action }: { action?: string }) {
-  if (!action) return null;
-  return <div className="text-[10px] font-mono text-slate-400">{action}</div>;
+function resolveButtonSteps(options?: ButtonOptions): UiActionStep[] {
+  if (options?.actionMode === 'steps') return options.actionSteps ?? [];
+  if (options?.action) return [{ id: 'legacy-action', kind: 'callApi', apiRef: options.action }];
+  return [];
+}
+
+function ActionInfoBadge({ options }: { options?: ButtonOptions }) {
+  if (options?.actionMode === 'steps') {
+    const count = options.actionSteps?.length ?? 0;
+    if (!count) return null;
+    return <div className="text-[10px] font-mono text-slate-400">{count} step{count > 1 ? 's' : ''}</div>;
+  }
+  if (!options?.action) return null;
+  return <div className="text-[10px] font-mono text-slate-400">{options.action}</div>;
 }
 
 function FileButtonComponent({ text, className, style }: { text: string; className: string; style?: React.CSSProperties }) {
@@ -149,6 +171,7 @@ function FileButtonComponent({ text, className, style }: { text: string; classNa
 }
 
 function ButtonComponent({ uischema, visible }: LayoutProps) {
+  const runner = useActionRunner();
   if (!visible) return null;
   const node = uischema as { text?: string; options?: ButtonOptions };
   const buttonType = node.options?.type ?? 'button';
@@ -162,11 +185,19 @@ function ButtonComponent({ uischema, visible }: LayoutProps) {
   if (buttonType === 'file') {
     return <FileButtonComponent text={text} className={className} style={node.options?.style} />;
   }
-  if (buttonType === 'action' && node.options?.action) {
+  if (buttonType === 'action') {
+    const steps = resolveButtonSteps(node.options);
     return (
       <div className="inline-flex flex-col items-start gap-1">
-        <button type="button" className={className} style={node.options?.style}>{text}</button>
-        <ActionInfoBadge action={node.options?.action} />
+        <button
+          type="button"
+          className={className}
+          style={node.options?.style}
+          onClick={() => runner?.runSteps(steps)}
+        >
+          {text}
+        </button>
+        <ActionInfoBadge options={node.options} />
       </div>
     );
   }

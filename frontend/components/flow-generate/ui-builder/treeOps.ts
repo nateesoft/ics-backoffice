@@ -127,6 +127,26 @@ export function findSlotPath(root: BuilderNode, slotName: string, path: number[]
   return null;
 }
 
+// Moves the single 'content' slot marker (see findSlotPath above) to `path`, clearing it from
+// wherever it currently sits first — only one node in the tree may carry it at a time. Passing
+// `null` just clears it (no active content slot).
+export function setContentSlot(root: BuilderNode, path: number[] | null): BuilderNode {
+  const clone = structuredClone(root);
+  clearSlot(clone, 'content');
+  if (path) {
+    const node = getNodeAtPath(clone, path);
+    node.options = { ...node.options, slot: 'content' };
+  }
+  return clone;
+}
+
+function clearSlot(node: BuilderNode, slotName: string): void {
+  if (node.options && node.options.slot === slotName) {
+    delete node.options.slot;
+  }
+  node.elements?.forEach(child => clearSlot(child, slotName));
+}
+
 export function addNodeAtPath(root: BuilderNode, containerPath: number[], index: number | undefined, node: BuilderNode): BuilderNode {
   const clone = structuredClone(root);
   const container = getNodeAtPath(clone, containerPath);

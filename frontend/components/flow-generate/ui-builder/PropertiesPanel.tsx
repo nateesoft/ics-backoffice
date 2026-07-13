@@ -1,13 +1,19 @@
 'use client';
 import { useState } from 'react';
 import type { JsonSchema7 } from '@jsonforms/core';
-import type { UiSchemaNode } from '@/types/flowUi';
+import type { UiActionStep, UiSchemaNode } from '@/types/flowUi';
 import ActionPickerModal from './ActionPickerModal';
+import ActionStepsEditor from './ActionStepsEditor';
+import { isContainer } from './treeOps';
 
 interface PropertiesPanelProps {
   schema: JsonSchema7;
   node: UiSchemaNode;
   projectId?: string;
+  excludeUiId?: string;
+  isMainPage?: boolean;
+  isContentSlot?: boolean;
+  onToggleContentSlot?: (next: boolean) => void;
   onSchemaChange: (schema: JsonSchema7) => void;
   onUpdateNode: (updater: (node: UiSchemaNode) => void) => void;
 }
@@ -55,7 +61,7 @@ function styleObjectToCssText(style: unknown): string {
   return Object.entries(style as Record<string, string>).map(([k, v]) => `${camelToKebab(k)}: ${v};`).join('\n');
 }
 
-export default function PropertiesPanel({ schema, node, projectId, onSchemaChange, onUpdateNode }: PropertiesPanelProps) {
+export default function PropertiesPanel({ schema, node, projectId, excludeUiId, isMainPage, isContentSlot, onToggleContentSlot, onSchemaChange, onUpdateNode }: PropertiesPanelProps) {
   const [actionPickerOpen, setActionPickerOpen] = useState(false);
   const propKey = node.type === 'Control' ? propKeyFromScope(node.scope) : undefined;
   const prop = propKey ? schema.properties?.[propKey] : undefined;
@@ -133,6 +139,30 @@ export default function PropertiesPanel({ schema, node, projectId, onSchemaChang
                   <option value="radio">Radio</option>
                 </select>
               </div>
+              <div className="pt-1">
+                <label className="flex items-center gap-2 text-xs text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(node.options?.onChangeSteps)}
+                    onChange={e => onUpdateNode(n => {
+                      n.options = { ...n.options };
+                      if (e.target.checked) n.options.onChangeSteps = [];
+                      else delete n.options.onChangeSteps;
+                    })}
+                  />
+                  เปิดใช้ Action เมื่อเปลี่ยนค่า (onChange)
+                </label>
+                {Boolean(node.options?.onChangeSteps) && (
+                  <div className="mt-2">
+                    <ActionStepsEditor
+                      steps={(node.options?.onChangeSteps as UiActionStep[]) ?? []}
+                      projectId={projectId}
+                      excludeUiId={excludeUiId}
+                      onChange={steps => onUpdateNode(n => { n.options = { ...n.options, onChangeSteps: steps }; })}
+                    />
+                  </div>
+                )}
+              </div>
             </>
           )}
 
@@ -194,33 +224,56 @@ export default function PropertiesPanel({ schema, node, projectId, onSchemaChang
           </div>
 
           {node.options?.type === 'action' && (
-            <div>
-              <label className={labelCls}>Action</label>
-              <div className="flex gap-1.5">
-                <input
-                  type="text"
-                  className={`${inputCls} font-mono flex-1`}
-                  value={(node.options?.action as string) ?? ''}
-                  onChange={e => updateOption('action', e.target.value || undefined)}
-                  placeholder="${ServiceName:methodName}"
-                />
-                <button
-                  type="button"
-                  onClick={() => setActionPickerOpen(true)}
-                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition whitespace-nowrap"
+            <div className="space-y-3">
+              <div>
+                <label className={labelCls}>Action Mode</label>
+                <select
+                  className={inputCls}
+                  value={(node.options?.actionMode as string) === 'steps' ? 'steps' : 'api'}
+                  onChange={e => updateOption('actionMode', e.target.value === 'steps' ? 'steps' : undefined)}
                 >
-                  Browse
-                </button>
+                  <option value="api">Single API Call</option>
+                  <option value="steps">Step Sequence</option>
+                </select>
               </div>
-              {actionPickerOpen && (
-                <ActionPickerModal
+
+              {node.options?.actionMode === 'steps' ? (
+                <ActionStepsEditor
+                  steps={(node.options?.actionSteps as UiActionStep[]) ?? []}
                   projectId={projectId}
-                  onClose={() => setActionPickerOpen(false)}
-                  onSelect={api => {
-                    updateOption('action', `\${${api.name}}`);
-                    setActionPickerOpen(false);
-                  }}
+                  excludeUiId={excludeUiId}
+                  onChange={steps => onUpdateNode(n => { n.options = { ...n.options, actionSteps: steps }; })}
                 />
+              ) : (
+                <div>
+                  <label className={labelCls}>Action</label>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      className={`${inputCls} font-mono flex-1`}
+                      value={(node.options?.action as string) ?? ''}
+                      onChange={e => updateOption('action', e.target.value || undefined)}
+                      placeholder="${ServiceName:methodName}"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setActionPickerOpen(true)}
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition whitespace-nowrap"
+                    >
+                      Browse
+                    </button>
+                  </div>
+                  {actionPickerOpen && (
+                    <ActionPickerModal
+                      projectId={projectId}
+                      onClose={() => setActionPickerOpen(false)}
+                      onSelect={api => {
+                        updateOption('action', `\${${api.name}}`);
+                        setActionPickerOpen(false);
+                      }}
+                    />
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -241,6 +294,23 @@ export default function PropertiesPanel({ schema, node, projectId, onSchemaChang
 
       {node.type === 'Categorization' && (
         <p className="text-xs text-slate-400">จัดการแท็บได้จากผัง builder โดยตรง (แก้ชื่อ/เพิ่ม/ลบแท็บ)</p>
+      )}
+
+      {isMainPage && isContainer(node) && onToggleContentSlot && (
+        <div className="space-y-2 pt-3 border-t border-slate-100">
+          <p className={sectionHeadingCls}>Content Slot</p>
+          <label className="flex items-center gap-2 text-xs text-slate-600">
+            <input
+              type="checkbox"
+              checked={Boolean(isContentSlot)}
+              onChange={e => onToggleContentSlot(e.target.checked)}
+            />
+            ใช้เป็นจุดแสดง Content ตาม Route (Content Slot)
+          </label>
+          <p className="text-[11px] text-slate-400">
+            พื้นที่นี้จะถูกแทนที่ด้วย Content ของ Page ที่ route ไปตาม uiPath — เลือกได้ทีละจุดเท่านั้น
+          </p>
+        </div>
       )}
 
       {isFlexContainer && (

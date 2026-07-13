@@ -11,6 +11,8 @@ import {
   isMultiLineControl, isNumberControl, isStringControl, not, rankWith,
 } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
+import type { UiActionStep } from '@/types/flowUi';
+import { useActionRunner } from './actionRunner';
 
 const CONTROL_RANK = 5;
 
@@ -96,9 +98,17 @@ function DateControlComponent({ data, label, required, description, errors, enab
 }
 
 function EnumControlComponent({ schema, uischema, data, label, required, description, errors, enabled, visible, path, handleChange }: ControlProps) {
+  const runner = useActionRunner();
   if (!visible) return null;
   const options = (schema.enum ?? []) as (string | number)[];
-  const isRadio = (uischema as { options?: { format?: string } }).options?.format === 'radio';
+  const nodeOptions = (uischema as { options?: { format?: string; onChangeSteps?: UiActionStep[] } }).options;
+  const isRadio = nodeOptions?.format === 'radio';
+  const onChangeSteps = nodeOptions?.onChangeSteps;
+
+  function change(value: unknown) {
+    handleChange(path, value);
+    if (onChangeSteps?.length) runner?.runSteps(onChangeSteps);
+  }
 
   if (isRadio) {
     return (
@@ -106,7 +116,7 @@ function EnumControlComponent({ schema, uischema, data, label, required, descrip
         <div className="flex flex-col gap-1.5">
           {options.map(opt => (
             <label key={String(opt)} className="flex items-center gap-2 text-sm text-slate-700">
-              <input type="radio" name={path} checked={data === opt} disabled={!enabled} onChange={() => handleChange(path, opt)} />
+              <input type="radio" name={path} checked={data === opt} disabled={!enabled} onChange={() => change(opt)} />
               {String(opt)}
             </label>
           ))}
@@ -117,7 +127,7 @@ function EnumControlComponent({ schema, uischema, data, label, required, descrip
 
   return (
     <ControlField label={label} required={required} description={description} errors={errors}>
-      <select className={inputCls} value={(data as string) ?? ''} disabled={!enabled} onChange={e => handleChange(path, e.target.value)}>
+      <select className={inputCls} value={(data as string) ?? ''} disabled={!enabled} onChange={e => change(e.target.value)}>
         <option value="" disabled>เลือก...</option>
         {options.map(opt => <option key={String(opt)} value={opt}>{String(opt)}</option>)}
       </select>

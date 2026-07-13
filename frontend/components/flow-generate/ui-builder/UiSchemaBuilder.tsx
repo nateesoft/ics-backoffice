@@ -92,7 +92,7 @@ export default function UiSchemaBuilder({ name, uiType, pageKind, schema, uiSche
         {tab === 'preview' && (
           <div>
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">โครงสร้าง UI Schema</h3>
-            <BuilderCanvas schema={schema} uiSchema={uiSchema} projectId={projectId} currentUiId={currentUiId} onSchemaChange={onSchemaChange} onUiSchemaChange={onUiSchemaChange} />
+            <BuilderCanvas schema={schema} uiSchema={uiSchema} projectId={projectId} currentUiId={currentUiId} pageKind={pageKind} onSchemaChange={onSchemaChange} onUiSchemaChange={onUiSchemaChange} />
           </div>
         )}
 
