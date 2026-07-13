@@ -1,3 +1,6 @@
+import type { JsonSchema7 } from '@jsonforms/core';
+import type { UiSchemaNode } from './flowUi';
+
 export type CssFramework = 'tailwind' | 'bootstrap' | 'css-modules' | 'plain-css';
 export type SupportedLanguage = 'en' | 'th';
 export type FrontendFramework = 'NextJS' | 'ReactJS' | 'VueJS' | 'Angular';
@@ -36,4 +39,8 @@ export interface FlowTemplate {
   templateId: string;
   name: string;
   description: string;
+  // App-shell starter content cloned into the project's Main Page UI on creation. Optional —
+  // older/catalog-only templates (e.g. simple-crud-app-v1) may have no shell layout to seed.
+  schema?: JsonSchema7;
+  uiSchema?: UiSchemaNode;
 }

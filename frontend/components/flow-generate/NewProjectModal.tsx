@@ -2,12 +2,14 @@
 import { useState } from 'react';
 import Modal from '@/components/ui/Modal';
 import {
-  FlowProject, CssFramework, SupportedLanguage, FrontendFramework, BackendFramework, DatabaseType, ThemeMode,
+  FlowProject, FlowTemplate, CssFramework, SupportedLanguage, FrontendFramework, BackendFramework, DatabaseType, ThemeMode,
   CSS_FRAMEWORKS, SUPPORTED_LANGUAGES, FRONTEND_FRAMEWORKS, BACKEND_FRAMEWORKS, DATABASES, THEMES,
   CURRENCY_FORMATS, DATE_FORMATS,
 } from '@/types/flowProject';
 import { FLOW_TEMPLATES, getFlowTemplate } from '@/lib/flowTemplates';
 import { FlowItemsStore } from '@/lib/flowItemsStore';
+import { flowUiStore } from '@/lib/flowUiStore';
+import LiveFormPreview from '@/components/flow-generate/ui-builder/LiveFormPreview';
 
 interface NewProjectModalProps {
   store: FlowItemsStore;
@@ -24,6 +26,7 @@ export default function NewProjectModal({ store, modalTitle = 'New Project', onC
   const [description, setDescription] = useState('');
   const [templateId, setTemplateId] = useState('');
   const [showTemplates, setShowTemplates] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<FlowTemplate | null>(null);
   const [cssFramework, setCssFramework] = useState<CssFramework>('tailwind');
   const [supportedLanguages, setSupportedLanguages] = useState<SupportedLanguage[]>(['en', 'th']);
   const [defaultLanguage, setDefaultLanguage] = useState<SupportedLanguage>('en');
@@ -65,6 +68,21 @@ export default function NewProjectModal({ store, modalTitle = 'New Project', onC
       database,
       theme,
     });
+    // Seed the project's Main Page UI with the template's app-shell content (if it has one) so
+    // the user lands on ready-to-edit chrome instead of a blank canvas.
+    if (selectedTemplate?.schema && selectedTemplate?.uiSchema) {
+      flowUiStore.create({
+        projectId: project.id,
+        name: `${project.name} — Main Layout`,
+        description: `สร้างจาก Template: ${selectedTemplate.name}`,
+        uiType: 'Page',
+        pageKind: 'Main Page',
+        uiPath: '/',
+        roles: [],
+        schema: selectedTemplate.schema,
+        uiSchema: selectedTemplate.uiSchema,
+      });
+    }
     setCreated(project);
   }
 
@@ -93,7 +111,7 @@ export default function NewProjectModal({ store, modalTitle = 'New Project', onC
   }
 
   return (
-    <Modal title={modalTitle} onClose={onClose} size="md">
+    <Modal title={modalTitle} onClose={onClose} size={showTemplates ? 'xl' : 'md'}>
       <div className="space-y-4">
         <div>
           <label className={labelCls}>Project ID</label>
@@ -203,7 +221,11 @@ export default function NewProjectModal({ store, modalTitle = 'New Project', onC
             </div>
             <button
               type="button"
-              onClick={() => setShowTemplates(v => !v)}
+              onClick={() => setShowTemplates(v => {
+                const next = !v;
+                if (next) setPreviewTemplate(selectedTemplate ?? FLOW_TEMPLATES[0]);
+                return next;
+              })}
               className="px-3 py-2 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 text-sm font-medium hover:bg-indigo-100 transition flex-shrink-0"
             >
               Browse
@@ -211,22 +233,47 @@ export default function NewProjectModal({ store, modalTitle = 'New Project', onC
           </div>
 
           {showTemplates && (
-            <div className="mt-2 border border-slate-200 rounded-lg divide-y divide-slate-100 max-h-56 overflow-y-auto">
-              {FLOW_TEMPLATES.map(t => (
-                <button
-                  key={t.templateId}
-                  type="button"
-                  onClick={() => { setTemplateId(t.templateId); setShowTemplates(false); }}
-                  className={`w-full text-left px-3 py-2.5 hover:bg-indigo-50 transition ${templateId === t.templateId ? 'bg-indigo-50' : ''}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${templateId === t.templateId ? 'bg-indigo-500' : 'bg-slate-300'}`} />
-                    <span className="text-sm font-medium text-slate-800">{t.name}</span>
-                    <span className="text-xs text-slate-400">{t.templateId}</span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-0.5 ml-4">{t.description}</p>
-                </button>
-              ))}
+            <div className="mt-2 border border-slate-200 rounded-lg grid grid-cols-2 overflow-hidden">
+              <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto border-r border-slate-200">
+                {FLOW_TEMPLATES.map(t => (
+                  <button
+                    key={t.templateId}
+                    type="button"
+                    onMouseEnter={() => setPreviewTemplate(t)}
+                    onFocus={() => setPreviewTemplate(t)}
+                    onClick={() => { setTemplateId(t.templateId); setShowTemplates(false); }}
+                    className={`w-full text-left px-3 py-2.5 hover:bg-indigo-50 transition ${templateId === t.templateId ? 'bg-indigo-50' : ''} ${previewTemplate?.templateId === t.templateId ? 'bg-indigo-50/60' : ''}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${templateId === t.templateId ? 'bg-indigo-500' : 'bg-slate-300'}`} />
+                      <span className="text-sm font-medium text-slate-800">{t.name}</span>
+                      <span className="text-xs text-slate-400">{t.templateId}</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5 ml-4">{t.description}</p>
+                  </button>
+                ))}
+              </div>
+              <div className="max-h-80 overflow-y-auto p-3 bg-slate-50">
+                {previewTemplate ? (
+                  <>
+                    <p className="text-sm font-semibold text-slate-800">{previewTemplate.name}</p>
+                    <p className="text-xs text-slate-400 mb-2">Preview</p>
+                    {previewTemplate.schema && previewTemplate.uiSchema ? (
+                      <div className="rounded-lg border border-slate-200 bg-slate-100 overflow-hidden" style={{ height: 300 }}>
+                        <div className="pointer-events-none origin-top-left" style={{ transform: 'scale(0.42)', width: '238%' }}>
+                          <LiveFormPreview schema={previewTemplate.schema} uiSchema={previewTemplate.uiSchema} data={{}} onDataChange={() => {}} />
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic text-center py-10">
+                        Template นี้ไม่มี Layout ให้ดูตัวอย่าง (เป็น template สำหรับ CRUD workflow)
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs text-slate-400 text-center py-10">เลื่อนเมาส์ไปที่ template เพื่อดูตัวอย่าง</p>
+                )}
+              </div>
             </div>
           )}
         </div>
