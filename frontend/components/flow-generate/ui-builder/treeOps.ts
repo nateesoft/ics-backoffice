@@ -114,6 +114,19 @@ export function getNodeAtPath(root: BuilderNode, path: number[]): BuilderNode {
   return node;
 }
 
+// Locates a container node marked `options.slot === slotName` (e.g. the content placeholder in
+// an app-shell template, see lib/flowTemplates.ts) — used to compose a Page Content UI's own
+// content into its project's Main Page for preview. Returns null if no node carries that marker.
+export function findSlotPath(root: BuilderNode, slotName: string, path: number[] = []): number[] | null {
+  if (root.options?.slot === slotName) return path;
+  if (!root.elements) return null;
+  for (let i = 0; i < root.elements.length; i++) {
+    const found = findSlotPath(root.elements[i], slotName, [...path, i]);
+    if (found) return found;
+  }
+  return null;
+}
+
 export function addNodeAtPath(root: BuilderNode, containerPath: number[], index: number | undefined, node: BuilderNode): BuilderNode {
   const clone = structuredClone(root);
   const container = getNodeAtPath(clone, containerPath);
@@ -216,7 +229,7 @@ export function mergeComponentIntoTree(
   componentSchema: JsonSchema7,
   componentUiSchema: BuilderNode,
   componentName: string
-): { schema: JsonSchema7; node: BuilderNode } {
+): { schema: JsonSchema7; node: BuilderNode; keyMap: Record<string, string> } {
   const usedKeys = new Set(Object.keys(targetSchema.properties ?? {}));
   const keyMap: Record<string, string> = {};
   const mergedProperties: Record<string, JsonSchema7> = { ...(targetSchema.properties ?? {}) };
@@ -252,5 +265,6 @@ export function mergeComponentIntoTree(
       ...(mergedRequired.length ? { required: mergedRequired } : {}),
     },
     node: { type: 'Group', label: componentName, elements: [remappedRoot] },
+    keyMap,
   };
 }

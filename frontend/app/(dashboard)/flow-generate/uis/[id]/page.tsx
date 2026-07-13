@@ -160,6 +160,9 @@ export default function FlowUiDetailPage() {
       </div>
 
       <UiSchemaBuilder
+        name={name}
+        uiType={uiType}
+        pageKind={showPageKind ? pageKind : null}
         schema={schema}
         uiSchema={uiSchema}
         data={data}

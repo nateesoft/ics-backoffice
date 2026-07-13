@@ -18,8 +18,10 @@ function btn(label: string, className: string, style?: Style): UiSchemaNode {
   return { type: 'Button', text: label, options: { variant: 'secondary', type: 'button', className, ...(style ? { style } : {}) } };
 }
 
+// flexWrap: 'nowrap' — these rows are always structural chrome (appbar, body split, menu bars),
+// never meant to wrap to a second line just because a dropped-in child happens to be wide.
 function row(className: string, elements: UiSchemaNode[], style?: Style): UiSchemaNode {
-  return { type: 'HorizontalLayout', elements, options: { className: `flex flex-row ${className}`, ...(style ? { style } : {}) } };
+  return { type: 'HorizontalLayout', elements, options: { className: `flex flex-row ${className}`, style: { flexWrap: 'nowrap', ...style } } };
 }
 
 function col(className: string, elements: UiSchemaNode[], style?: Style): UiSchemaNode {
@@ -49,10 +51,15 @@ function logoutButton(): UiSchemaNode {
   return btn('Logout', 'text-sm text-red-600 border-red-200 hover:bg-red-50');
 }
 
+// `options.slot: 'content'` marks this node so the "Preview" button on a Page Content UI
+// (components/flow-generate/ui-builder/composePreview.ts) can find where to embed that page's
+// own content when previewing it composed inside this Main Page app-shell.
 function contentSlot(hint: string): UiSchemaNode {
-  return col('flex-1 items-center justify-center p-6 overflow-auto bg-slate-50', [
-    text(hint, 'text-sm text-slate-400 italic text-center'),
-  ], { flex: '1 1 auto' });
+  return {
+    type: 'VerticalLayout',
+    elements: [text(hint, 'text-sm text-slate-400 italic text-center')],
+    options: { className: 'flex flex-col flex-1 items-center justify-center p-6 overflow-auto bg-slate-50', style: { flex: '1 1 auto' }, slot: 'content' },
+  };
 }
 
 function footerBar(note = '© 2026 Company Name. All rights reserved.'): UiSchemaNode {
