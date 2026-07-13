@@ -91,6 +91,15 @@ const menuItems = [
     )
   },
   {
+    href: '/apis-gen',
+    label: 'APIs Gen',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+      </svg>
+    )
+  },
+  {
     href: '/meeting',
     label: 'Meeting Room',
     icon: (
@@ -107,6 +116,11 @@ const flowSubItems = [
   { href: '/flow-generate/uis', label: 'UIs' },
 ];
 
+const apisGenSubItems = [
+  { href: '/apis-gen', label: 'Collections' },
+  { href: '/apis-gen/custom-endpoints', label: 'Custom Endpoints' },
+];
+
 export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [teamUsers, setTeamUsers] = useState<OnlineUser[]>([]);
@@ -114,6 +128,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const [docFolders, setDocFolders] = useState<DocFolder[]>([]);
   const [docsExpanded, setDocsExpanded] = useState(false);
   const [flowExpanded, setFlowExpanded] = useState(false);
+  const [apisGenExpanded, setApisGenExpanded] = useState(false);
   const [addingFolder, setAddingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [editingFolder, setEditingFolder] = useState<number | null>(null);
@@ -136,6 +151,10 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
   useEffect(() => {
     if (pathname.startsWith('/flow-generate')) setFlowExpanded(true);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (pathname.startsWith('/apis-gen')) setApisGenExpanded(true);
   }, [pathname]);
 
   useEffect(() => {
@@ -286,6 +305,76 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                 {!collapsed && flowExpanded && (
                   <div className="mt-0.5 ml-4 pl-3 border-l border-slate-700/70 space-y-0.5 pb-0.5">
                     {flowSubItems.map(sub => {
+                      const isSubActive = pathname === sub.href;
+                      return (
+                        <Link
+                          key={sub.href}
+                          href={sub.href}
+                          onClick={onMobileClose}
+                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition min-w-0 ${
+                            isSubActive
+                              ? 'bg-indigo-500/25 text-indigo-300'
+                              : 'text-slate-400 hover:bg-slate-700/60 hover:text-slate-200'
+                          }`}
+                        >
+                          <span className="truncate">{sub.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          if (item.href === '/apis-gen') {
+            const isApisGenActive = pathname.startsWith('/apis-gen');
+            return (
+              <div key={item.href}>
+                {divider}
+                {/* APIs Gen row */}
+                <div className={`flex items-center rounded-lg transition ${isApisGenActive && !collapsed ? 'bg-indigo-600' : ''}`}>
+                  <Link
+                    href="/apis-gen"
+                    onClick={onMobileClose}
+                    className={`flex items-center gap-3 px-3 py-2.5 flex-1 text-sm font-medium rounded-lg transition ${
+                      isApisGenActive
+                        ? collapsed
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-white'
+                        : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                    }`}
+                  >
+                    {item.icon}
+                    {!collapsed && <span className="flex-1">{item.label}</span>}
+                  </Link>
+
+                  {!collapsed && (
+                    <div className="flex items-center pr-1.5 gap-0.5">
+                      <button
+                        onClick={() => setApisGenExpanded(v => !v)}
+                        title={apisGenExpanded ? 'Collapse' : 'Expand'}
+                        className={`p-1 rounded transition ${
+                          isApisGenActive
+                            ? 'text-indigo-200 hover:bg-indigo-500 hover:text-white'
+                            : 'text-slate-500 hover:bg-slate-700 hover:text-white'
+                        }`}
+                      >
+                        <svg
+                          className={`w-3 h-3 transition-transform duration-200 ${apisGenExpanded ? 'rotate-90' : ''}`}
+                          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sub-menu: Collections / Custom Endpoints */}
+                {!collapsed && apisGenExpanded && (
+                  <div className="mt-0.5 ml-4 pl-3 border-l border-slate-700/70 space-y-0.5 pb-0.5">
+                    {apisGenSubItems.map(sub => {
                       const isSubActive = pathname === sub.href;
                       return (
                         <Link

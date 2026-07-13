@@ -1,7 +1,18 @@
 import axios from 'axios';
+import type {
+  Collection,
+  CustomEndpoint,
+  CustomEndpointInput,
+  Paginated,
+  RecordItem,
+} from '@/types/apiGen';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/ics-backoffice/api';
+
+export { API_BASE_URL };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || '/ics-backoffice/api',
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 
@@ -249,6 +260,42 @@ export const lineNotifyApi = {
   getStatus: () => api.get<{ linked: boolean; expiresAt: string | null }>('/line-notify/status'),
   generateToken: () => api.post<{ token: string; expiresAt: string }>('/line-notify/generate-token'),
   unlink: () => api.delete('/line-notify/unlink'),
+};
+
+export const apiGenApi = {
+  listCollections: (page = 1, limit = 20) =>
+    api.get<Paginated<Collection>>('/collections', { params: { page, limit } }),
+  getCollection: (id: string) => api.get<Collection>(`/collections/${id}`),
+  deleteCollection: (id: string) => api.delete(`/collections/${id}`),
+  publishCollection: (id: string) => api.post<Collection>(`/collections/${id}/publish`),
+  unpublishCollection: (id: string) => api.post<Collection>(`/collections/${id}/unpublish`),
+  generate: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post<Collection>('/collections/generate', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  listRecords: (collectionId: string, search?: string, page = 1, limit = 20) =>
+    api.get<Paginated<RecordItem>>(`/collections/${collectionId}/records`, {
+      params: { search, page, limit },
+    }),
+  createRecord: (collectionId: string, data: Record<string, unknown>) =>
+    api.post<RecordItem>(`/collections/${collectionId}/records`, data),
+  updateRecord: (collectionId: string, recordId: string, data: Record<string, unknown>) =>
+    api.patch<RecordItem>(`/collections/${collectionId}/records/${recordId}`, data),
+  deleteRecord: (collectionId: string, recordId: string) =>
+    api.delete(`/collections/${collectionId}/records/${recordId}`),
+
+  listCustomEndpoints: (page = 1, limit = 20) =>
+    api.get<Paginated<CustomEndpoint>>('/custom-endpoints', { params: { page, limit } }),
+  getCustomEndpoint: (id: string) => api.get<CustomEndpoint>(`/custom-endpoints/${id}`),
+  createCustomEndpoint: (data: CustomEndpointInput) =>
+    api.post<CustomEndpoint>('/custom-endpoints', data),
+  updateCustomEndpoint: (id: string, data: CustomEndpointInput) =>
+    api.patch<CustomEndpoint>(`/custom-endpoints/${id}`, data),
+  deleteCustomEndpoint: (id: string) => api.delete(`/custom-endpoints/${id}`),
 };
 
 export default api;

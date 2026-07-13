@@ -39,6 +39,11 @@ import { ChatMessage } from './entities/chat-message.entity';
 import { CommentReaction } from './entities/comment-reaction.entity';
 import { NoteReaction } from './entities/note-reaction.entity';
 import { NoteReply } from './entities/note-reply.entity';
+import { CollectionsModule } from './collections/collections.module';
+import { CustomEndpointsModule } from './custom-endpoints/custom-endpoints.module';
+import { Collection } from './collections/entities/collection.entity';
+import { RecordEntity } from './collections/entities/record.entity';
+import { CustomEndpoint } from './custom-endpoints/entities/custom-endpoint.entity';
 
 @Module({
   imports: [
@@ -48,7 +53,7 @@ import { NoteReply } from './entities/note-reply.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply],
+        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply, Collection, RecordEntity, CustomEndpoint],
         synchronize: true,
         timezone: '+07:00',
       }),
@@ -74,6 +79,8 @@ import { NoteReply } from './entities/note-reply.entity';
     DocumentCommentsModule,
     ProjectPlansModule,
     LineNotifyModule,
+    CollectionsModule,
+    CustomEndpointsModule,
   ],
 })
 export class AppModule {}
