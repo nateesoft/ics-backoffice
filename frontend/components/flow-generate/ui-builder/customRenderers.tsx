@@ -11,7 +11,7 @@
 // `options.className` or `options.style` is present, the wrapper renders a styled `<div>` and
 // re-dispatches to the normal renderer with those two keys stripped (so the wrapper's own
 // tester no longer matches on the redispatch, avoiding infinite recursion).
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { JsonFormsProps, JsonSchema, LayoutProps, RankedTester, UISchemaElement } from '@jsonforms/core';
 import { rankWith, uiTypeIs } from '@jsonforms/core';
 import { JsonFormsDispatch, useJsonForms, withJsonFormsLayoutProps, withJsonFormsRendererProps } from '@jsonforms/react';
@@ -214,6 +214,26 @@ function ButtonComponent({ uischema, visible }: LayoutProps) {
   return <button type="button" className={className} style={node.options?.style}>{text}</button>;
 }
 
+// Invisible marker node (UIs Gen's "Initial Load" palette element): fires its `options.actionSteps`
+// exactly once, the moment the page/content/modal it lives in first mounts — e.g. a callApi step
+// to fetch that page's data on load. Not a click target, so it renders nothing.
+function InitialLoadComponent({ uischema, visible }: LayoutProps) {
+  const runner = useActionRunner();
+  const hasRun = useRef(false);
+  const node = uischema as { options?: { actionSteps?: UiActionStep[] } };
+
+  useEffect(() => {
+    if (hasRun.current || !visible) return;
+    hasRun.current = true;
+    runner?.runSteps(node.options?.actionSteps ?? []);
+    // Steps run once on mount regardless of later prop changes — an "initial load" re-firing on
+    // every unrelated re-render would repeatedly re-trigger its API calls.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
+  return null;
+}
+
 // Types above already read `options.className`/`options.style` themselves — exclude them here
 // so a styled Card doesn't end up double-wrapped.
 const SELF_STYLED_TYPES = ['Card', 'Paper', 'Box', 'Group', 'HorizontalLayout', 'VerticalLayout', 'Button'];
@@ -237,6 +257,7 @@ export const groupTester: RankedTester = rankWith(2, uiTypeIs('Group'));
 export const horizontalLayoutTester: RankedTester = rankWith(2, uiTypeIs('HorizontalLayout'));
 export const verticalLayoutTester: RankedTester = rankWith(2, uiTypeIs('VerticalLayout'));
 export const buttonTester: RankedTester = rankWith(2, uiTypeIs('Button'));
+export const initialLoadTester: RankedTester = rankWith(2, uiTypeIs('InitialLoad'));
 
 export const styleWrapperTester: RankedTester = rankWith(20, uischema => {
   const type = (uischema as UISchemaElement).type;
@@ -252,6 +273,7 @@ export const GroupRenderer = withJsonFormsLayoutProps(GroupComponent);
 export const HorizontalLayoutRenderer = withJsonFormsLayoutProps(HorizontalLayoutComponent);
 export const VerticalLayoutRenderer = withJsonFormsLayoutProps(VerticalLayoutComponent);
 export const ButtonRenderer = withJsonFormsLayoutProps(ButtonComponent);
+export const InitialLoadRenderer = withJsonFormsLayoutProps(InitialLoadComponent);
 export const StyleWrapperRenderer = withJsonFormsRendererProps(StyleWrapperComponent);
 
 export const customRenderers = [
@@ -262,5 +284,6 @@ export const customRenderers = [
   { tester: horizontalLayoutTester, renderer: HorizontalLayoutRenderer },
   { tester: verticalLayoutTester, renderer: VerticalLayoutRenderer },
   { tester: buttonTester, renderer: ButtonRenderer },
+  { tester: initialLoadTester, renderer: InitialLoadRenderer },
   { tester: styleWrapperTester, renderer: StyleWrapperRenderer },
 ];

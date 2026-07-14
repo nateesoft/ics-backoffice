@@ -6,6 +6,11 @@ import { PALETTE_GROUPS, BuilderElementType } from '@/components/flow-generate/u
 // Structural-element palette only — forked from flow-generate's Palette.tsx without the "saved
 // Components" section (that section reads flow-generate's own flowUiStore, which would leak
 // unrelated Flow Generate content into the UIs Gen designer).
+//
+// "Initial Load" is UIs Gen-only — kept out of the shared PALETTE_GROUPS (treeOps.ts) so
+// flow-generate's own Palette doesn't pick it up, and listed as its own group here instead.
+const SYSTEM_GROUP = { heading: 'System', items: [{ type: 'InitialLoad' as BuilderElementType, label: 'Initial Load', icon: '⚡' }] };
+
 function PaletteChip({ type, label, icon }: { type: BuilderElementType; label: string; icon: string }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `palette:${type}`,
@@ -35,7 +40,7 @@ export default function Palette() {
 
   return (
     <div className="flex flex-col gap-4 p-3 rounded-xl bg-slate-50 border border-slate-100">
-      {PALETTE_GROUPS.map(group => {
+      {[...PALETTE_GROUPS, SYSTEM_GROUP].map(group => {
         const isCollapsed = Boolean(collapsed[group.heading]);
         return (
           <div key={group.heading} className="flex flex-col gap-2">

@@ -20,7 +20,12 @@ export type BuilderElementType =
   | 'Paper'
   | 'Box'
   | 'Button'
-  | 'Label';
+  | 'Label'
+  // Invisible marker node: runs its `options.actionSteps` once when the page/content it lives in
+  // first mounts (see customRenderers.tsx's InitialLoadRenderer) — e.g. "fetch this page's data on
+  // load". Deliberately left out of PALETTE_GROUPS below (flow-generate's UI builder doesn't offer
+  // it in its own Palette) — UIs Gen's Palette.tsx lists it separately.
+  | 'InitialLoad';
 
 // Palette actions that open a dialog to bind a schema property, rather than being inserted
 // directly onto the canvas.
@@ -77,6 +82,7 @@ export function isControlWidget(type: BuilderElementType): type is ControlWidget
 export function createDefaultNode(type: Exclude<BuilderElementType, ControlWidgetAction>): BuilderNode {
   if (type === 'Label') return { type: 'Label', text: 'Label' };
   if (type === 'Button') return { type: 'Button', text: 'Submit' };
+  if (type === 'InitialLoad') return { type: 'InitialLoad', options: { actionSteps: [] } };
   if (type === 'Group' || type === 'Card') return { type, label: type, elements: [] };
   if (type === 'Tabs') return { type: 'Categorization', elements: [createDefaultCategory('Tab 1'), createDefaultCategory('Tab 2')] };
   return { type, elements: [] };

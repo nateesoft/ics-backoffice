@@ -77,6 +77,7 @@ const TYPE_META: Record<string, { label: string; icon: string; color: string }> 
   Paper: { label: 'Paper', icon: '▧', color: 'bg-orange-50 text-orange-600 border-orange-100' },
   Box: { label: 'Box', icon: '□', color: 'bg-slate-100 text-slate-600 border-slate-200' },
   Button: { label: 'Button', icon: '⏎', color: 'bg-rose-50 text-rose-600 border-rose-100' },
+  InitialLoad: { label: 'Initial Load', icon: '⚡', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
 };
 
 const WIDGET_META: Record<string, { label: string; icon: string; color: string }> = {
@@ -221,6 +222,15 @@ function BuilderNodeCard({ path, node }: { path: number[]; node: BuilderNode }) 
             placeholder="Text"
             className="flex-1 min-w-0 px-2 py-1 rounded border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
+        )}
+
+        {node.type === 'InitialLoad' && (
+          // Unlike Label/Button, this node has no text of its own to show — a fixed caption is
+          // the only way to tell it apart from any other card now that the generic type badge is gone.
+          <span className="flex-1 min-w-0 text-xs font-semibold text-yellow-700">
+            ⚡ Initial Load — {(node.options?.actionSteps as unknown[] | undefined)?.length ?? 0} step
+            {((node.options?.actionSteps as unknown[] | undefined)?.length ?? 0) === 1 ? '' : 's'}
+          </span>
         )}
 
         <div className="flex-1" />

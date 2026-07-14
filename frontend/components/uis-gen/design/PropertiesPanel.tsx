@@ -178,6 +178,19 @@ export default function PropertiesPanel({ schema, node, targets, onSchemaChange,
         </div>
       )}
 
+      {node.type === 'InitialLoad' && (
+        <div className="space-y-3">
+          <p className="text-xs text-slate-500">
+            ทำงานอัตโนมัติครั้งเดียวตอนหน้านี้โหลดเสร็จ (ไม่ต้องกดปุ่ม) — ใช้สำหรับดึงข้อมูลเริ่มต้นให้หน้านี้
+          </p>
+          <ActionStepsEditor
+            steps={(node.options?.actionSteps as UisGenActionStep[]) ?? []}
+            targets={targets}
+            onChange={steps => onUpdateNode(n => { n.options = { ...n.options, actionSteps: steps }; })}
+          />
+        </div>
+      )}
+
       {node.type === 'Button' && (
         <div className="space-y-3">
           <div>
