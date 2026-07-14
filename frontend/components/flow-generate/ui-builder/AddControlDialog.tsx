@@ -12,8 +12,12 @@ interface AddControlDialogProps {
   onConfirm: (result: { scope: string; label: string; schema: JsonSchema7; options?: Record<string, unknown> }) => void;
 }
 
+// 'password' isn't a real JSON Schema type — it maps to `type: 'string'` plus
+// `options.inputType: 'password'` (masked input), same convention as the "Type" selector for
+// existing string Controls in PropertiesPanel.tsx / rendered by customControlRenderers.tsx.
 const FIELD_TYPES = [
   { value: 'string', label: 'Text' },
+  { value: 'password', label: 'Password' },
   { value: 'number', label: 'Number' },
   { value: 'integer', label: 'Integer' },
   { value: 'boolean', label: 'Checkbox' },
@@ -48,7 +52,12 @@ export default function AddControlDialog({ schema, preset = 'field', onCancel, o
   const [error, setError] = useState('');
 
   const needsOptions = preset === 'select' || preset === 'radio';
-  const controlOptions = preset === 'radio' ? { format: 'radio' } : undefined;
+  const isPasswordField = mode === 'new' && preset === 'field' && newType === 'password';
+  const controlOptions = preset === 'radio'
+    ? { format: 'radio' }
+    : isPasswordField
+      ? { inputType: 'password' }
+      : undefined;
 
   function handleConfirm() {
     if (mode === 'existing') {
@@ -71,7 +80,7 @@ export default function AddControlDialog({ schema, preset = 'field', onCancel, o
       if (opts.length < 2) { setError('กรุณากรอกตัวเลือกอย่างน้อย 2 รายการ คั่นด้วย comma'); return; }
       propSchema = { type: 'string', enum: opts, ...(newTitle.trim() ? { title: newTitle.trim() } : {}) };
     } else {
-      propSchema = { type: newType, ...(newTitle.trim() ? { title: newTitle.trim() } : {}) };
+      propSchema = { type: isPasswordField ? 'string' : newType, ...(newTitle.trim() ? { title: newTitle.trim() } : {}) };
     }
 
     const updatedSchema: JsonSchema7 = {
