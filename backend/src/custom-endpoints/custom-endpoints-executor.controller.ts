@@ -17,10 +17,17 @@ export class CustomEndpointsExecutorController {
     @Body() body: Record<string, unknown>,
   ) {
     const subPath = Array.isArray(splat) ? splat.join('/') : (splat ?? '');
+    // GET requests carry no body — let 'findBy'/'validate' (and any future GET-configured action
+    // that reads inputMapping) read their fields from the query string instead, e.g.
+    // GET /api/v2/users/find?email=foo@bar.com.
+    const effectiveBody =
+      req.method === 'GET'
+        ? { ...(req.query as Record<string, unknown>), ...(body ?? {}) }
+        : (body ?? {});
     const { status, data } = await this.customEndpointsService.execute(
       req.method as HttpMethod,
       subPath,
-      body ?? {},
+      effectiveBody,
       req.headers.authorization,
       {
         page: req.query.page as string | undefined,

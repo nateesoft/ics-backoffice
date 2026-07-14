@@ -100,6 +100,15 @@ const menuItems = [
     )
   },
   {
+    href: '/uis-gen',
+    label: 'UIs Gen',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 5.25h16.5v13.5H3.75V5.25zM3.75 9h16.5M8.25 9v9.75" />
+      </svg>
+    )
+  },
+  {
     href: '/meeting',
     label: 'Meeting Room',
     icon: (

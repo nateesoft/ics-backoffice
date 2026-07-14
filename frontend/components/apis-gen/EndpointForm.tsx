@@ -8,11 +8,16 @@ import {
   CustomEndpointAuthType,
   CustomEndpointInput,
   HttpMethod,
+  ValidatePasswordMode,
 } from '@/types/apiGen';
 
 const HTTP_METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
-const ACTIONS: CustomEndpointAction[] = ['list', 'get', 'create', 'update', 'delete'];
+const ACTIONS: CustomEndpointAction[] = ['list', 'get', 'create', 'update', 'delete', 'findBy', 'validate'];
 const ID_ACTIONS: CustomEndpointAction[] = ['get', 'update', 'delete'];
+const VALIDATE_PASSWORD_MODES: { value: ValidatePasswordMode; label: string }[] = [
+  { value: 'bcrypt', label: 'Hashed (bcrypt)' },
+  { value: 'plain', label: 'Plain text' },
+];
 const AUTH_TYPES: { value: CustomEndpointAuthType; label: string }[] = [
   { value: 'none', label: 'No Auth' },
   { value: 'basic', label: 'Basic Auth' },
@@ -31,6 +36,7 @@ interface InputRow {
   requestField: string;
   recordField: string;
   required: boolean;
+  isPasswordField: boolean;
 }
 
 interface ResponseRow {
@@ -54,6 +60,7 @@ export interface EndpointFormValues {
   inputMapping: InputRow[];
   transformSteps: TransformRow[];
   responseMapping: ResponseRow[];
+  validatePasswordMode: ValidatePasswordMode;
   authType: CustomEndpointAuthType;
   authUsername: string;
   authPassword: string;
@@ -61,7 +68,7 @@ export interface EndpointFormValues {
 }
 
 function emptyInputRow(id: string): InputRow {
-  return { id, requestField: '', recordField: '', required: false };
+  return { id, requestField: '', recordField: '', required: false, isPasswordField: false };
 }
 
 function emptyResponseRow(id: string): ResponseRow {
@@ -82,6 +89,7 @@ export function defaultFormValues(): EndpointFormValues {
     inputMapping: [],
     transformSteps: [],
     responseMapping: [],
+    validatePasswordMode: 'bcrypt',
     authType: 'none',
     authUsername: '',
     authPassword: '',
@@ -96,9 +104,10 @@ export function toFormValues(input: CustomEndpointInput, idPrefix: string): Endp
     action: input.action,
     path: input.path,
     collectionId: input.collectionId,
-    inputMapping: input.inputMapping.map((r, i) => ({ id: `${idPrefix}-in-${i}`, ...r })),
+    inputMapping: input.inputMapping.map((r, i) => ({ id: `${idPrefix}-in-${i}`, isPasswordField: false, ...r })),
     transformSteps: (input.transformSteps ?? []).map((r, i) => ({ id: `${idPrefix}-tf-${i}`, ...r })),
     responseMapping: input.responseMapping.map((r, i) => ({ id: `${idPrefix}-out-${i}`, ...r })),
+    validatePasswordMode: input.validatePasswordMode ?? 'bcrypt',
     authType: input.authType ?? 'none',
     authUsername: input.authUsername ?? '',
     authPassword: '',
@@ -189,9 +198,14 @@ export default function EndpointForm({
   }
 
   const selectedCollection = collections.find((c) => c.id === values.collectionId);
-  const showInputMapping = values.action === 'create' || values.action === 'update';
+  const showInputMapping =
+    values.action === 'create' ||
+    values.action === 'update' ||
+    values.action === 'findBy' ||
+    values.action === 'validate';
   const showResponseMapping = values.action !== 'delete';
   const showTransformSteps = values.action !== 'delete';
+  const isValidateAction = values.action === 'validate';
   const keepsExistingSecret = initialAuthType === values.authType && initialAuthType !== 'none';
   const normalizedPath = normalizePathPreview(values.path);
   const previewPath = ID_ACTIONS.includes(values.action) ? `${normalizedPath}/:id` : normalizedPath;
@@ -205,13 +219,19 @@ export default function EndpointForm({
       collectionId: values.collectionId,
       inputMapping: values.inputMapping
         .filter((r) => r.requestField.trim() || r.recordField.trim())
-        .map(({ requestField, recordField, required }) => ({ requestField, recordField, required })),
+        .map(({ requestField, recordField, required, isPasswordField }) => ({
+          requestField,
+          recordField,
+          required,
+          ...(isValidateAction ? { isPasswordField } : {}),
+        })),
       transformSteps: values.transformSteps
         .filter((r) => r.field.trim() || r.expression.trim())
         .map(({ field, expression }) => ({ field, expression })),
       responseMapping: values.responseMapping
         .filter((r) => r.recordField.trim() || r.responseField.trim())
         .map(({ recordField, responseField }) => ({ recordField, responseField })),
+      ...(isValidateAction ? { validatePasswordMode: values.validatePasswordMode } : {}),
       authType: values.authType,
       authUsername: values.authType === 'basic' ? values.authUsername.trim() : null,
       ...(values.authPassword.trim() ? { authPassword: values.authPassword.trim() } : {}),
@@ -311,14 +331,21 @@ export default function EndpointForm({
       {showInputMapping && (
         <div className="space-y-2 border-t border-slate-100 pt-5">
           <label className="block text-sm font-medium text-slate-700">
-            Input mapping <span className="font-normal text-slate-400">(request body field &rarr; record field)</span>
+            Input mapping{' '}
+            <span className="font-normal text-slate-400">
+              {values.action === 'findBy'
+                ? '(request field → record field to match on, AND-combined)'
+                : isValidateAction
+                  ? '(non-password rows = lookup match; the password row compares against the stored field)'
+                  : '(request body field → record field)'}
+            </span>
           </label>
           {values.inputMapping.map((row) => (
             <div key={row.id} className="flex items-center gap-2">
               <input
                 value={row.requestField}
                 onChange={(e) => updateInputRow(row.id, { requestField: e.target.value })}
-                placeholder="request field"
+                placeholder={row.isPasswordField ? 'e.g. password' : 'request field'}
                 className={rowInputClass}
               />
               <span className="text-slate-400">&rarr;</span>
@@ -329,15 +356,28 @@ export default function EndpointForm({
                 list={`${idPrefix}-collection-fields`}
                 className={rowInputClass}
               />
-              <label className="flex items-center gap-1 text-xs text-slate-600">
-                <input
-                  type="checkbox"
-                  checked={row.required}
-                  onChange={(e) => updateInputRow(row.id, { required: e.target.checked })}
-                  className="accent-indigo-600"
-                />
-                required
-              </label>
+              {isValidateAction && (
+                <label className="flex items-center gap-1 text-xs text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={row.isPasswordField}
+                    onChange={(e) => updateInputRow(row.id, { isPasswordField: e.target.checked })}
+                    className="accent-indigo-600"
+                  />
+                  password
+                </label>
+              )}
+              {!isValidateAction && (
+                <label className="flex items-center gap-1 text-xs text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={row.required}
+                    onChange={(e) => updateInputRow(row.id, { required: e.target.checked })}
+                    className="accent-indigo-600"
+                  />
+                  required
+                </label>
+              )}
               <button
                 type="button"
                 onClick={() => removeInputRow(row.id)}
@@ -351,7 +391,41 @@ export default function EndpointForm({
           <button type="button" onClick={addInputRow} className="text-sm font-medium text-indigo-600 hover:text-indigo-700">
             + Add input mapping
           </button>
-          <p className="text-xs text-slate-400">Leave empty to pass the request body through as-is.</p>
+          {values.action === 'findBy' && (
+            <p className="text-xs text-slate-400">Leave empty to match all records (same as List).</p>
+          )}
+          {isValidateAction && (
+            <>
+              <div className="flex items-center gap-2 pt-1">
+                <label className="text-xs font-medium text-slate-600">Stored password format</label>
+                <select
+                  value={values.validatePasswordMode}
+                  onChange={(e) => update({ validatePasswordMode: e.target.value as ValidatePasswordMode })}
+                  className="rounded-lg border border-slate-300 px-2 py-1 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                >
+                  {VALIDATE_PASSWORD_MODES.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-xs text-slate-400">
+                Mark exactly one row as &ldquo;password&rdquo; (e.g. password &rarr; password); all other rows must match
+                exactly (e.g. username &rarr; username) to find the record. Returns 401 for either a missing record or a
+                wrong password &mdash; the response never includes the password field.
+              </p>
+              {values.method === 'GET' && (
+                <p className="text-xs text-amber-600">
+                  ⚠ GET sends field values via the query string, which can end up in server/browser logs. Use POST for
+                  login-style validation instead.
+                </p>
+              )}
+            </>
+          )}
+          {values.action !== 'findBy' && !isValidateAction && (
+            <p className="text-xs text-slate-400">Leave empty to pass the request body through as-is.</p>
+          )}
         </div>
       )}
 

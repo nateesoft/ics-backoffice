@@ -18,6 +18,7 @@ import {
   InputMappingRule,
   ResponseMappingRule,
   TransformStep,
+  ValidatePasswordMode,
 } from './entities/custom-endpoint.entity';
 import {
   applyInputMapping,
@@ -34,9 +35,12 @@ const ACTIONS: CustomEndpointAction[] = [
   'create',
   'update',
   'delete',
+  'findBy',
+  'validate',
 ];
 const ID_ACTIONS: CustomEndpointAction[] = ['get', 'update', 'delete'];
 const AUTH_TYPES: CustomEndpointAuthType[] = ['none', 'basic', 'bearer'];
+const VALIDATE_PASSWORD_MODES: ValidatePasswordMode[] = ['bcrypt', 'plain'];
 const SALT_ROUNDS = 10;
 
 export interface CustomEndpointInput {
@@ -48,6 +52,7 @@ export interface CustomEndpointInput {
   inputMapping: InputMappingRule[];
   transformSteps: TransformStep[];
   responseMapping: ResponseMappingRule[];
+  validatePasswordMode?: ValidatePasswordMode;
   authType: CustomEndpointAuthType;
   authUsername?: string | null;
   authPassword?: string;
@@ -63,6 +68,7 @@ interface NormalizedCustomEndpoint {
   inputMapping: InputMappingRule[];
   transformSteps: TransformStep[];
   responseMapping: ResponseMappingRule[];
+  validatePasswordMode: ValidatePasswordMode;
   authType: CustomEndpointAuthType;
   authUsername: string | null;
   authSecretHash: string | null;
@@ -202,7 +208,68 @@ export class CustomEndpointsService {
         await this.collectionsService.deleteRecord(def.collectionId, recordId!);
         return { status: 204, data: undefined };
       }
+      case 'findBy': {
+        const criteria = applyInputMapping(body, def.inputMapping);
+        const result = await this.collectionsService.findRecordsByFields(
+          def.collectionId,
+          criteria,
+          query?.page,
+          query?.limit,
+        );
+        return {
+          status: 200,
+          data: {
+            ...result,
+            data: result.data.map((r) => this.toResponseData(r, def)),
+          },
+        };
+      }
+      case 'validate': {
+        return this.executeValidate(def, body);
+      }
     }
+  }
+
+  private async executeValidate(
+    def: CustomEndpoint,
+    body: Record<string, unknown>,
+  ) {
+    const { criteria, passwordField, passwordValue } = splitValidateMapping(
+      body,
+      def.inputMapping,
+    );
+    // Config is enforced at save time (validateAndNormalize), but guard here too in case older
+    // rows predate that check.
+    if (!passwordField || passwordValue === undefined) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const matches = await this.collectionsService.findRecordsByFields(
+      def.collectionId,
+      criteria,
+      undefined,
+      '1',
+    );
+    // Same generic error for "no matching record" and "wrong password" — don't let callers use
+    // this endpoint to enumerate which usernames exist.
+    const record = matches.data[0];
+    if (!record) throw new UnauthorizedException('Invalid credentials');
+
+    const stored = record.data[passwordField];
+    const isMatch =
+      typeof stored === 'string' &&
+      (def.validatePasswordMode === 'plain'
+        ? stored === String(passwordValue)
+        : await bcrypt.compare(String(passwordValue), stored));
+    if (!isMatch) throw new UnauthorizedException('Invalid credentials');
+
+    // Never echo the password field back, regardless of responseMapping configuration.
+    const sanitizedData = { ...record.data };
+    delete sanitizedData[passwordField];
+    return {
+      status: 200,
+      data: this.toResponseData({ ...record, data: sanitizedData }, def),
+    };
   }
 
   private toResponseData(
@@ -284,6 +351,30 @@ export class CustomEndpointsService {
         );
       }
     }
+
+    let validatePasswordMode: ValidatePasswordMode = 'bcrypt';
+    if (input.action === 'validate') {
+      const passwordRows = (input.inputMapping ?? []).filter(
+        (r) => r.isPasswordField,
+      );
+      if (passwordRows.length !== 1) {
+        throw new BadRequestException(
+          'Validate action requires exactly one input mapping row marked as the password field',
+        );
+      }
+      const lookupRows = (input.inputMapping ?? []).filter(
+        (r) => !r.isPasswordField,
+      );
+      if (lookupRows.length === 0) {
+        throw new BadRequestException(
+          'Validate action requires at least one lookup field (e.g. username) besides the password field',
+        );
+      }
+      validatePasswordMode = input.validatePasswordMode ?? 'bcrypt';
+      if (!VALIDATE_PASSWORD_MODES.includes(validatePasswordMode)) {
+        throw new BadRequestException('Invalid validate password mode');
+      }
+    }
     for (const step of input.transformSteps ?? []) {
       if (!step.field?.trim() || !step.expression?.trim()) {
         throw new BadRequestException(
@@ -340,6 +431,7 @@ export class CustomEndpointsService {
       inputMapping: input.inputMapping ?? [],
       transformSteps: input.transformSteps ?? [],
       responseMapping: input.responseMapping ?? [],
+      validatePasswordMode,
       authType,
       authUsername,
       authSecretHash,
@@ -416,6 +508,32 @@ export class CustomEndpointsService {
       }
     }
   }
+}
+
+// Splits a 'validate' action's inputMapping into lookup criteria (AND-matched to find the
+// candidate record, e.g. { username: 'alice' }) and the one row marked isPasswordField (the
+// submitted password + which record field holds the stored password to compare against).
+function splitValidateMapping(
+  body: Record<string, unknown>,
+  rules: InputMappingRule[],
+): {
+  criteria: Record<string, unknown>;
+  passwordField?: string;
+  passwordValue?: unknown;
+} {
+  const criteria: Record<string, unknown> = {};
+  let passwordField: string | undefined;
+  let passwordValue: unknown;
+  for (const rule of rules) {
+    const value = body[rule.requestField];
+    if (rule.isPasswordField) {
+      passwordField = rule.recordField;
+      passwordValue = value;
+    } else if (value !== undefined) {
+      criteria[rule.recordField] = value;
+    }
+  }
+  return { criteria, passwordField, passwordValue };
 }
 
 function normalizePath(input: string): string {

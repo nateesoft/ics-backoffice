@@ -119,6 +119,37 @@ export class CollectionsService {
     return { data, total, page: pagination.page, limit: pagination.limit };
   }
 
+  // Exact-match AND filter across one or more record.data fields — used by custom-endpoints'
+  // 'findBy' and 'validate' actions. Field names are interpolated into the JSONB `->>'field'`
+  // accessor (TypeORM can't parameterize identifiers), so they're validated against a strict
+  // alnum/underscore pattern first; values are always bound as query parameters.
+  async findRecordsByFields(
+    collectionId: string,
+    criteria: Record<string, unknown>,
+    page?: string,
+    limit?: string,
+  ): Promise<PaginatedResult<RecordEntity>> {
+    await this.findCollection(collectionId);
+    const pagination = parsePagination(page, limit);
+    const qb = this.recordsRepo
+      .createQueryBuilder('record')
+      .where('record.collectionId = :collectionId', { collectionId })
+      .orderBy('record.createdAt', 'ASC')
+      .skip(pagination.skip)
+      .take(pagination.limit);
+    Object.entries(criteria).forEach(([field, value], index) => {
+      if (!/^[a-zA-Z0-9_]+$/.test(field)) {
+        throw new BadRequestException(`Invalid field name: ${field}`);
+      }
+      const param = `findByVal${index}`;
+      qb.andWhere(`record.data->>'${field}' = :${param}`, {
+        [param]: String(value),
+      });
+    });
+    const [data, total] = await qb.getManyAndCount();
+    return { data, total, page: pagination.page, limit: pagination.limit };
+  }
+
   async findRecord(collectionId: string, recordId: string) {
     const record = await this.recordsRepo.findOne({
       where: { id: recordId, collectionId },

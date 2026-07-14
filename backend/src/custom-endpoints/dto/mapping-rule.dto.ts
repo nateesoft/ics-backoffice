@@ -1,4 +1,4 @@
-import { IsBoolean, IsString } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class InputMappingRuleDto {
   @IsString()
@@ -9,6 +9,10 @@ export class InputMappingRuleDto {
 
   @IsBoolean()
   required: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isPasswordField?: boolean;
 }
 
 export class ResponseMappingRuleDto {

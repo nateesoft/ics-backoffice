@@ -12,6 +12,7 @@ import type {
   CustomEndpointAction,
   CustomEndpointAuthType,
   HttpMethod,
+  ValidatePasswordMode,
 } from '../entities/custom-endpoint.entity';
 import {
   InputMappingRuleDto,
@@ -26,8 +27,11 @@ const ACTIONS: CustomEndpointAction[] = [
   'create',
   'update',
   'delete',
+  'findBy',
+  'validate',
 ];
 const AUTH_TYPES: CustomEndpointAuthType[] = ['none', 'basic', 'bearer'];
+const VALIDATE_PASSWORD_MODES: ValidatePasswordMode[] = ['bcrypt', 'plain'];
 const MAX_MAPPING_ROWS = 50;
 
 export class CustomEndpointDto {
@@ -63,6 +67,10 @@ export class CustomEndpointDto {
   @ValidateNested({ each: true })
   @Type(() => ResponseMappingRuleDto)
   responseMapping: ResponseMappingRuleDto[];
+
+  @IsOptional()
+  @IsIn(VALIDATE_PASSWORD_MODES)
+  validatePasswordMode?: ValidatePasswordMode;
 
   @IsIn(AUTH_TYPES)
   authType: CustomEndpointAuthType;

@@ -23,13 +23,17 @@ export interface RecordItem {
 }
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-export type CustomEndpointAction = 'list' | 'get' | 'create' | 'update' | 'delete';
+export type CustomEndpointAction = 'list' | 'get' | 'create' | 'update' | 'delete' | 'findBy' | 'validate';
 export type CustomEndpointAuthType = 'none' | 'basic' | 'bearer';
+export type ValidatePasswordMode = 'bcrypt' | 'plain';
 
 export interface InputMappingRule {
   requestField: string;
   recordField: string;
   required: boolean;
+  // 'validate' action only: this row is the password comparison (requestField = submitted
+  // password, recordField = stored password field), not a lookup criterion.
+  isPasswordField?: boolean;
 }
 
 export interface ResponseMappingRule {
@@ -53,6 +57,7 @@ export interface CustomEndpoint {
   inputMapping: InputMappingRule[];
   transformSteps: TransformStep[];
   responseMapping: ResponseMappingRule[];
+  validatePasswordMode?: ValidatePasswordMode;
   authType: CustomEndpointAuthType;
   authUsername: string | null;
   createdAt: string;
