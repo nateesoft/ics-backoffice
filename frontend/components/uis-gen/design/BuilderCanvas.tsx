@@ -190,22 +190,15 @@ function BuilderNodeCard({ path, node }: { path: number[]; node: BuilderNode }) 
         >
           ⠿
         </button>
-        <span className="text-xs font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-white/60">
-          {meta.icon} {meta.label}
-        </span>
-
         {node.type === 'Control' && (
-          <>
-            <input
-              type="text"
-              value={node.label ?? ''}
-              onChange={e => onUpdateNode(path, n => { n.label = e.target.value; })}
-              onClick={e => e.stopPropagation()}
-              placeholder="Label"
-              className="flex-1 min-w-0 px-2 py-1 rounded border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            />
-            <span className="text-[10px] font-mono text-slate-400 truncate max-w-[40%]">{node.scope}</span>
-          </>
+          <input
+            type="text"
+            value={node.label ?? ''}
+            onChange={e => onUpdateNode(path, n => { n.label = e.target.value; })}
+            onClick={e => e.stopPropagation()}
+            placeholder="Label"
+            className="flex-1 min-w-0 px-2 py-1 rounded border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          />
         )}
 
         {(node.type === 'Group' || node.type === 'Card' || node.type === 'Paper' || node.type === 'Box') && (

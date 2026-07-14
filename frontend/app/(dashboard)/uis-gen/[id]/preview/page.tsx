@@ -173,6 +173,7 @@ export default function UisGenPreviewPage() {
           uiSchema={pageData.uiSchema}
           data={getNodeData(matchedPage.id, pageData.data)}
           onDataChange={d => setNodeData(matchedPage.id, d)}
+          initialData={pageData.data}
           nodes={nodeRefs}
           onNavigate={setPath}
         />
@@ -196,6 +197,7 @@ export default function UisGenPreviewPage() {
             uiSchema={contentData.uiSchema}
             data={getNodeData(matchedContent.id, contentData.data)}
             onDataChange={d => setNodeData(matchedContent.id, d)}
+            initialData={contentData.data}
             nodes={nodeRefs}
             onNavigate={setPath}
           />

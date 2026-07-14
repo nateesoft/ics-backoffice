@@ -231,7 +231,6 @@ function SitemapCanvasInner({ projectId }: SitemapCanvasProps) {
   return (
     <div className="flex gap-4 h-[calc(100vh-260px)] min-h-[520px]">
       <div className="w-44 flex-shrink-0 space-y-2 overflow-y-auto">
-        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide px-0.5">ลาก node ไปวาง</p>
         {PALETTE_ITEMS.map(item => (
           <PaletteItem
             key={item.type}

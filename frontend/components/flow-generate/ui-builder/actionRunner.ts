@@ -7,6 +7,11 @@ import type { UiActionStep } from '@/types/flowUi';
 
 export interface ActionRunner {
   runSteps: (steps: UiActionStep[]) => void;
+  // UIs Gen's Preview is a navigable end-user-facing view (unlike flow-generate's design-time
+  // preview), so the "N step(s)" / api-ref debug caption under action buttons should stay hidden there.
+  hideStepBadge?: boolean;
+  // Restores the form's data back to whatever it was designed with (a Button of type 'reset').
+  resetForm?: () => void;
 }
 
 export const ActionRunnerContext = createContext<ActionRunner | null>(null);

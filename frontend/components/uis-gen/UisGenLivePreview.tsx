@@ -98,6 +98,10 @@ interface UisGenLivePreviewProps {
   nodes: LivePreviewNodeRef[];
   onNavigate?: (path: string) => void;
   onRequestClose?: () => void;
+  // What a 'reset' button restores `data` to (the node's own designed sample data, distinct from
+  // the live `data` the Preview page is tracking per-node). Falls back to this instance's
+  // first-render `data` when the caller doesn't have a separate default to offer (design-time tabs).
+  initialData?: Record<string, unknown>;
 }
 
 function NestedModalPreview({
@@ -125,12 +129,13 @@ function NestedModalPreview({
   );
 }
 
-export default function UisGenLivePreview({ schema, uiSchema, data, onDataChange, nodes, onNavigate, onRequestClose }: UisGenLivePreviewProps) {
+export default function UisGenLivePreview({ schema, uiSchema, data, onDataChange, nodes, onNavigate, onRequestClose, initialData }: UisGenLivePreviewProps) {
   const hasFields = Boolean(uiSchema.elements?.length);
   const [modalStack, setModalStack] = useState<LivePreviewNodeRef[]>([]);
   const [activeAlert, setActiveAlert] = useState<LivePreviewNodeRef | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountDataRef = useRef(data);
 
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
@@ -214,8 +219,12 @@ export default function UisGenLivePreview({ schema, uiSchema, data, onDataChange
     await runStepList(rawSteps as UisGenActionStep[], null);
   }
 
+  function resetForm() {
+    onDataChange(initialData ?? mountDataRef.current);
+  }
+
   return (
-    <ActionRunnerContext.Provider value={{ runSteps: handleRunSteps }}>
+    <ActionRunnerContext.Provider value={{ runSteps: handleRunSteps, hideStepBadge: true, resetForm }}>
       <div className="relative jf-vanilla bg-white rounded-lg min-h-[52px]">
         {hasFields ? (
           <JsonForms

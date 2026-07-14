@@ -197,6 +197,7 @@ export default function PropertiesPanel({ schema, node, targets, onSchemaChange,
               <option value="button">Button</option>
               <option value="file">File</option>
               <option value="action">Action</option>
+              <option value="reset">Reset</option>
             </select>
           </div>
 

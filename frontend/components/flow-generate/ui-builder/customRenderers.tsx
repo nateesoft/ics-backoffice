@@ -124,14 +124,16 @@ function VerticalLayoutComponent(props: LayoutProps) {
   return <PlainFlexContainer {...props} defaultDirection="column" />;
 }
 
-// `options.type` distinguishes 'button' (plain), 'file' (opens a native file picker), and
-// 'action'. An 'action' button runs either a single API reference (`options.action`, legacy
-// "${ApiName}" mode, `options.actionMode` unset/'api') or an ordered `options.actionSteps`
-// sequence (`options.actionMode === 'steps'`) — see PropertiesPanel.tsx / ActionStepsEditor.tsx.
-// Both are executed live via the ActionRunnerContext provided by LiveFormPreview.tsx: callApi
-// steps are simulated (toast), openModal/closeModal steps actually push/pop a nested preview
-// modal, matching e.g. "click Logout -> open the Logout Confirm modal we designed".
-type ButtonType = 'button' | 'file' | 'action';
+// `options.type` distinguishes 'button' (plain), 'file' (opens a native file picker),
+// 'action', and 'reset' (restores the form's data via ActionRunnerContext.resetForm — see
+// LiveFormPreview.tsx / UisGenLivePreview.tsx). An 'action' button runs either a single API
+// reference (`options.action`, legacy "${ApiName}" mode, `options.actionMode` unset/'api') or an
+// ordered `options.actionSteps` sequence (`options.actionMode === 'steps'`) — see
+// PropertiesPanel.tsx / ActionStepsEditor.tsx. Both are executed live via the ActionRunnerContext
+// provided by LiveFormPreview.tsx: callApi steps are simulated (toast), openModal/closeModal steps
+// actually push/pop a nested preview modal, matching e.g. "click Logout -> open the Logout Confirm
+// modal we designed".
+type ButtonType = 'button' | 'file' | 'action' | 'reset';
 type ButtonOptions = {
   variant?: string;
   type?: ButtonType;
@@ -148,7 +150,8 @@ function resolveButtonSteps(options?: ButtonOptions): UiActionStep[] {
   return [];
 }
 
-function ActionInfoBadge({ options }: { options?: ButtonOptions }) {
+function ActionInfoBadge({ options, hidden }: { options?: ButtonOptions; hidden?: boolean }) {
+  if (hidden) return null;
   if (options?.actionMode === 'steps') {
     const count = options.actionSteps?.length ?? 0;
     if (!count) return null;
@@ -175,7 +178,7 @@ function ButtonComponent({ uischema, visible }: LayoutProps) {
   if (!visible) return null;
   const node = uischema as { text?: string; options?: ButtonOptions };
   const buttonType = node.options?.type ?? 'button';
-  const text = node.text || (buttonType === 'file' ? 'Upload File' : 'Submit');
+  const text = node.text || (buttonType === 'file' ? 'Upload File' : buttonType === 'reset' ? 'Reset' : 'Submit');
   const variant = node.options?.variant === 'secondary' ? 'secondary' : 'primary';
   const baseClassName = variant === 'primary'
     ? 'px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition'
@@ -184,6 +187,13 @@ function ButtonComponent({ uischema, visible }: LayoutProps) {
 
   if (buttonType === 'file') {
     return <FileButtonComponent text={text} className={className} style={node.options?.style} />;
+  }
+  if (buttonType === 'reset') {
+    return (
+      <button type="button" className={className} style={node.options?.style} onClick={() => runner?.resetForm?.()}>
+        {text}
+      </button>
+    );
   }
   if (buttonType === 'action') {
     const steps = resolveButtonSteps(node.options);
@@ -197,7 +207,7 @@ function ButtonComponent({ uischema, visible }: LayoutProps) {
         >
           {text}
         </button>
-        <ActionInfoBadge options={node.options} />
+        <ActionInfoBadge options={node.options} hidden={runner?.hideStepBadge} />
       </div>
     );
   }

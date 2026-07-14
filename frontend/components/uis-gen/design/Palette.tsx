@@ -35,9 +35,6 @@ export default function Palette() {
 
   return (
     <div className="flex flex-col gap-4 p-3 rounded-xl bg-slate-50 border border-slate-100">
-      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide -mb-2">
-        ลาก element ไปวางด้านซ้าย
-      </span>
       {PALETTE_GROUPS.map(group => {
         const isCollapsed = Boolean(collapsed[group.heading]);
         return (

@@ -23,6 +23,10 @@ interface LiveFormPreviewProps {
   // NestedModalPreview below) — lets a 'closeModal' step *inside that modal's own tree* (e.g. its
   // own "Close" button) close the modal it lives in, not just modals it opened itself.
   onRequestClose?: () => void;
+  // What a 'reset' button restores `data` to. Omitted by callers (e.g. the UI Schema Builder's own
+  // sample-data editor) where `data` IS the thing being designed — falls back to whatever `data`
+  // was on this instance's first render, so reset still means something there.
+  initialData?: Record<string, unknown>;
 }
 
 // A modal opened by an 'openModal' step keeps its own local data state — it's a sandboxed
@@ -37,11 +41,12 @@ function NestedModalPreview({ item, onClose }: { item: FlowUiItem; onClose: () =
   );
 }
 
-export default function LiveFormPreview({ schema, uiSchema, data, onDataChange, onRequestClose }: LiveFormPreviewProps) {
+export default function LiveFormPreview({ schema, uiSchema, data, onDataChange, onRequestClose, initialData }: LiveFormPreviewProps) {
   const hasFields = Boolean(uiSchema.elements?.length);
   const [modalStack, setModalStack] = useState<FlowUiItem[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountDataRef = useRef(data);
 
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
@@ -74,8 +79,12 @@ export default function LiveFormPreview({ schema, uiSchema, data, onDataChange, 
     }
   }
 
+  function resetForm() {
+    onDataChange(initialData ?? mountDataRef.current);
+  }
+
   return (
-    <ActionRunnerContext.Provider value={{ runSteps }}>
+    <ActionRunnerContext.Provider value={{ runSteps, resetForm }}>
       <div className="relative jf-vanilla bg-white rounded-lg border border-slate-200 p-4 min-h-[52px]">
         {hasFields ? (
           <JsonForms
