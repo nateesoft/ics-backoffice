@@ -19,6 +19,7 @@ export type BuilderElementType =
   | 'Card'
   | 'Paper'
   | 'Box'
+  | 'Grid'
   | 'Button'
   | 'Label'
   // Invisible marker node: runs its `options.actionSteps` once when the page/content it lives in
@@ -53,6 +54,7 @@ export const PALETTE_GROUPS: { heading: string; items: { type: BuilderElementTyp
       { type: 'Card', label: 'Card', icon: '▣' },
       { type: 'Paper', label: 'Paper', icon: '▧' },
       { type: 'Box', label: 'Box', icon: '□' },
+      { type: 'Grid', label: 'Grid', icon: '▦' },
     ],
   },
   {
@@ -67,7 +69,7 @@ export const PALETTE_GROUPS: { heading: string; items: { type: BuilderElementTyp
 export const PALETTE_ITEMS = PALETTE_GROUPS.flatMap(g => g.items);
 
 // Real uischema `type` strings (not palette actions) that behave as containers with `elements`.
-export const CONTAINER_TYPES: string[] = ['Group', 'HorizontalLayout', 'VerticalLayout', 'Card', 'Paper', 'Box', 'Categorization', 'Category'];
+export const CONTAINER_TYPES: string[] = ['Group', 'HorizontalLayout', 'VerticalLayout', 'Card', 'Paper', 'Box', 'Grid', 'Categorization', 'Category'];
 
 export type BuilderNode = UiSchemaNode;
 
@@ -85,6 +87,7 @@ export function createDefaultNode(type: Exclude<BuilderElementType, ControlWidge
   if (type === 'InitialLoad') return { type: 'InitialLoad', options: { actionSteps: [] } };
   if (type === 'Group' || type === 'Card') return { type, label: type, elements: [] };
   if (type === 'Tabs') return { type: 'Categorization', elements: [createDefaultCategory('Tab 1'), createDefaultCategory('Tab 2')] };
+  if (type === 'Grid') return { type, elements: [], options: { columns: 2, gap: 8 } };
   return { type, elements: [] };
 }
 

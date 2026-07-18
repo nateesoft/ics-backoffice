@@ -77,6 +77,7 @@ const TYPE_META: Record<string, { label: string; icon: string; color: string }> 
   Card: { label: 'Card', icon: '▣', color: 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100' },
   Paper: { label: 'Paper', icon: '▧', color: 'bg-orange-50 text-orange-600 border-orange-100' },
   Box: { label: 'Box', icon: '□', color: 'bg-slate-100 text-slate-600 border-slate-200' },
+  Grid: { label: 'Grid', icon: '▦', color: 'bg-teal-50 text-teal-600 border-teal-100' },
   Button: { label: 'Button', icon: '⏎', color: 'bg-rose-50 text-rose-600 border-rose-100' },
 };
 

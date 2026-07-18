@@ -31,6 +31,19 @@ interface ContainerOptions {
   gap?: number;
 }
 
+interface GridOptions {
+  className?: string;
+  style?: Record<string, string | number>;
+  columns?: number;
+  rows?: number;
+  gap?: number;
+}
+
+type GridNode = UISchemaElement & {
+  elements?: UISchemaElement[];
+  options?: GridOptions;
+};
+
 type ContainerNode = UISchemaElement & {
   elements?: UISchemaElement[];
   label?: string;
@@ -122,6 +135,32 @@ function HorizontalLayoutComponent(props: LayoutProps) {
 
 function VerticalLayoutComponent(props: LayoutProps) {
   return <PlainFlexContainer {...props} defaultDirection="column" />;
+}
+
+// Grid: a CSS grid container with a configurable column/row count, so items can be arranged
+// into a matrix rather than a single flex row/column.
+function GridComponent({ schema, uischema, path, visible }: LayoutProps) {
+  const { renderers, cells } = useJsonForms();
+  if (!visible) return null;
+  const node = uischema as GridNode;
+  const elements = node.elements ?? [];
+  const opts = node.options;
+  const columns = Math.max(1, opts?.columns ?? 2);
+  const rows = opts?.rows ?? undefined;
+  const className = ['grid-layout', opts?.className].filter(Boolean).join(' ');
+  const style: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+    gridTemplateRows: rows ? `repeat(${rows}, auto)` : undefined,
+    gap: opts?.gap !== undefined ? `${opts.gap}px` : undefined,
+    ...opts?.style,
+  };
+
+  return (
+    <div className={className} style={style}>
+      {renderChildren(elements, schema, path, renderers, cells)}
+    </div>
+  );
 }
 
 // `options.type` distinguishes 'button' (plain), 'file' (opens a native file picker),
@@ -236,7 +275,7 @@ function InitialLoadComponent({ uischema, visible }: LayoutProps) {
 
 // Types above already read `options.className`/`options.style` themselves — exclude them here
 // so a styled Card doesn't end up double-wrapped.
-const SELF_STYLED_TYPES = ['Card', 'Paper', 'Box', 'Group', 'HorizontalLayout', 'VerticalLayout', 'Button'];
+const SELF_STYLED_TYPES = ['Card', 'Paper', 'Box', 'Group', 'HorizontalLayout', 'VerticalLayout', 'Grid', 'Button'];
 
 function StyleWrapperComponent({ uischema, schema, path, visible, renderers, cells }: JsonFormsProps) {
   if (!uischema || visible === false) return null;
@@ -256,6 +295,7 @@ export const boxTester: RankedTester = rankWith(2, uiTypeIs('Box'));
 export const groupTester: RankedTester = rankWith(2, uiTypeIs('Group'));
 export const horizontalLayoutTester: RankedTester = rankWith(2, uiTypeIs('HorizontalLayout'));
 export const verticalLayoutTester: RankedTester = rankWith(2, uiTypeIs('VerticalLayout'));
+export const gridTester: RankedTester = rankWith(2, uiTypeIs('Grid'));
 export const buttonTester: RankedTester = rankWith(2, uiTypeIs('Button'));
 export const initialLoadTester: RankedTester = rankWith(2, uiTypeIs('InitialLoad'));
 
@@ -272,6 +312,7 @@ export const BoxRenderer = withJsonFormsLayoutProps(BoxComponent);
 export const GroupRenderer = withJsonFormsLayoutProps(GroupComponent);
 export const HorizontalLayoutRenderer = withJsonFormsLayoutProps(HorizontalLayoutComponent);
 export const VerticalLayoutRenderer = withJsonFormsLayoutProps(VerticalLayoutComponent);
+export const GridRenderer = withJsonFormsLayoutProps(GridComponent);
 export const ButtonRenderer = withJsonFormsLayoutProps(ButtonComponent);
 export const InitialLoadRenderer = withJsonFormsLayoutProps(InitialLoadComponent);
 export const StyleWrapperRenderer = withJsonFormsRendererProps(StyleWrapperComponent);
@@ -283,6 +324,7 @@ export const customRenderers = [
   { tester: groupTester, renderer: GroupRenderer },
   { tester: horizontalLayoutTester, renderer: HorizontalLayoutRenderer },
   { tester: verticalLayoutTester, renderer: VerticalLayoutRenderer },
+  { tester: gridTester, renderer: GridRenderer },
   { tester: buttonTester, renderer: ButtonRenderer },
   { tester: initialLoadTester, renderer: InitialLoadRenderer },
   { tester: styleWrapperTester, renderer: StyleWrapperRenderer },

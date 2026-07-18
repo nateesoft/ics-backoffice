@@ -240,6 +240,45 @@ export default function PropertiesPanel({ schema, node, targets, onSchemaChange,
         <p className="text-xs text-slate-400">จัดการแท็บได้จากผัง builder โดยตรง (แก้ชื่อ/เพิ่ม/ลบแท็บ)</p>
       )}
 
+      {node.type === 'Grid' && (
+        <div className="space-y-3 pt-3 border-t border-slate-100">
+          <p className={sectionHeadingCls}>Grid Layout</p>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={labelCls}>Columns</label>
+              <input
+                type="number"
+                min={1}
+                className={inputCls}
+                value={(node.options?.columns as number) ?? 2}
+                onChange={e => updateOption('columns', Math.max(1, Number(e.target.value) || 1))}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Rows</label>
+              <input
+                type="number"
+                min={1}
+                className={inputCls}
+                value={(node.options?.rows as number) ?? ''}
+                onChange={e => updateOption('rows', e.target.value ? Math.max(1, Number(e.target.value)) : undefined)}
+                placeholder="อัตโนมัติ"
+              />
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>ระยะห่างระหว่าง element (Gap, px)</label>
+            <input
+              type="number"
+              className={inputCls}
+              value={(node.options?.gap as number) ?? ''}
+              onChange={e => updateOption('gap', e.target.value ? Number(e.target.value) : undefined)}
+              placeholder="ค่าเริ่มต้นจากธีม"
+            />
+          </div>
+        </div>
+      )}
+
       {isFlexContainer && (
         <div className="space-y-3 pt-3 border-t border-slate-100">
           <p className={sectionHeadingCls}>Layout</p>
