@@ -4,8 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import FlowBreadcrumb from '@/components/flow-generate/FlowBreadcrumb';
 import NewProjectModal from '@/components/uis-gen/NewProjectModal';
-import { uisGenProjectStore } from '@/lib/uisGenProjectStore';
-import { uisGenSitemapStore } from '@/lib/uisGenSitemapStore';
+import { uisGenProjectsApi } from '@/lib/api';
 import { getUisGenTemplate } from '@/lib/uisGenTemplates';
 import type { UisGenProject } from '@/types/uisGen';
 
@@ -15,17 +14,19 @@ export default function UisGenPage() {
   const [loaded, setLoaded] = useState(false);
 
   function load() {
-    setProjects(uisGenProjectStore.getAll());
-    setLoaded(true);
+    uisGenProjectsApi.getAll().then(res => {
+      setProjects(res.data);
+      setLoaded(true);
+    });
   }
 
   useEffect(load, []);
 
   function handleDelete(id: string) {
     if (!confirm('ลบ Web Application Project นี้? รวมถึง Sitemap และหน้าที่ออกแบบไว้ทั้งหมด')) return;
-    uisGenProjectStore.remove(id);
-    uisGenSitemapStore.remove(id);
-    load();
+    // Deleting the project cascades to its sitemap row on the backend (FK onDelete: CASCADE) —
+    // no separate sitemap-delete call needed.
+    uisGenProjectsApi.remove(id).then(load);
   }
 
   return (

@@ -6,6 +6,7 @@ import type {
   Paginated,
   RecordItem,
 } from '@/types/apiGen';
+import type { UisGenProject, UisGenSitemapState } from '@/types/uisGen';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/ics-backoffice/api';
 
@@ -296,6 +297,21 @@ export const apiGenApi = {
   updateCustomEndpoint: (id: string, data: CustomEndpointInput) =>
     api.patch<CustomEndpoint>(`/custom-endpoints/${id}`, data),
   deleteCustomEndpoint: (id: string) => api.delete(`/custom-endpoints/${id}`),
+};
+
+export const uisGenProjectsApi = {
+  getAll: () => api.get<UisGenProject[]>('/uis-gen-projects'),
+  getById: (id: string) => api.get<UisGenProject>(`/uis-gen-projects/${id}`),
+  create: (data: { name: string; templateId: string; navPosition: UisGenProject['navPosition']; themeColor: string }) =>
+    api.post<UisGenProject>('/uis-gen-projects', data),
+  update: (id: string, data: Partial<Omit<UisGenProject, 'id' | 'createdAt' | 'updatedAt'>>) =>
+    api.patch<UisGenProject>(`/uis-gen-projects/${id}`, data),
+  remove: (id: string) => api.delete(`/uis-gen-projects/${id}`),
+};
+
+export const uisGenSitemapApi = {
+  getByProjectId: (projectId: string) => api.get<UisGenSitemapState>(`/uis-gen-sitemap/${projectId}`),
+  save: (projectId: string, state: UisGenSitemapState) => api.put<UisGenSitemapState>(`/uis-gen-sitemap/${projectId}`, state),
 };
 
 export default api;

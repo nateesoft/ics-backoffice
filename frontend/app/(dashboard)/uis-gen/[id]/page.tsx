@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import FlowBreadcrumb from '@/components/flow-generate/FlowBreadcrumb';
 import SitemapCanvas from '@/components/uis-gen/SitemapCanvas';
-import { uisGenProjectStore } from '@/lib/uisGenProjectStore';
+import { uisGenProjectsApi } from '@/lib/api';
 import { getUisGenTemplate } from '@/lib/uisGenTemplates';
 import type { UisGenProject } from '@/types/uisGen';
 
@@ -17,7 +17,7 @@ export default function UisGenProjectPage() {
   const [project, setProject] = useState<UisGenProject | null | undefined>(undefined);
 
   useEffect(() => {
-    setProject(uisGenProjectStore.getById(projectId));
+    uisGenProjectsApi.getById(projectId).then(res => setProject(res.data)).catch(() => setProject(null));
   }, [projectId]);
 
   if (project === undefined) return null;
@@ -35,13 +35,11 @@ export default function UisGenProjectPage() {
   const template = getUisGenTemplate(project.templateId);
 
   function handleRename(name: string) {
-    const updated = uisGenProjectStore.update(projectId, { name });
-    if (updated) setProject(updated);
+    uisGenProjectsApi.update(projectId, { name }).then(res => setProject(res.data));
   }
 
   function handleGenerate() {
-    const updated = uisGenProjectStore.update(projectId, { sitemapGenerated: true });
-    if (updated) setProject(updated);
+    uisGenProjectsApi.update(projectId, { sitemapGenerated: true }).then(res => setProject(res.data));
   }
 
   return (

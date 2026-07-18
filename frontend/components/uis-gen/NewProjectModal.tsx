@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Modal from '@/components/ui/Modal';
 import { UISGEN_TEMPLATES } from '@/lib/uisGenTemplates';
-import { uisGenProjectStore } from '@/lib/uisGenProjectStore';
+import { uisGenProjectsApi } from '@/lib/api';
 import type { NavPosition } from '@/types/uisGen';
 
 interface NewProjectModalProps {
@@ -40,13 +40,14 @@ export default function NewProjectModal({ onClose }: NewProjectModalProps) {
   function handleCreate() {
     if (!name.trim() || creating) return;
     setCreating(true);
-    const project = uisGenProjectStore.create({
+    uisGenProjectsApi.create({
       name: name.trim(),
       templateId,
       navPosition: template.hasNav ? navPosition : 'left',
       themeColor,
-    });
-    router.push(`/uis-gen/${project.id}`);
+    }).then(res => {
+      router.push(`/uis-gen/${res.data.id}`);
+    }).catch(() => setCreating(false));
   }
 
   return (

@@ -12,7 +12,7 @@ import {
   UisGenConditionNodeData,
   DEFAULT_UISGEN_SCHEMA, DEFAULT_UISGEN_UI_SCHEMA, DEFAULT_UISGEN_DATA,
 } from '@/types/uisGen';
-import { uisGenSitemapStore } from '@/lib/uisGenSitemapStore';
+import { uisGenSitemapApi } from '@/lib/api';
 import {
   ActorFlowNode, PageFlowNode, ContentFlowNode, ModalFlowNode, AlertFlowNode, ConditionFlowNode,
   ActorNodeData, PageNodeData, ContentNodeData, ModalNodeData, AlertNodeData, ConditionNodeData,
@@ -121,26 +121,31 @@ function SitemapCanvasInner({ projectId }: SitemapCanvasProps) {
   }, [setEdges]);
 
   useEffect(() => {
-    const saved = uisGenSitemapStore.getByProjectId(projectId);
-    const restoredNodes: CanvasNode[] = saved.nodes.map(n => ({
-      id: n.id,
-      type: n.type,
-      position: n.position,
-      data: { ...(n.data as object), onRemove: handleRemoveNode } as CanvasNode['data'],
-    }) as CanvasNode);
-    const nodeIds = new Set(restoredNodes.map(n => n.id));
-    const restoredEdges: LabeledEdgeType[] = saved.edges
-      .filter(e => nodeIds.has(e.source) && nodeIds.has(e.target))
-      .map(e => ({
-        id: e.id, source: e.source, target: e.target,
-        sourceHandle: e.sourceHandle ?? undefined, targetHandle: e.targetHandle ?? undefined,
-        type: 'labeled',
-        ...edgeAppearance(),
-        data: { label: e.label ?? '', onLabelChange: handleEdgeLabelChange },
-      }));
-    setNodes(restoredNodes);
-    setEdges(restoredEdges);
-    setLoaded(true);
+    let cancelled = false;
+    uisGenSitemapApi.getByProjectId(projectId).then(res => {
+      if (cancelled) return;
+      const saved = res.data;
+      const restoredNodes: CanvasNode[] = saved.nodes.map(n => ({
+        id: n.id,
+        type: n.type,
+        position: n.position,
+        data: { ...(n.data as object), onRemove: handleRemoveNode } as CanvasNode['data'],
+      }) as CanvasNode);
+      const nodeIds = new Set(restoredNodes.map(n => n.id));
+      const restoredEdges: LabeledEdgeType[] = saved.edges
+        .filter(e => nodeIds.has(e.source) && nodeIds.has(e.target))
+        .map(e => ({
+          id: e.id, source: e.source, target: e.target,
+          sourceHandle: e.sourceHandle ?? undefined, targetHandle: e.targetHandle ?? undefined,
+          type: 'labeled',
+          ...edgeAppearance(),
+          data: { label: e.label ?? '', onLabelChange: handleEdgeLabelChange },
+        }));
+      setNodes(restoredNodes);
+      setEdges(restoredEdges);
+      setLoaded(true);
+    });
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, handleRemoveNode, handleEdgeLabelChange]);
 
@@ -157,7 +162,7 @@ function SitemapCanvasInner({ projectId }: SitemapCanvasProps) {
         sourceHandle: e.sourceHandle, targetHandle: e.targetHandle,
         label: e.data?.label,
       }));
-      uisGenSitemapStore.save(projectId, { nodes: storedNodes, edges: storedEdges });
+      uisGenSitemapApi.save(projectId, { nodes: storedNodes, edges: storedEdges }).catch(() => {});
     }, 250);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, [nodes, edges, loaded, projectId]);

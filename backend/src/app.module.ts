@@ -44,6 +44,10 @@ import { CustomEndpointsModule } from './custom-endpoints/custom-endpoints.modul
 import { Collection } from './collections/entities/collection.entity';
 import { RecordEntity } from './collections/entities/record.entity';
 import { CustomEndpoint } from './custom-endpoints/entities/custom-endpoint.entity';
+import { UisGenProjectsModule } from './uis-gen-projects/uis-gen-projects.module';
+import { UisGenSitemapModule } from './uis-gen-sitemap/uis-gen-sitemap.module';
+import { UisGenProject } from './entities/uis-gen-project.entity';
+import { UisGenSitemap } from './entities/uis-gen-sitemap.entity';
 
 @Module({
   imports: [
@@ -53,7 +57,7 @@ import { CustomEndpoint } from './custom-endpoints/entities/custom-endpoint.enti
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply, Collection, RecordEntity, CustomEndpoint],
+        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply, Collection, RecordEntity, CustomEndpoint, UisGenProject, UisGenSitemap],
         synchronize: true,
         timezone: '+07:00',
       }),
@@ -81,6 +85,8 @@ import { CustomEndpoint } from './custom-endpoints/entities/custom-endpoint.enti
     LineNotifyModule,
     CollectionsModule,
     CustomEndpointsModule,
+    UisGenProjectsModule,
+    UisGenSitemapModule,
   ],
 })
 export class AppModule {}

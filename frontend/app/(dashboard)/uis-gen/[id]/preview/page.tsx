@@ -3,8 +3,7 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { uisGenProjectStore } from '@/lib/uisGenProjectStore';
-import { uisGenSitemapStore } from '@/lib/uisGenSitemapStore';
+import { uisGenProjectsApi, uisGenSitemapApi } from '@/lib/api';
 import { getUisGenTemplate } from '@/lib/uisGenTemplates';
 import ShellFrame from '@/components/uis-gen/ShellFrame';
 import UisGenLivePreview from '@/components/uis-gen/UisGenLivePreview';
@@ -75,12 +74,14 @@ export default function UisGenPreviewPage() {
   const [dataByNode, setDataByNode] = useState<Record<string, Record<string, unknown>>>({});
 
   useEffect(() => {
-    setProject(uisGenProjectStore.getById(projectId));
-    const loadedSitemap = uisGenSitemapStore.getByProjectId(projectId);
-    setSitemap(loadedSitemap);
-    const defaultActor = computeDefaultActor(loadedSitemap);
-    setActorId(defaultActor);
-    setPath(computeEntryPath(loadedSitemap, defaultActor));
+    uisGenProjectsApi.getById(projectId).then(res => setProject(res.data)).catch(() => setProject(null));
+    uisGenSitemapApi.getByProjectId(projectId).then(res => {
+      const loadedSitemap = res.data;
+      setSitemap(loadedSitemap);
+      const defaultActor = computeDefaultActor(loadedSitemap);
+      setActorId(defaultActor);
+      setPath(computeEntryPath(loadedSitemap, defaultActor));
+    });
   }, [projectId]);
 
   function handleActorChange(nextActorId: string) {
