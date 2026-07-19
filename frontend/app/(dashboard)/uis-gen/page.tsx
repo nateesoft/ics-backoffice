@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import FlowBreadcrumb from '@/components/flow-generate/FlowBreadcrumb';
 import NewProjectModal from '@/components/uis-gen/NewProjectModal';
+import DeployModal from '@/components/uis-gen/DeployModal';
 import { uisGenProjectsApi } from '@/lib/api';
 import { getUisGenTemplate } from '@/lib/uisGenTemplates';
 import type { UisGenProject } from '@/types/uisGen';
@@ -11,6 +12,7 @@ import type { UisGenProject } from '@/types/uisGen';
 export default function UisGenPage() {
   const [projects, setProjects] = useState<UisGenProject[]>([]);
   const [showNewProject, setShowNewProject] = useState(false);
+  const [deployProjectId, setDeployProjectId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   function load() {
@@ -81,6 +83,11 @@ export default function UisGenPage() {
                     <Link href={`/uis-gen/${p.id}/preview`} className="text-sm font-medium text-indigo-600 hover:text-indigo-700">
                       Preview
                     </Link>
+                    {p.sitemapGenerated && (
+                      <button onClick={() => setDeployProjectId(p.id)} className="text-sm font-medium text-emerald-600 hover:text-emerald-700">
+                        Deploy
+                      </button>
+                    )}
                     <button onClick={() => handleDelete(p.id)} className="text-sm font-medium text-red-600 hover:text-red-700">
                       Delete
                     </button>
@@ -93,6 +100,7 @@ export default function UisGenPage() {
       )}
 
       {showNewProject && <NewProjectModal onClose={() => setShowNewProject(false)} />}
+      {deployProjectId && <DeployModal projectId={deployProjectId} onClose={() => setDeployProjectId(null)} />}
     </div>
   );
 }

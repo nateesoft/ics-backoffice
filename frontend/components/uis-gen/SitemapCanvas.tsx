@@ -269,6 +269,7 @@ function SitemapCanvasInner({ projectId }: SitemapCanvasProps) {
 
       {selectedNode && (
         <NodeInspector
+          projectId={projectId}
           node={selectedNode}
           allNodes={nodes}
           edges={edges}

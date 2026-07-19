@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import FlowBreadcrumb from '@/components/flow-generate/FlowBreadcrumb';
 import SitemapCanvas from '@/components/uis-gen/SitemapCanvas';
+import DeployModal from '@/components/uis-gen/DeployModal';
 import { uisGenProjectsApi } from '@/lib/api';
 import { getUisGenTemplate } from '@/lib/uisGenTemplates';
 import type { UisGenProject } from '@/types/uisGen';
@@ -15,6 +16,7 @@ export default function UisGenProjectPage() {
   const router = useRouter();
 
   const [project, setProject] = useState<UisGenProject | null | undefined>(undefined);
+  const [deployOpen, setDeployOpen] = useState(false);
 
   useEffect(() => {
     uisGenProjectsApi.getById(projectId).then(res => setProject(res.data)).catch(() => setProject(null));
@@ -63,19 +65,33 @@ export default function UisGenProjectPage() {
           </div>
         </div>
         {project.sitemapGenerated && (
-          <button
-            type="button"
-            onClick={() => router.push(`/uis-gen/${projectId}/preview`)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition self-start"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            Preview
-          </button>
+          <div className="flex items-center gap-2 self-start">
+            <button
+              type="button"
+              onClick={() => router.push(`/uis-gen/${projectId}/preview`)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Preview
+            </button>
+            <button
+              type="button"
+              onClick={() => setDeployOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3-3m0 0l3 3m-3-3v12" />
+              </svg>
+              Deploy
+            </button>
+          </div>
         )}
       </div>
+
+      {deployOpen && <DeployModal projectId={projectId} onClose={() => setDeployOpen(false)} />}
 
       {project.sitemapGenerated ? (
         <div className="bg-white rounded-2xl border border-slate-100 p-4">

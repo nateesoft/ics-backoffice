@@ -314,4 +314,42 @@ export const uisGenSitemapApi = {
   save: (projectId: string, state: UisGenSitemapState) => api.put<UisGenSitemapState>(`/uis-gen-sitemap/${projectId}`, state),
 };
 
+export interface ActorCredentialSummary {
+  actorNodeId: string;
+  username: string;
+  hasPassword: boolean;
+}
+
+export const uisGenActorCredentialsApi = {
+  list: (projectId: string) => api.get<ActorCredentialSummary[]>(`/uis-gen-actor-credentials/${projectId}`),
+  upsert: (projectId: string, actorNodeId: string, data: { username: string; password?: string }) =>
+    api.put<ActorCredentialSummary>(`/uis-gen-actor-credentials/${projectId}/${actorNodeId}`, data),
+  remove: (projectId: string, actorNodeId: string) =>
+    api.delete(`/uis-gen-actor-credentials/${projectId}/${actorNodeId}`),
+};
+
+export type UisGenDeploymentStatus = 'pending' | 'generating' | 'building' | 'starting' | 'running' | 'failed' | 'stopped';
+
+export interface UisGenDeployment {
+  id: string;
+  projectId: string;
+  status: UisGenDeploymentStatus;
+  slug: string;
+  frontendPort: number | null;
+  backendPort: number | null;
+  lastError: string | null;
+  deployedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const deployApi = {
+  start: (projectId: string) => api.post<UisGenDeployment>(`/uis-gen-deployments/${projectId}/deploy`),
+  listForProject: (projectId: string) => api.get<UisGenDeployment[]>(`/uis-gen-deployments/${projectId}`),
+  getStatus: (id: string) => api.get<UisGenDeployment>(`/uis-gen-deployments/${id}/status`),
+  getLogs: (id: string, tail?: number) => api.get<{ lines: string[] }>(`/uis-gen-deployments/${id}/logs`, { params: tail ? { tail } : undefined }),
+  stop: (id: string) => api.post<UisGenDeployment>(`/uis-gen-deployments/${id}/stop`),
+  remove: (id: string) => api.delete(`/uis-gen-deployments/${id}`),
+};
+
 export default api;

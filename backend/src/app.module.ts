@@ -48,6 +48,10 @@ import { UisGenProjectsModule } from './uis-gen-projects/uis-gen-projects.module
 import { UisGenSitemapModule } from './uis-gen-sitemap/uis-gen-sitemap.module';
 import { UisGenProject } from './entities/uis-gen-project.entity';
 import { UisGenSitemap } from './entities/uis-gen-sitemap.entity';
+import { UisGenDeployment } from './entities/uis-gen-deployment.entity';
+import { UisGenActorCredential } from './entities/uis-gen-actor-credential.entity';
+import { UisGenActorCredentialsModule } from './uis-gen-actor-credentials/uis-gen-actor-credentials.module';
+import { DeployModule } from './deploy/deploy.module';
 
 @Module({
   imports: [
@@ -57,7 +61,7 @@ import { UisGenSitemap } from './entities/uis-gen-sitemap.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply, Collection, RecordEntity, CustomEndpoint, UisGenProject, UisGenSitemap],
+        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply, Collection, RecordEntity, CustomEndpoint, UisGenProject, UisGenSitemap, UisGenDeployment, UisGenActorCredential],
         synchronize: true,
         timezone: '+07:00',
       }),
@@ -87,6 +91,8 @@ import { UisGenSitemap } from './entities/uis-gen-sitemap.entity';
     CustomEndpointsModule,
     UisGenProjectsModule,
     UisGenSitemapModule,
+    UisGenActorCredentialsModule,
+    DeployModule,
   ],
 })
 export class AppModule {}

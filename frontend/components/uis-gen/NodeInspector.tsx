@@ -1,16 +1,18 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Edge } from '@xyflow/react';
 import type {
   UisGenActorNodeData, UisGenPageNodeData, UisGenContentNodeData, UisGenModalNodeData, UisGenAlertNodeData,
   UisGenConditionNodeData, ModalPosition, AlertType,
 } from '@/types/uisGen';
 import { MODAL_POSITIONS, ALERT_TYPES } from '@/types/uisGen';
+import { uisGenActorCredentialsApi } from '@/lib/api';
 import PageDesignerModal from './PageDesignerModal';
 import { ActionTarget } from './design/ActionStepsEditor';
 import type { CanvasNode } from './SitemapCanvas';
 
 interface NodeInspectorProps {
+  projectId: string;
   node: CanvasNode;
   allNodes: CanvasNode[];
   edges: Edge[];
@@ -21,6 +23,79 @@ interface NodeInspectorProps {
 
 const inputCls = "w-full px-2.5 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm bg-white";
 const labelCls = "block text-[11px] font-semibold text-slate-500 mb-1 uppercase tracking-wide";
+
+// Login credentials for deployed apps — a real Actor auth system that Preview (a UI-only dropdown
+// with zero enforcement) never had. Kept separate from `onUpdate`'s sitemap-node state since it's a
+// real network resource (own table, own endpoint), not part of the freely-autosaved graph.
+function ActorCredentialsEditor({ projectId, actorNodeId }: { projectId: string; actorNodeId: string }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [hasPassword, setHasPassword] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'saving' | 'saved' | 'error'>('loading');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    setUsername('');
+    setPassword('');
+    setHasPassword(false);
+    setStatus('loading');
+    setError('');
+    uisGenActorCredentialsApi.list(projectId).then(res => {
+      const existing = res.data.find(c => c.actorNodeId === actorNodeId);
+      setUsername(existing?.username ?? '');
+      setHasPassword(Boolean(existing?.hasPassword));
+      setStatus('idle');
+    }).catch(() => setStatus('idle'));
+  }, [projectId, actorNodeId]);
+
+  async function handleSave() {
+    if (!username.trim()) { setStatus('error'); setError('กรอก Username ก่อน'); return; }
+    if (!hasPassword && !password) { setStatus('error'); setError('ตั้ง Password ครั้งแรกให้ Actor นี้ก่อน'); return; }
+    setStatus('saving');
+    try {
+      await uisGenActorCredentialsApi.upsert(projectId, actorNodeId, { username: username.trim(), password: password || undefined });
+      setHasPassword(true);
+      setPassword('');
+      setStatus('saved');
+    } catch {
+      setStatus('error');
+      setError('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง');
+    }
+  }
+
+  return (
+    <div className="space-y-2 pt-2 mt-2 border-t border-slate-100">
+      <label className={labelCls}>Login (สำหรับแอปที่ Deploy แล้ว)</label>
+      <input
+        type="text"
+        className={inputCls}
+        value={username}
+        placeholder="Username"
+        onChange={e => { setUsername(e.target.value); setStatus('idle'); }}
+      />
+      <input
+        type="password"
+        className={inputCls}
+        value={password}
+        placeholder={hasPassword ? 'ปล่อยว่างไว้ถ้าไม่เปลี่ยน Password' : 'ตั้ง Password'}
+        onChange={e => { setPassword(e.target.value); setStatus('idle'); }}
+      />
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={status === 'saving' || status === 'loading'}
+          className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-xs font-medium transition disabled:opacity-50"
+        >
+          {status === 'saving' ? 'กำลังบันทึก...' : 'บันทึก Login'}
+        </button>
+        {status === 'saved' && <span className="text-[11px] text-emerald-600">บันทึกแล้ว ✓</span>}
+        {status === 'error' && <span className="text-[11px] text-red-500">{error}</span>}
+        {status !== 'error' && status !== 'saved' && hasPassword && <span className="text-[11px] text-slate-400">ตั้ง Password แล้ว ✓</span>}
+      </div>
+    </div>
+  );
+}
 
 const TYPE_TITLES: Record<CanvasNode['type'], string> = {
   actor: 'Actor',
@@ -54,7 +129,7 @@ function ActorAccessList({ node, allNodes, edges, onToggleActorAccess }: {
   );
 }
 
-export default function NodeInspector({ node, allNodes, edges, onUpdate, onToggleActorAccess, onClose }: NodeInspectorProps) {
+export default function NodeInspector({ projectId, node, allNodes, edges, onUpdate, onToggleActorAccess, onClose }: NodeInspectorProps) {
   const [designerOpen, setDesignerOpen] = useState(false);
 
   const targets: ActionTarget[] = allNodes
@@ -89,6 +164,7 @@ export default function NodeInspector({ node, allNodes, edges, onUpdate, onToggl
               onChange={e => onUpdate(d => { (d as UisGenActorNodeData).color = e.target.value; })}
             />
           </div>
+          <ActorCredentialsEditor projectId={projectId} actorNodeId={node.id} />
         </div>
       )}
 
