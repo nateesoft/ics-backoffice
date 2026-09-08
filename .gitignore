@@ -7,3 +7,4 @@ backend/.env
 .idea
 .vscode
 backend/uploads
+uisgen-deployments
