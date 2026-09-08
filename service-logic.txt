@@ -1,0 +1,40 @@
+### service logic ###
+1. connect database
+2. เลือกตารางในฐานข้อมูล ถ้าเป็นการ join ข้อมูลหลายตารางจะใช้ sql query พิมพ์ไปตรงๆ
+
+### filter data ###
+ระบบจะแสดงข้อมูลตามที query จากในฐานข้อมูล
+หน้าจะสามารถทำ CRUD ได้ทั้งหมดเลย ตัวอย่างเช่น
+
+Step (Filter):
+1. verify data to filter
+2. response json with success or error message
+
+Step (Validate):
+1. verify login vaidate credentials (username and password)
+2. response json with success or error message
+
+Step (Create):
+1. verify payload
+2. execute insert to database
+3. response json with success or error message
+
+Step (Update):
+1. verify key and payload
+2. execute update to database
+3. response json with success or error message
+
+Step (Delete):
+1. verify key to delete
+2. execute delete from database
+3. response json with success or error message
+
+// error handling
+1. catch any errors during database operations
+2. log the error for debugging
+3. return a user-friendly error message to the client
+
+// security considerations
+1. validate and sanitize input data to prevent SQL injection
+2. implement authentication and authorization for CRUD operations
+3. use parameterized queries or ORM for database interactions

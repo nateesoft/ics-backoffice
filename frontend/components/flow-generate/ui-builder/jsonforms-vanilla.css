@@ -1,0 +1,180 @@
+/* Tailwind-flavored overrides for @jsonforms/vanilla-renderers output, scoped under .jf-vanilla */
+
+.jf-vanilla {
+  font-size: 0.875rem;
+  color: #1e293b; /* slate-800 */
+}
+
+.jf-vanilla .vertical-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.jf-vanilla .horizontal-layout {
+  display: flex;
+  flex-direction: row;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.jf-vanilla .horizontal-layout > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.jf-vanilla .group-layout {
+  border: 1px solid #e2e8f0; /* slate-200 */
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: #f8fafc; /* slate-50 */
+}
+
+.jf-vanilla .group-layout > legend,
+.jf-vanilla fieldset.group-layout {
+  font-weight: 600;
+  color: #334155; /* slate-700 */
+  border: none;
+  padding: 0;
+  margin: 0 0 0.75rem 0;
+}
+
+.jf-vanilla label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b; /* slate-500 */
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.25rem;
+}
+
+.jf-vanilla input,
+.jf-vanilla select,
+.jf-vanilla textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0; /* slate-200 */
+  border-radius: 0.5rem;
+  background: #ffffff;
+  font-size: 0.875rem;
+  color: #1e293b;
+  outline: none;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.jf-vanilla input:focus,
+.jf-vanilla select:focus,
+.jf-vanilla textarea:focus {
+  border-color: #818cf8; /* indigo-400 */
+  box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.35);
+}
+
+.jf-vanilla input[type='checkbox'] {
+  width: auto;
+  margin-right: 0.4rem;
+}
+
+.jf-vanilla .control {
+  margin-bottom: 0;
+}
+
+.jf-vanilla .validation_error {
+  color: #dc2626; /* red-600 */
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.jf-vanilla button {
+  padding: 0.4rem 0.85rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.jf-vanilla button:hover {
+  background: #f1f5f9;
+}
+
+/* Tabs (Categorization) */
+.jf-vanilla .categorization-master {
+  border-bottom: 1px solid #e2e8f0; /* slate-200 */
+  margin-bottom: 1rem;
+}
+
+.jf-vanilla .category-subcategories {
+  display: flex;
+  gap: 1.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.jf-vanilla .category-subcategories > li {
+  cursor: pointer;
+  padding: 0.5rem 0.1rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #64748b; /* slate-500 */
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.jf-vanilla .category-subcategories > li:hover {
+  color: #4338ca; /* indigo-700 */
+}
+
+.jf-vanilla .category-subcategories > li.selected {
+  color: #4f46e5; /* indigo-600 */
+  border-bottom-color: #4f46e5;
+  font-weight: 600;
+}
+
+/* Radio group */
+.jf-vanilla .radio {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.jf-vanilla .radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.jf-vanilla .radio-input {
+  width: auto;
+}
+
+.jf-vanilla .radio-label {
+  font-size: 0.8rem;
+  font-weight: 400;
+  text-transform: none;
+  color: #1e293b;
+  margin-bottom: 0;
+}
+
+/* Table (array-of-object control) */
+.jf-vanilla .array-table-layout table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.jf-vanilla .array-table-layout th,
+.jf-vanilla .array-table-layout td {
+  border: 1px solid #e2e8f0; /* slate-200 */
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}
+
+.jf-vanilla .array-table-layout th {
+  background: #f8fafc; /* slate-50 */
+  font-weight: 600;
+  color: #475569;
+}

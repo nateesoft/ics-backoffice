@@ -1204,6 +1204,15 @@
                     "name": "Simple CRUD Application",
                     "description": "A simple CRUD application for managing user data.",
                     "templateId": "simple-crud-app-v1",
+                    "cssFramework": "tailwind",
+                    "supportedLanguages": ["en", "th"],
+                    "defaultLanguage": "en",
+                    "formatDate": "DD/MM/YYYY HH:mm:ss",
+                    "currencyFormat": "THB",
+                    "frontendFramework": "NextJS",
+                    "backendFramework": "NestJS",
+                    "database": "PostgreSQL",
+                    "theme": "light",
                     "data": {
                         "products": [
                             {

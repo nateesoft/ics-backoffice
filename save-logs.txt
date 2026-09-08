@@ -1,0 +1,19 @@
+Found it. Two separate issues here:
+
+1. The login credentials (not DB creds)
+
+The DB username/password (uisgen / b91ed41e79806c59f7f487e2a1042386 in docker-compose.yml) is just for Postgres — it has nothing to do with the app's login screen.
+
+The actual login is checked against a seeded collection record in seed.ts:49-58:
+
+username: admin
+password: 000000
+2. Why login fails even with the right credentials
+
+The generated login page has the Login button's callApi step hardcoded to:
+
+
+http://localhost:3001/api/v2/login-validate
+That's the design-time default. But this deployment's backend actually runs on port 4201 (per docker-compose), and right now nothing is even listening on 3001 — so the browser's fetch just fails, which the flow treats the same as "wrong password" and pops the "Login Failure" modal. So it isn't rejecting your credentials — it's calling a URL that doesn't reach this app's backend at all.
+
+This looks like a generator bug: the exported button action bakes in whatever backend origin was active in the builder at design time, instead of using the deployed app's own backend URL. Want me to find and fix that in the flow-generate/UIs Gen export logic so future deployments call the correct backend, and patch this existing inventory-apps-3 deployment so you can log in now?

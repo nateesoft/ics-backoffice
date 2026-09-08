@@ -39,6 +39,19 @@ import { ChatMessage } from './entities/chat-message.entity';
 import { CommentReaction } from './entities/comment-reaction.entity';
 import { NoteReaction } from './entities/note-reaction.entity';
 import { NoteReply } from './entities/note-reply.entity';
+import { CollectionsModule } from './collections/collections.module';
+import { CustomEndpointsModule } from './custom-endpoints/custom-endpoints.module';
+import { Collection } from './collections/entities/collection.entity';
+import { RecordEntity } from './collections/entities/record.entity';
+import { CustomEndpoint } from './custom-endpoints/entities/custom-endpoint.entity';
+import { UisGenProjectsModule } from './uis-gen-projects/uis-gen-projects.module';
+import { UisGenSitemapModule } from './uis-gen-sitemap/uis-gen-sitemap.module';
+import { UisGenProject } from './entities/uis-gen-project.entity';
+import { UisGenSitemap } from './entities/uis-gen-sitemap.entity';
+import { UisGenDeployment } from './entities/uis-gen-deployment.entity';
+import { UisGenActorCredential } from './entities/uis-gen-actor-credential.entity';
+import { UisGenActorCredentialsModule } from './uis-gen-actor-credentials/uis-gen-actor-credentials.module';
+import { DeployModule } from './deploy/deploy.module';
 
 @Module({
   imports: [
@@ -48,7 +61,7 @@ import { NoteReply } from './entities/note-reply.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply],
+        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply, Collection, RecordEntity, CustomEndpoint, UisGenProject, UisGenSitemap, UisGenDeployment, UisGenActorCredential],
         synchronize: true,
         timezone: '+07:00',
       }),
@@ -74,6 +87,12 @@ import { NoteReply } from './entities/note-reply.entity';
     DocumentCommentsModule,
     ProjectPlansModule,
     LineNotifyModule,
+    CollectionsModule,
+    CustomEndpointsModule,
+    UisGenProjectsModule,
+    UisGenSitemapModule,
+    UisGenActorCredentialsModule,
+    DeployModule,
   ],
 })
 export class AppModule {}
