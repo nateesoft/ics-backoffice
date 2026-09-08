@@ -52,6 +52,8 @@ import { UisGenDeployment } from './entities/uis-gen-deployment.entity';
 import { UisGenActorCredential } from './entities/uis-gen-actor-credential.entity';
 import { UisGenActorCredentialsModule } from './uis-gen-actor-credentials/uis-gen-actor-credentials.module';
 import { DeployModule } from './deploy/deploy.module';
+import { ContactsModule } from './contacts/contacts.module';
+import { Contact } from './entities/contact.entity';
 
 @Module({
   imports: [
@@ -61,7 +63,7 @@ import { DeployModule } from './deploy/deploy.module';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply, Collection, RecordEntity, CustomEndpoint, UisGenProject, UisGenSitemap, UisGenDeployment, UisGenActorCredential],
+        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply, Collection, RecordEntity, CustomEndpoint, UisGenProject, UisGenSitemap, UisGenDeployment, UisGenActorCredential, Contact],
         synchronize: true,
         timezone: '+07:00',
       }),
@@ -93,6 +95,7 @@ import { DeployModule } from './deploy/deploy.module';
     UisGenSitemapModule,
     UisGenActorCredentialsModule,
     DeployModule,
+    ContactsModule,
   ],
 })
 export class AppModule {}

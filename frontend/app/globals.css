@@ -105,6 +105,111 @@ body {
   color: #334155;
 }
 
+/* ============================================================= */
+/* Marketing site (ICS website) — animations & effects           */
+/* Scoped to the (site) route group by unique class names.       */
+/* ============================================================= */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Scroll animations — initial state is set by JS to avoid SSR flash */
+[data-animate].anim-pending {
+  opacity: 0;
+}
+[data-animate="fade-up"].anim-pending    { transform: translateY(36px); }
+[data-animate="fade-down"].anim-pending  { transform: translateY(-24px); }
+[data-animate="fade-left"].anim-pending  { transform: translateX(-36px); }
+[data-animate="fade-right"].anim-pending { transform: translateX(36px); }
+[data-animate="zoom-in"].anim-pending    { transform: scale(0.9); }
+
+[data-animate].anim-pending,
+[data-animate].anim-in {
+  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-animate].anim-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Floating background icons */
+@keyframes float-a {
+  0%, 100% { transform: translateY(0px) rotate(-3deg); }
+  50%       { transform: translateY(-22px) rotate(3deg); }
+}
+@keyframes float-b {
+  0%, 100% { transform: translateY(0px) rotate(4deg); }
+  50%       { transform: translateY(-18px) rotate(-2deg); }
+}
+@keyframes float-c {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  40%       { transform: translateY(-25px) rotate(-4deg); }
+  80%       { transform: translateY(-8px) rotate(2deg); }
+}
+@keyframes float-d {
+  0%, 100% { transform: translateY(0px) rotate(-2deg); }
+  50%       { transform: translateY(-16px) rotate(5deg); }
+}
+@keyframes float-e {
+  0%, 100% { transform: translateY(0px) rotate(2deg) scale(1); }
+  50%       { transform: translateY(-20px) rotate(-3deg) scale(1.05); }
+}
+@keyframes float-f {
+  0%, 100% { transform: translateY(0px) rotate(-4deg); }
+  50%       { transform: translateY(-14px) rotate(2deg); }
+}
+
+/* Hero heading animations */
+@keyframes hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes text-shimmer {
+  0%, 100% { background-position: 0% center; }
+  50%       { background-position: 100% center; }
+}
+
+.anim-hero-1 { animation: hero-fade-up 1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; }
+.anim-hero-2 { animation: hero-fade-up 1s cubic-bezier(0.22, 1, 0.36, 1) 0.4s  both; }
+.anim-hero-3 { animation: hero-fade-up 1s cubic-bezier(0.22, 1, 0.36, 1) 0.65s both; }
+
+.anim-text-shimmer {
+  background-size: 250% auto;
+  animation: text-shimmer 5s ease-in-out infinite;
+}
+.anim-text-shimmer-fast {
+  background-size: 250% auto;
+  animation: text-shimmer 2.5s ease-in-out infinite;
+}
+
+@keyframes text-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.8; transform: scale(1.03); }
+}
+.anim-text-pulse {
+  display: inline-block;
+  animation: text-pulse 2.8s ease-in-out infinite;
+}
+
+.anim-float-a { animation: float-a 7s ease-in-out infinite; }
+.anim-float-b { animation: float-b 9s ease-in-out infinite 1s; }
+.anim-float-c { animation: float-c 8s ease-in-out infinite 2s; }
+.anim-float-d { animation: float-d 6s ease-in-out infinite 0.5s; }
+.anim-float-e { animation: float-e 10s ease-in-out infinite 1.5s; }
+.anim-float-f { animation: float-f 7.5s ease-in-out infinite 3s; }
+
 /* Login sun shadow */
 .login-card-wrapper {
   position: relative;
