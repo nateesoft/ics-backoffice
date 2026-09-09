@@ -27,6 +27,7 @@ ics-backoffice/
 │       ├── comments/       # Issue comments (threaded)
 │       ├── chat/           # Real-time chat (WebSocket gateway)
 │       ├── notifications/  # In-app notifications
+│       ├── quotations/     # Quotation + QuotationTemplate CRUD (ใบเสนอราคา)
 │       └── entities/       # TypeORM entities (see list below)
 ├── start.sh           # Run both services locally
 ├── Jenkinsfile        # CI/CD pipeline (deploys to Windows via PM2)
@@ -50,6 +51,8 @@ ics-backoffice/
 | `Note` | `notes` | sticky notes บน dashboard |
 | `Notification` | `notifications` | |
 | `ChatMessage` | `chat_messages` | |
+| `QuotationTemplate` | `quotation_templates` | มี `isDefault`; `layout` เป็น jsonb (บริษัท, สี, คอลัมน์, VAT, ขนาดกระดาษ) |
+| `Quotation` | `quotations` | `items` เป็น jsonb; totals คำนวณ client-side ด้วย `computeTotals()` |
 
 ## Development Commands
 
@@ -120,6 +123,26 @@ Sidebar ตรง "Documents" มีปุ่ม **"+"** สำหรับส�
 - Sidebar component ใช้ `useSearchParams` → ต้อง wrap ด้วย `<Suspense>` ใน `DashboardLayout`
 - Documents page ใช้ `useSearchParams` → component แยกเป็น `DocumentsInner` wrap ด้วย `<Suspense>` ใน default export
 
+## Quotation (ใบเสนอราคา)
+
+Sidebar เมนู **"Quotation"** (expandable) → sub-items: `ใบเสนอราคา` (`/quotations`), `แม่แบบ` (`/quotations/templates`)
+
+- **Backend**: `backend/src/quotations/` — 1 controller ครอบ 2 resource:
+  `GET/POST/PUT/DELETE /quotation-templates` + `PATCH /quotation-templates/:id/default`, และ `GET/POST/PUT/DELETE /quotations`
+- **Auto-seed**: `GET /quotation-templates` ครั้งแรกสร้าง "แม่แบบมาตรฐาน" (`isDefault: true`) ให้อัตโนมัติ
+- **Default template**: มีได้ตัวเดียว — `setDefault()` ใช้ query builder (`update({},…)` ของ TypeORM ห้าม criteria ว่าง)
+- **เลขที่**: เว้นว่าง `quotationNo` → ออกอัตโนมัติ `QT<YYYY><MM>-<seq>`
+- **Totals** ไม่เก็บใน DB — คำนวณด้วย `computeTotals()` ใน `frontend/types/quotation.ts` (มี `bahtText()` อ่านเงินเป็นคำไทยด้วย)
+- **Frontend**: `frontend/components/quotations/`
+  - `renderQuotation.ts` — single source of truth: `buildQuotationPreview()` (สำหรับ `dangerouslySetInnerHTML` ใน preview) + `buildQuotationDoc()` / `printQuotation()` (เปิด `window.open` เขียน HTML เต็มพร้อม `@page { size }` แล้ว auto `window.print()`)
+  - `QuotationPreview.tsx` — scale กระดาษ (mm) ให้พอดี container ด้วย `ResizeObserver` + `transform: scale()`
+  - `QuotationEditor.tsx` — ฟอร์มซ้าย + preview สดขวา; toolbar เลือกแม่แบบ / ขนาดกระดาษ / แนววาง / พิมพ์ / บันทึก
+  - `TemplateDesigner.tsx` — แก้ `layout` ทุก field + โลโก้ (อัปโหลด → data URL เก็บใน jsonb) + preview ตัวอย่างสด
+  - `ImportItemsDialog.tsx` — นำเข้ารายการจาก `.xlsx/.xls/.csv` ด้วย `xlsx` (SheetJS 0.18.5) + column mapping + append/replace
+- **Print / paper size**: กำหนดใน template (`layout.paperSize`, `orientation`, `marginMm`) หรือ override ตอนพิมพ์จาก toolbar — รองรับ A4/A5/A3/Letter/Legal
+- `frontend/lib/api.ts`: `quotationTemplatesApi`, `quotationsApi`
+- Dynamic route pages ใช้ `useParams()` (ไม่ใช่ `params` promise) — ดู `quotations/[id]/page.tsx`
+
 ## Auth
 
 - JWT เก็บใน **HTTP-only cookie** (ไม่ใช่ localStorage)
@@ -135,6 +158,7 @@ Sidebar ตรง "Documents" มีปุ่ม **"+"** สำหรับส�
 - Drag & drop (Trello board) ใช้ `@dnd-kit/core` + `@dnd-kit/sortable`
 - Calendar ใช้ `react-calendar`
 - Charts ใช้ `recharts`
+- Excel/CSV parsing (Quotation import) ใช้ `xlsx` (SheetJS 0.18.5 — pin ไว้; version นี้มี CVE เดิมแต่ใช้อ่านไฟล์ภายในองค์กร)
 - `useSearchParams()` ต้อง wrap ด้วย `<Suspense>` เสมอ (Next.js 16 requirement) — ดูตัวอย่างใน `documents/page.tsx` และ `DashboardLayout.tsx`
 - Navigation links ต้องใช้ Next.js `<Link>` เสมอ (ไม่ใช่ `<a>`) เพื่อให้ `basePath` prefix ถูกต้องใน production
 

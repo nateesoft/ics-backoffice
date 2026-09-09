@@ -54,6 +54,9 @@ import { UisGenActorCredentialsModule } from './uis-gen-actor-credentials/uis-ge
 import { DeployModule } from './deploy/deploy.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { Contact } from './entities/contact.entity';
+import { QuotationsModule } from './quotations/quotations.module';
+import { QuotationTemplate } from './entities/quotation-template.entity';
+import { Quotation } from './entities/quotation.entity';
 
 @Module({
   imports: [
@@ -63,7 +66,7 @@ import { Contact } from './entities/contact.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply, Collection, RecordEntity, CustomEndpoint, UisGenProject, UisGenSitemap, UisGenDeployment, UisGenActorCredential, Contact],
+        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply, Collection, RecordEntity, CustomEndpoint, UisGenProject, UisGenSitemap, UisGenDeployment, UisGenActorCredential, Contact, QuotationTemplate, Quotation],
         synchronize: true,
         timezone: '+07:00',
       }),
@@ -96,6 +99,7 @@ import { Contact } from './entities/contact.entity';
     UisGenActorCredentialsModule,
     DeployModule,
     ContactsModule,
+    QuotationsModule,
   ],
 })
 export class AppModule {}

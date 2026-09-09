@@ -73,6 +73,16 @@ const menuItems = [
     divider: true,
   },
   {
+    href: '/quotations',
+    label: 'Quotation',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+      </svg>
+    ),
+    divider: true,
+  },
+  {
     href: '/documents',
     label: 'Documents',
     icon: (
@@ -130,6 +140,11 @@ const apisGenSubItems = [
   { href: '/apis-gen/custom-endpoints', label: 'Custom Endpoints' },
 ];
 
+const quotationSubItems = [
+  { href: '/quotations', label: 'ใบเสนอราคา' },
+  { href: '/quotations/templates', label: 'แม่แบบ' },
+];
+
 export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [teamUsers, setTeamUsers] = useState<OnlineUser[]>([]);
@@ -138,6 +153,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const [docsExpanded, setDocsExpanded] = useState(false);
   const [flowExpanded, setFlowExpanded] = useState(false);
   const [apisGenExpanded, setApisGenExpanded] = useState(false);
+  const [quotationExpanded, setQuotationExpanded] = useState(false);
   const [addingFolder, setAddingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [editingFolder, setEditingFolder] = useState<number | null>(null);
@@ -164,6 +180,10 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
   useEffect(() => {
     if (pathname.startsWith('/apis-gen')) setApisGenExpanded(true);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (pathname.startsWith('/quotations')) setQuotationExpanded(true);
   }, [pathname]);
 
   useEffect(() => {
@@ -384,6 +404,74 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                 {!collapsed && apisGenExpanded && (
                   <div className="mt-0.5 ml-4 pl-3 border-l border-slate-700/70 space-y-0.5 pb-0.5">
                     {apisGenSubItems.map(sub => {
+                      const isSubActive = pathname === sub.href;
+                      return (
+                        <Link
+                          key={sub.href}
+                          href={sub.href}
+                          onClick={onMobileClose}
+                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition min-w-0 ${
+                            isSubActive
+                              ? 'bg-indigo-500/25 text-indigo-300'
+                              : 'text-slate-400 hover:bg-slate-700/60 hover:text-slate-200'
+                          }`}
+                        >
+                          <span className="truncate">{sub.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          if (item.href === '/quotations') {
+            const isQuotationActive = pathname.startsWith('/quotations');
+            return (
+              <div key={item.href}>
+                {divider}
+                <div className={`flex items-center rounded-lg transition ${isQuotationActive && !collapsed ? 'bg-indigo-600' : ''}`}>
+                  <Link
+                    href="/quotations"
+                    onClick={onMobileClose}
+                    className={`flex items-center gap-3 px-3 py-2.5 flex-1 text-sm font-medium rounded-lg transition ${
+                      isQuotationActive
+                        ? collapsed
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-white'
+                        : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                    }`}
+                  >
+                    {item.icon}
+                    {!collapsed && <span className="flex-1">{item.label}</span>}
+                  </Link>
+
+                  {!collapsed && (
+                    <div className="flex items-center pr-1.5 gap-0.5">
+                      <button
+                        onClick={() => setQuotationExpanded(v => !v)}
+                        title={quotationExpanded ? 'Collapse' : 'Expand'}
+                        className={`p-1 rounded transition ${
+                          isQuotationActive
+                            ? 'text-indigo-200 hover:bg-indigo-500 hover:text-white'
+                            : 'text-slate-500 hover:bg-slate-700 hover:text-white'
+                        }`}
+                      >
+                        <svg
+                          className={`w-3 h-3 transition-transform duration-200 ${quotationExpanded ? 'rotate-90' : ''}`}
+                          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {!collapsed && quotationExpanded && (
+                  <div className="mt-0.5 ml-4 pl-3 border-l border-slate-700/70 space-y-0.5 pb-0.5">
+                    {quotationSubItems.map(sub => {
                       const isSubActive = pathname === sub.href;
                       return (
                         <Link

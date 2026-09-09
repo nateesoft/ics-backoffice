@@ -7,6 +7,12 @@ import type {
   RecordItem,
 } from '@/types/apiGen';
 import type { UisGenProject, UisGenSitemapState } from '@/types/uisGen';
+import type {
+  Quotation,
+  QuotationInput,
+  QuotationTemplate,
+  TemplateInput,
+} from '@/types/quotation';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/ics-backoffice/api';
 
@@ -350,6 +356,24 @@ export const deployApi = {
   getLogs: (id: string, tail?: number) => api.get<{ lines: string[] }>(`/uis-gen-deployments/${id}/logs`, { params: tail ? { tail } : undefined }),
   stop: (id: string) => api.post<UisGenDeployment>(`/uis-gen-deployments/${id}/stop`),
   remove: (id: string) => api.delete(`/uis-gen-deployments/${id}`),
+};
+
+export const quotationTemplatesApi = {
+  getAll: () => api.get<QuotationTemplate[]>('/quotation-templates'),
+  getOne: (id: number) => api.get<QuotationTemplate>(`/quotation-templates/${id}`),
+  create: (data: TemplateInput) => api.post<QuotationTemplate>('/quotation-templates', data),
+  update: (id: number, data: TemplateInput) =>
+    api.put<QuotationTemplate>(`/quotation-templates/${id}`, data),
+  setDefault: (id: number) => api.patch<QuotationTemplate>(`/quotation-templates/${id}/default`),
+  remove: (id: number) => api.delete(`/quotation-templates/${id}`),
+};
+
+export const quotationsApi = {
+  getAll: () => api.get<Quotation[]>('/quotations'),
+  getOne: (id: number) => api.get<Quotation>(`/quotations/${id}`),
+  create: (data: QuotationInput) => api.post<Quotation>('/quotations', data),
+  update: (id: number, data: QuotationInput) => api.put<Quotation>(`/quotations/${id}`, data),
+  remove: (id: number) => api.delete(`/quotations/${id}`),
 };
 
 export default api;
