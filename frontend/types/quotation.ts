@@ -16,7 +16,12 @@ export interface QuotationColumn {
 export type PaperSize = 'A4' | 'A5' | 'A3' | 'Letter' | 'Legal';
 export type Orientation = 'portrait' | 'landscape';
 
+/** รูปแบบการวางเลย์เอาต์ของเอกสาร — 'standard' = โมเดิร์น, 'ics-classic' = ฟอร์มตามแบบ ICS (มีกรอบ/สองภาษา) */
+export type QuotationVariant = 'standard' | 'ics-classic';
+
 export interface QuotationLayout {
+  variant: QuotationVariant;
+
   companyName: string;
   companyAddress: string;
   companyPhone: string;
@@ -30,6 +35,12 @@ export interface QuotationLayout {
   terms: string;
   bankDetails: string;
   signatureLabel: string;
+
+  // ── ใช้เฉพาะ variant 'ics-classic' ──
+  issuerName: string; // ชื่อผู้เสนอราคาที่ลงนาม เช่น "ชูชาติ คล่องการ"
+  priceValidity: string; // กำหนดยืนราคา
+  deliveryPeriod: string; // กำหนดส่งของ
+  paymentTerms: string; // เงื่อนไขการชำระเงิน
 
   accentColor: string;
   fontFamily: string;
@@ -110,7 +121,17 @@ export const STATUS_LABEL: Record<QuotationStatus, string> = {
   rejected: 'ปฏิเสธ',
 };
 
+export const QUOTATION_VARIANTS: { value: QuotationVariant; label: string }[] = [
+  { value: 'standard', label: 'มาตรฐาน (โมเดิร์น)' },
+  { value: 'ics-classic', label: 'ICS Classic (ฟอร์มมีกรอบ สองภาษา)' },
+];
+
 export const DEFAULT_LAYOUT: QuotationLayout = {
+  variant: 'standard',
+  issuerName: '',
+  priceValidity: '',
+  deliveryPeriod: '',
+  paymentTerms: '',
   companyName: 'บริษัท ของคุณ จำกัด',
   companyAddress: '123 ถนนตัวอย่าง แขวง/ตำบล เขต/อำเภอ จังหวัด 10000',
   companyPhone: '0-2000-0000',

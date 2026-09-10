@@ -6,6 +6,7 @@ import { Quotation } from '../entities/quotation.entity';
 import { SaveQuotationDto, SaveTemplateDto } from './quotations.dto';
 
 export const DEFAULT_LAYOUT: QuotationLayout = {
+  variant: 'standard',
   companyName: 'บริษัท ของคุณ จำกัด',
   companyAddress: '123 ถนนตัวอย่าง แขวง/ตำบล เขต/อำเภอ จังหวัด 10000',
   companyPhone: '0-2000-0000',
@@ -19,6 +20,10 @@ export const DEFAULT_LAYOUT: QuotationLayout = {
     '1. ราคานี้ยืนราคา 30 วันนับจากวันที่เสนอราคา\n2. ยืนยันการสั่งซื้อโดยลงนามในเอกสารฉบับนี้\n3. เงื่อนไขการชำระเงิน: มัดจำ 50% ส่วนที่เหลือชำระเมื่อส่งมอบงาน',
   bankDetails: '',
   signatureLabel: 'ผู้มีอำนาจลงนาม',
+  issuerName: '',
+  priceValidity: '',
+  deliveryPeriod: '',
+  paymentTerms: '',
   accentColor: '#4f46e5',
   fontFamily: "'Sarabun', 'Noto Sans Thai', sans-serif",
   columns: [
@@ -40,6 +45,40 @@ export const DEFAULT_LAYOUT: QuotationLayout = {
   marginMm: 12,
 };
 
+export const ICS_CLASSIC_TEMPLATE_NAME = 'ใบเสนอราคา ICS (ตามแบบฟอร์ม)';
+
+// แม่แบบตามฟอร์มกระดาษของ IN CONCEPT SERVICE — มีกรอบ หัวตารางสองภาษา ช่องเซ็น 3 ช่อง
+export const ICS_CLASSIC_LAYOUT: QuotationLayout = {
+  ...DEFAULT_LAYOUT,
+  variant: 'ics-classic',
+  companyName: 'IN CONCEPT SERVICE CO.,LTD',
+  companyAddress:
+    '101/122 หมู่2 ต.บางคูเวียง อ.บางกรวย จ.นนทบุรี 11130\n101/122 Moo2 Bangkhuwiang Bangkruai Nonthaburi 11130 (THAILAND)',
+  companyPhone: '085-3366948 , 084-364-2609',
+  companyEmail: 'sales.ics9.service@gmail.com',
+  companyTaxId: '0125568000980',
+  documentTitle: 'ใบเสนอราคา',
+  footerNote: '',
+  terms: '',
+  signatureLabel: 'ผู้เสนอราคา',
+  issuerName: 'ชูชาติ คล่องการ',
+  priceValidity: '15 วัน',
+  deliveryPeriod: '15 วันหลังได้รับ PO',
+  paymentTerms: 'มัดจำ 50% วันส่งสินค้า อีก 50 %',
+  accentColor: '#8a6d3b',
+  columns: [
+    { key: 'no', label: 'เลขที่ / No.', enabled: true },
+    { key: 'description', label: 'รายการ / Description', enabled: true },
+    { key: 'quantity', label: 'จำนวน / Quantity', enabled: true },
+    { key: 'unit', label: 'หน่วย / Unit', enabled: true },
+    { key: 'unitPrice', label: 'ราคา/หน่วย / Price/Unit', enabled: true },
+    { key: 'discount', label: 'ส่วนลด / Discount', enabled: false },
+    { key: 'amount', label: 'จำนวนเงิน / Amount', enabled: true },
+  ],
+  vatEnabled: true,
+  vatRate: 7,
+};
+
 @Injectable()
 export class QuotationsService {
   constructor(
@@ -50,12 +89,20 @@ export class QuotationsService {
   // ── Templates ─────────────────────────────────────────────
 
   async getTemplates() {
-    const count = await this.templates.count();
-    if (count === 0) {
+    const existing = await this.templates.find();
+    if (existing.length === 0) {
       await this.templates.save({
         name: 'แม่แบบมาตรฐาน',
         isDefault: true,
         layout: DEFAULT_LAYOUT,
+      });
+    }
+    // seed แม่แบบตามฟอร์ม ICS ครั้งเดียว (ให้ระบบที่มีแม่แบบเดิมอยู่แล้วได้รับด้วย)
+    if (!existing.some((t) => t.name === ICS_CLASSIC_TEMPLATE_NAME)) {
+      await this.templates.save({
+        name: ICS_CLASSIC_TEMPLATE_NAME,
+        isDefault: false,
+        layout: ICS_CLASSIC_LAYOUT,
       });
     }
     return this.templates.find({ order: { isDefault: 'DESC', createdAt: 'ASC' } });

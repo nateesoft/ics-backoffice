@@ -2,6 +2,9 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 
 // รูปแบบ layout ของใบเสนอราคา — เก็บเป็น jsonb ทั้งก้อนเพื่อให้ปรับแต่งได้อิสระ
 export interface QuotationLayout {
+  // รูปแบบการวางเลย์เอาต์: 'standard' = โมเดิร์น, 'ics-classic' = ฟอร์มตามแบบ ICS (มีกรอบ/สองภาษา)
+  variant: 'standard' | 'ics-classic';
+
   // ข้อมูลบริษัทผู้เสนอราคา
   companyName: string;
   companyAddress: string;
@@ -17,6 +20,12 @@ export interface QuotationLayout {
   terms: string; // เงื่อนไข/หมายเหตุ (หลายบรรทัด)
   bankDetails: string;
   signatureLabel: string;
+
+  // ── ใช้เฉพาะ variant 'ics-classic' ──
+  issuerName: string; // ชื่อผู้เสนอราคาที่ลงนาม เช่น "ชูชาติ คล่องการ"
+  priceValidity: string; // กำหนดยืนราคา
+  deliveryPeriod: string; // กำหนดส่งของ
+  paymentTerms: string; // เงื่อนไขการชำระเงิน
 
   // สไตล์
   accentColor: string;

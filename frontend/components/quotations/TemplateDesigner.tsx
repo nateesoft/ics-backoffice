@@ -6,10 +6,12 @@ import { quotationTemplatesApi } from '@/lib/api';
 import {
   type QuotationLayout,
   type QuotationColumnKey,
+  type QuotationVariant,
   type PaperSize,
   type Orientation,
   DEFAULT_LAYOUT,
   PAPER_SIZES,
+  QUOTATION_VARIANTS,
   emptyItem,
 } from '@/types/quotation';
 import QuotationPreview from './QuotationPreview';
@@ -205,6 +207,19 @@ export default function TemplateDesigner({ id }: Props) {
 
           <section className="space-y-3">
             <h3 className="text-sm font-semibold text-slate-700">หัว / ท้ายเอกสาร</h3>
+            <Field label="รูปแบบเอกสาร">
+              <select
+                className={inputCls}
+                value={layout.variant}
+                onChange={(e) => set('variant', e.target.value as QuotationVariant)}
+              >
+                {QUOTATION_VARIANTS.map((v) => (
+                  <option key={v.value} value={v.value}>
+                    {v.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="ชื่อเอกสาร">
                 <input className={inputCls} value={layout.documentTitle} onChange={(e) => set('documentTitle', e.target.value)} />
@@ -234,6 +249,27 @@ export default function TemplateDesigner({ id }: Props) {
               <input className={inputCls} value={layout.footerNote} onChange={(e) => set('footerNote', e.target.value)} />
             </Field>
           </section>
+
+          {layout.variant === 'ics-classic' && (
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-slate-700">ฟอร์ม ICS Classic</h3>
+              <Field label="ชื่อผู้เสนอราคา (ลงนาม)">
+                <input className={inputCls} value={layout.issuerName} onChange={(e) => set('issuerName', e.target.value)} />
+              </Field>
+              <Field label="กำหนดยืนราคา / Price Validity">
+                <input className={inputCls} value={layout.priceValidity} onChange={(e) => set('priceValidity', e.target.value)} />
+              </Field>
+              <Field label="กำหนดส่งของ / Delivery Period">
+                <input className={inputCls} value={layout.deliveryPeriod} onChange={(e) => set('deliveryPeriod', e.target.value)} />
+              </Field>
+              <Field label="การชำระเงิน / Payment Terms">
+                <input className={inputCls} value={layout.paymentTerms} onChange={(e) => set('paymentTerms', e.target.value)} />
+              </Field>
+              <p className="text-xs text-slate-400">
+                หัวคอลัมน์ในฟอร์มนี้แสดงสองภาษา — พิมพ์เป็น “ไทย / English” ในหัวข้อคอลัมน์ด้านล่าง
+              </p>
+            </section>
+          )}
 
           <section className="space-y-2">
             <h3 className="text-sm font-semibold text-slate-700">คอลัมน์ตารางรายการ</h3>
