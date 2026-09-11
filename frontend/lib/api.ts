@@ -8,8 +8,12 @@ import type {
 } from '@/types/apiGen';
 import type { UisGenProject, UisGenSitemapState } from '@/types/uisGen';
 import type {
+  CustomerInput,
+  ProductInput,
   Quotation,
+  QuotationCustomer,
   QuotationInput,
+  QuotationProduct,
   QuotationTemplate,
   TemplateInput,
 } from '@/types/quotation';
@@ -374,6 +378,26 @@ export const quotationsApi = {
   create: (data: QuotationInput) => api.post<Quotation>('/quotations', data),
   update: (id: number, data: QuotationInput) => api.put<Quotation>(`/quotations/${id}`, data),
   remove: (id: number) => api.delete(`/quotations/${id}`),
+};
+
+export const quotationCustomersApi = {
+  getAll: (q?: string) =>
+    api.get<QuotationCustomer[]>('/quotation-customers', { params: q ? { q } : undefined }),
+  getOne: (id: number) => api.get<QuotationCustomer>(`/quotation-customers/${id}`),
+  create: (data: CustomerInput) => api.post<QuotationCustomer>('/quotation-customers', data),
+  update: (id: number, data: CustomerInput) =>
+    api.put<QuotationCustomer>(`/quotation-customers/${id}`, data),
+  remove: (id: number) => api.delete(`/quotation-customers/${id}`),
+};
+
+export const quotationProductsApi = {
+  getAll: (q?: string) =>
+    api.get<QuotationProduct[]>('/quotation-products', { params: q ? { q } : undefined }),
+  getOne: (id: number) => api.get<QuotationProduct>(`/quotation-products/${id}`),
+  create: (data: ProductInput) => api.post<QuotationProduct>('/quotation-products', data),
+  update: (id: number, data: ProductInput) =>
+    api.put<QuotationProduct>(`/quotation-products/${id}`, data),
+  remove: (id: number) => api.delete(`/quotation-products/${id}`),
 };
 
 export default api;

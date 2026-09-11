@@ -2,11 +2,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { quotationsApi, quotationTemplatesApi } from '@/lib/api';
+import { quotationCustomersApi, quotationProductsApi, quotationsApi, quotationTemplatesApi } from '@/lib/api';
 import {
   type QuotationInput,
   type QuotationItem,
   type QuotationTemplate,
+  type QuotationCustomer,
+  type QuotationProduct,
   type PaperSize,
   type Orientation,
   DEFAULT_LAYOUT,
@@ -39,6 +41,15 @@ export default function QuotationEditor({ id }: Props) {
   const [showImport, setShowImport] = useState(false);
   const [printSize, setPrintSize] = useState<PaperSize | ''>('');
   const [printOrient, setPrintOrient] = useState<Orientation | ''>('');
+
+  const [customers, setCustomers] = useState<QuotationCustomer[]>([]);
+  const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+  const [savingCustomer, setSavingCustomer] = useState(false);
+  const [customerSaved, setCustomerSaved] = useState(false);
+
+  const [products, setProducts] = useState<QuotationProduct[]>([]);
+  const [openItemDropdown, setOpenItemDropdown] = useState<number | null>(null);
 
   const set = <K extends keyof QuotationInput>(k: K, v: QuotationInput[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -73,6 +84,77 @@ export default function QuotationEditor({ id }: Props) {
       .catch(() => router.push('/quotations'))
       .finally(() => setLoading(false));
   }, [id, router]);
+
+  useEffect(() => {
+    quotationCustomersApi
+      .getAll()
+      .then((r) => setCustomers(r.data))
+      .catch(() => {});
+    quotationProductsApi
+      .getAll()
+      .then((r) => setProducts(r.data))
+      .catch(() => {});
+  }, []);
+
+  // ถ้าชื่อลูกค้าในฟอร์มตรงกับ master เป๊ะ ๆ ให้ผูก selectedCustomerId ไว้ (เช่นตอนเปิดใบเก่า)
+  useEffect(() => {
+    const name = form.customerName?.trim();
+    if (!name || !customers.length) return;
+    const match = customers.find((c) => c.name === name);
+    setSelectedCustomerId(match ? match.id : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customers, currentId]);
+
+  const filteredCustomers = useMemo(() => {
+    const q = (form.customerName ?? '').trim().toLowerCase();
+    const list = q ? customers.filter((c) => c.name.toLowerCase().includes(q)) : customers;
+    return list.slice(0, 8);
+  }, [customers, form.customerName]);
+
+  function pickCustomer(c: QuotationCustomer) {
+    setForm((f) => ({
+      ...f,
+      customerName: c.name,
+      customerAddress: c.address,
+      customerPhone: c.phone,
+      customerEmail: c.email,
+      customerTaxId: c.taxId,
+    }));
+    setSelectedCustomerId(c.id);
+    setCustomerDropdownOpen(false);
+  }
+
+  async function saveCustomerToMaster() {
+    if (!form.customerName?.trim()) {
+      alert('กรุณาระบุชื่อลูกค้าก่อนบันทึก');
+      return;
+    }
+    setSavingCustomer(true);
+    try {
+      const payload = {
+        name: form.customerName,
+        address: form.customerAddress,
+        phone: form.customerPhone,
+        email: form.customerEmail,
+        taxId: form.customerTaxId,
+      };
+      const r = selectedCustomerId
+        ? await quotationCustomersApi.update(selectedCustomerId, payload)
+        : await quotationCustomersApi.create(payload);
+      setCustomers((cs) => {
+        const exists = cs.some((c) => c.id === r.data.id);
+        const next = exists ? cs.map((c) => (c.id === r.data.id ? r.data : c)) : [...cs, r.data];
+        return next.sort((a, b) => a.name.localeCompare(b.name));
+      });
+      setSelectedCustomerId(r.data.id);
+      setCustomerSaved(true);
+      setTimeout(() => setCustomerSaved(false), 2000);
+    } catch {
+      alert('บันทึกข้อมูลลูกค้าไม่สำเร็จ');
+    } finally {
+      setSavingCustomer(false);
+    }
+  }
 
   // เลือก template: ค่า form.templateId หรือ default
   const activeTemplate = useMemo(() => {
@@ -117,6 +199,17 @@ export default function QuotationEditor({ id }: Props) {
       [next[i], next[j]] = [next[j], next[i]];
       return { ...f, items: next };
     });
+  }
+
+  function filteredProducts(query: string) {
+    const q = query.trim().toLowerCase();
+    const list = q ? products.filter((p) => p.name.toLowerCase().includes(q)) : products;
+    return list.slice(0, 8);
+  }
+
+  function pickProduct(i: number, p: QuotationProduct) {
+    updateItem(i, { description: p.name, unit: p.unit, unitPrice: p.unitPrice });
+    setOpenItemDropdown(null);
   }
 
   async function save(): Promise<number | null> {
@@ -273,14 +366,52 @@ export default function QuotationEditor({ id }: Props) {
           </section>
 
           <section className="space-y-3">
-            <h3 className="text-sm font-semibold text-slate-700">ลูกค้า</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-700">ลูกค้า</h3>
+              <button
+                onClick={saveCustomerToMaster}
+                disabled={savingCustomer}
+                className="text-xs font-medium text-indigo-600 hover:text-indigo-800 disabled:opacity-40"
+                title="บันทึกข้อมูลลูกค้านี้ไว้ใช้เลือกซ้ำในครั้งถัดไป"
+              >
+                {customerSaved ? '✓ บันทึกแล้ว' : savingCustomer ? 'กำลังบันทึก…' : '💾 บันทึกลงข้อมูลลูกค้า'}
+              </button>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="ชื่อลูกค้า / บริษัท">
-                <input
-                  className={inputCls}
-                  value={form.customerName ?? ''}
-                  onChange={(e) => set('customerName', e.target.value)}
-                />
+                <div className="relative">
+                  <input
+                    className={inputCls}
+                    value={form.customerName ?? ''}
+                    onChange={(e) => {
+                      set('customerName', e.target.value);
+                      setSelectedCustomerId(null);
+                      setCustomerDropdownOpen(true);
+                    }}
+                    onFocus={() => setCustomerDropdownOpen(true)}
+                    onBlur={() => setTimeout(() => setCustomerDropdownOpen(false), 150)}
+                    placeholder="พิมพ์เพื่อค้นหาลูกค้าเดิม หรือกรอกชื่อใหม่"
+                  />
+                  {customerDropdownOpen && filteredCustomers.length > 0 && (
+                    <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto bg-white border border-slate-200 rounded-lg shadow-lg">
+                      {filteredCustomers.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onMouseDown={() => pickCustomer(c)}
+                          className="w-full text-left px-3 py-1.5 text-sm hover:bg-indigo-50"
+                        >
+                          <div className="font-medium text-slate-800">{c.name}</div>
+                          {(c.phone || c.email) && (
+                            <div className="text-xs text-slate-400">
+                              {[c.phone, c.email].filter(Boolean).join(' · ')}
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </Field>
               <Field label="เรียน (ผู้ติดต่อ)">
                 <input
@@ -353,12 +484,41 @@ export default function QuotationEditor({ id }: Props) {
                   <div className="flex items-start gap-2">
                     <span className="text-xs text-slate-400 pt-2 w-5 text-right">{i + 1}</span>
                     <div className="flex-1 space-y-2">
-                      <input
-                        className={inputCls}
-                        placeholder="รายละเอียด"
-                        value={it.description}
-                        onChange={(e) => updateItem(i, { description: e.target.value })}
-                      />
+                      <div className="relative">
+                        <input
+                          className={inputCls}
+                          placeholder="รายละเอียด (พิมพ์เพื่อค้นหาจากสินค้า/บริการ)"
+                          value={it.description}
+                          onChange={(e) => {
+                            updateItem(i, { description: e.target.value });
+                            setOpenItemDropdown(i);
+                          }}
+                          onFocus={() => setOpenItemDropdown(i)}
+                          onBlur={() =>
+                            setTimeout(
+                              () => setOpenItemDropdown((cur) => (cur === i ? null : cur)),
+                              150,
+                            )
+                          }
+                        />
+                        {openItemDropdown === i && filteredProducts(it.description).length > 0 && (
+                          <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto bg-white border border-slate-200 rounded-lg shadow-lg">
+                            {filteredProducts(it.description).map((p) => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onMouseDown={() => pickProduct(i, p)}
+                                className="w-full text-left px-3 py-1.5 text-sm hover:bg-indigo-50"
+                              >
+                                <div className="font-medium text-slate-800">{p.name}</div>
+                                <div className="text-xs text-slate-400">
+                                  {[p.unit, p.unitPrice ? formatMoney(p.unitPrice) : ''].filter(Boolean).join(' · ')}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       <div className="grid grid-cols-4 gap-2">
                         <input
                           className={inputCls}

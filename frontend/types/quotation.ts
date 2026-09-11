@@ -104,6 +104,44 @@ export interface Quotation {
 export type QuotationInput = Partial<Omit<Quotation, 'id' | 'createdAt' | 'updatedAt'>>;
 export type TemplateInput = { name?: string; isDefault?: boolean; layout?: Partial<QuotationLayout> };
 
+// ── ลูกค้า (master data) ──────────────────────────────────
+
+export interface QuotationCustomer {
+  id: number;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  taxId: string;
+  note: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CustomerInput = Partial<Omit<QuotationCustomer, 'id' | 'createdAt' | 'updatedAt'>>;
+
+export function emptyCustomer(): CustomerInput {
+  return { name: '', address: '', phone: '', email: '', taxId: '', note: '' };
+}
+
+// ── สินค้า/บริการ (master data) ────────────────────────────
+
+export interface QuotationProduct {
+  id: number;
+  name: string;
+  unit: string;
+  unitPrice: number;
+  note: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ProductInput = Partial<Omit<QuotationProduct, 'id' | 'createdAt' | 'updatedAt'>>;
+
+export function emptyProduct(): ProductInput {
+  return { name: '', unit: '', unitPrice: 0, note: '' };
+}
+
 // ── ค่าคงที่ ──────────────────────────────────────────────
 
 export const PAPER_SIZES: { value: PaperSize; label: string }[] = [

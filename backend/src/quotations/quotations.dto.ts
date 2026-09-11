@@ -50,3 +50,19 @@ export class SaveTemplateDto {
   @IsBoolean() @IsOptional() isDefault?: boolean;
   @IsOptional() layout?: Record<string, unknown>;
 }
+
+export class SaveCustomerDto {
+  @IsString() @IsOptional() name?: string;
+  @IsString() @IsOptional() address?: string;
+  @IsString() @IsOptional() phone?: string;
+  @IsString() @IsOptional() email?: string;
+  @IsString() @IsOptional() taxId?: string;
+  @IsString() @IsOptional() note?: string;
+}
+
+export class SaveProductDto {
+  @IsString() @IsOptional() name?: string;
+  @IsString() @IsOptional() unit?: string;
+  @IsNumber() @IsOptional() unitPrice?: number;
+  @IsString() @IsOptional() note?: string;
+}

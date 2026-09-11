@@ -53,6 +53,8 @@ ics-backoffice/
 | `ChatMessage` | `chat_messages` | |
 | `QuotationTemplate` | `quotation_templates` | มี `isDefault`; `layout` เป็น jsonb (บริษัท, สี, คอลัมน์, VAT, ขนาดกระดาษ) |
 | `Quotation` | `quotations` | `items` เป็น jsonb; totals คำนวณ client-side ด้วย `computeTotals()` |
+| `QuotationCustomer` | `quotation_customers` | master data ลูกค้า — ไม่มี FK กับ `Quotation` (เลือกมาเติมฟิลด์ตอนสร้างใบเท่านั้น, `Quotation` เก็บ snapshot ของตัวเองอยู่แล้ว) |
+| `QuotationProduct` | `quotation_products` | master data สินค้า/บริการ (ชื่อ, หน่วย, ราคา/หน่วย) — ไม่มี FK กับ `Quotation` เช่นกัน (`items` jsonb เก็บ snapshot ของแต่ละแถวเอง) |
 
 ## Development Commands
 
@@ -125,10 +127,13 @@ Sidebar ตรง "Documents" มีปุ่ม **"+"** สำหรับส�
 
 ## Quotation (ใบเสนอราคา)
 
-Sidebar เมนู **"Quotation"** (expandable) → sub-items: `ใบเสนอราคา` (`/quotations`), `แม่แบบ` (`/quotations/templates`)
+Sidebar เมนู **"Quotation"** (expandable) → sub-items: `ใบเสนอราคา` (`/quotations`), `ลูกค้า` (`/quotations/customers`), `สินค้า/บริการ` (`/quotations/products`), `แม่แบบ` (`/quotations/templates`)
 
-- **Backend**: `backend/src/quotations/` — 1 controller ครอบ 2 resource:
-  `GET/POST/PUT/DELETE /quotation-templates` + `PATCH /quotation-templates/:id/default`, และ `GET/POST/PUT/DELETE /quotations`
+- **Backend**: `backend/src/quotations/` — 1 controller ครอบ 4 resource:
+  `GET/POST/PUT/DELETE /quotation-templates` + `PATCH /quotation-templates/:id/default`, `GET/POST/PUT/DELETE /quotations`, `GET/POST/PUT/DELETE /quotation-customers`, และ `GET/POST/PUT/DELETE /quotation-products` (master data ลูกค้า/สินค้า-บริการ, `GET` ทั้งคู่รับ query `?q=` ค้นหาชื่อ)
+- **ลูกค้า (master data)**: หน้า `/quotations/customers` จัดการ CRUD เอง; ใน `QuotationEditor.tsx` ช่อง "ชื่อลูกค้า/บริษัท" เป็น autocomplete ดึงจาก `quotationCustomersApi` — เลือกแล้วเติมฟิลด์ที่อยู่/เบอร์/อีเมล/เลขภาษีให้อัตโนมัติ, ปุ่ม "บันทึกลงข้อมูลลูกค้า" ใน editor ใช้ upsert (อัปเดตถ้าเคยเลือก/พิมพ์ตรงชื่อเดิม ไม่งั้นสร้างใหม่)
+- **สินค้า/บริการ (master data)**: หน้า `/quotations/products` จัดการ CRUD เอง (ชื่อรายการ, หน่วย, ราคา/หน่วย); ใน `QuotationEditor.tsx` แต่ละแถว "รายการ" ช่องรายละเอียดเป็น autocomplete ดึงจาก `quotationProductsApi` — เลือกแล้วเติมหน่วย+ราคา/หน่วยให้อัตโนมัติ (จำนวน/ส่วนลดยังกรอกเองต่อใบ)
+- ทั้งสอง master data ไม่ผูก FK กับ `Quotation` เพราะใบเสนอราคาเก็บ snapshot ข้อมูลของตัวเอง (`customerName` ฯลฯ และ `items` jsonb) อยู่แล้ว — แก้ไข master ภายหลังจะไม่กระทบใบเก่า
 - **Auto-seed**: `GET /quotation-templates` ครั้งแรกสร้าง "แม่แบบมาตรฐาน" (`isDefault: true`) ให้อัตโนมัติ
 - **Default template**: มีได้ตัวเดียว — `setDefault()` ใช้ query builder (`update({},…)` ของ TypeORM ห้าม criteria ว่าง)
 - **เลขที่**: เว้นว่าง `quotationNo` → ออกอัตโนมัติ `QT<YYYY><MM>-<seq>`

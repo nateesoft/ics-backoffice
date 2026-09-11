@@ -9,11 +9,12 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { QuotationsService } from './quotations.service';
-import { SaveQuotationDto, SaveTemplateDto } from './quotations.dto';
+import { SaveCustomerDto, SaveProductDto, SaveQuotationDto, SaveTemplateDto } from './quotations.dto';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -77,5 +78,59 @@ export class QuotationsController {
   @HttpCode(204)
   removeQuotation(@Param('id', ParseIntPipe) id: number) {
     return this.svc.removeQuotation(id);
+  }
+
+  // ── Customers (master data) ──
+  @Get('quotation-customers')
+  getCustomers(@Query('q') q?: string) {
+    return this.svc.getCustomers(q);
+  }
+
+  @Get('quotation-customers/:id')
+  getCustomer(@Param('id', ParseIntPipe) id: number) {
+    return this.svc.getCustomer(id);
+  }
+
+  @Post('quotation-customers')
+  createCustomer(@Body() dto: SaveCustomerDto) {
+    return this.svc.createCustomer(dto);
+  }
+
+  @Put('quotation-customers/:id')
+  updateCustomer(@Param('id', ParseIntPipe) id: number, @Body() dto: SaveCustomerDto) {
+    return this.svc.updateCustomer(id, dto);
+  }
+
+  @Delete('quotation-customers/:id')
+  @HttpCode(204)
+  removeCustomer(@Param('id', ParseIntPipe) id: number) {
+    return this.svc.removeCustomer(id);
+  }
+
+  // ── Products / Services (master data) ──
+  @Get('quotation-products')
+  getProducts(@Query('q') q?: string) {
+    return this.svc.getProducts(q);
+  }
+
+  @Get('quotation-products/:id')
+  getProduct(@Param('id', ParseIntPipe) id: number) {
+    return this.svc.getProduct(id);
+  }
+
+  @Post('quotation-products')
+  createProduct(@Body() dto: SaveProductDto) {
+    return this.svc.createProduct(dto);
+  }
+
+  @Put('quotation-products/:id')
+  updateProduct(@Param('id', ParseIntPipe) id: number, @Body() dto: SaveProductDto) {
+    return this.svc.updateProduct(id, dto);
+  }
+
+  @Delete('quotation-products/:id')
+  @HttpCode(204)
+  removeProduct(@Param('id', ParseIntPipe) id: number) {
+    return this.svc.removeProduct(id);
   }
 }

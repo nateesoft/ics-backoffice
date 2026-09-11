@@ -57,6 +57,8 @@ import { Contact } from './entities/contact.entity';
 import { QuotationsModule } from './quotations/quotations.module';
 import { QuotationTemplate } from './entities/quotation-template.entity';
 import { Quotation } from './entities/quotation.entity';
+import { QuotationCustomer } from './entities/quotation-customer.entity';
+import { QuotationProduct } from './entities/quotation-product.entity';
 
 @Module({
   imports: [
@@ -66,7 +68,7 @@ import { Quotation } from './entities/quotation.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply, Collection, RecordEntity, CustomEndpoint, UisGenProject, UisGenSitemap, UisGenDeployment, UisGenActorCredential, Contact, QuotationTemplate, Quotation],
+        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply, Collection, RecordEntity, CustomEndpoint, UisGenProject, UisGenSitemap, UisGenDeployment, UisGenActorCredential, Contact, QuotationTemplate, Quotation, QuotationCustomer, QuotationProduct],
         synchronize: true,
         timezone: '+07:00',
       }),

@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { QuotationTemplate, QuotationLayout } from '../entities/quotation-template.entity';
 import { Quotation } from '../entities/quotation.entity';
-import { SaveQuotationDto, SaveTemplateDto } from './quotations.dto';
+import { QuotationCustomer } from '../entities/quotation-customer.entity';
+import { QuotationProduct } from '../entities/quotation-product.entity';
+import { SaveCustomerDto, SaveProductDto, SaveQuotationDto, SaveTemplateDto } from './quotations.dto';
 
 export const DEFAULT_LAYOUT: QuotationLayout = {
   variant: 'standard',
@@ -84,6 +86,8 @@ export class QuotationsService {
   constructor(
     @InjectRepository(QuotationTemplate) private templates: Repository<QuotationTemplate>,
     @InjectRepository(Quotation) private quotations: Repository<Quotation>,
+    @InjectRepository(QuotationCustomer) private customers: Repository<QuotationCustomer>,
+    @InjectRepository(QuotationProduct) private products: Repository<QuotationProduct>,
   ) {}
 
   // ── Templates ─────────────────────────────────────────────
@@ -220,5 +224,105 @@ export class QuotationsService {
       .where('q.quotationNo LIKE :p', { p: `${prefix}%` })
       .getCount();
     return `${prefix}-${String(count + 1).padStart(3, '0')}`;
+  }
+
+  // ── Customers (master data) ─────────────────────────────────
+
+  getCustomers(q?: string) {
+    if (q?.trim()) {
+      return this.customers
+        .createQueryBuilder('c')
+        .where('c.name ILIKE :q', { q: `%${q.trim()}%` })
+        .orderBy('c.name', 'ASC')
+        .getMany();
+    }
+    return this.customers.find({ order: { name: 'ASC' } });
+  }
+
+  async getCustomer(id: number) {
+    const c = await this.customers.findOne({ where: { id } });
+    if (!c) throw new NotFoundException('ไม่พบลูกค้า');
+    return c;
+  }
+
+  createCustomer(dto: SaveCustomerDto) {
+    const name = dto.name?.trim();
+    if (!name) throw new BadRequestException('กรุณาระบุชื่อลูกค้า');
+    return this.customers.save({
+      name,
+      address: dto.address?.trim() ?? '',
+      phone: dto.phone?.trim() ?? '',
+      email: dto.email?.trim() ?? '',
+      taxId: dto.taxId?.trim() ?? '',
+      note: dto.note?.trim() ?? '',
+    });
+  }
+
+  async updateCustomer(id: number, dto: SaveCustomerDto) {
+    const c = await this.getCustomer(id);
+    if (dto.name !== undefined) {
+      const name = dto.name.trim();
+      if (!name) throw new BadRequestException('กรุณาระบุชื่อลูกค้า');
+      c.name = name;
+    }
+    if (dto.address !== undefined) c.address = dto.address.trim();
+    if (dto.phone !== undefined) c.phone = dto.phone.trim();
+    if (dto.email !== undefined) c.email = dto.email.trim();
+    if (dto.taxId !== undefined) c.taxId = dto.taxId.trim();
+    if (dto.note !== undefined) c.note = dto.note.trim();
+    return this.customers.save(c);
+  }
+
+  async removeCustomer(id: number) {
+    await this.getCustomer(id);
+    await this.customers.delete(id);
+  }
+
+  // ── Products / Services (master data) ───────────────────────
+
+  getProducts(q?: string) {
+    if (q?.trim()) {
+      return this.products
+        .createQueryBuilder('p')
+        .where('p.name ILIKE :q', { q: `%${q.trim()}%` })
+        .orderBy('p.name', 'ASC')
+        .getMany();
+    }
+    return this.products.find({ order: { name: 'ASC' } });
+  }
+
+  async getProduct(id: number) {
+    const p = await this.products.findOne({ where: { id } });
+    if (!p) throw new NotFoundException('ไม่พบสินค้า/บริการ');
+    return p;
+  }
+
+  createProduct(dto: SaveProductDto) {
+    const name = dto.name?.trim();
+    if (!name) throw new BadRequestException('กรุณาระบุชื่อสินค้า/บริการ');
+    return this.products.save({
+      name,
+      unit: dto.unit?.trim() ?? '',
+      unitPrice: Number(dto.unitPrice) || 0,
+      note: dto.note?.trim() ?? '',
+    });
+  }
+
+  async updateProduct(id: number, dto: SaveProductDto) {
+    const p = await this.getProduct(id);
+    if (dto.name !== undefined) {
+      const name = dto.name.trim();
+      if (!name) throw new BadRequestException('กรุณาระบุชื่อสินค้า/บริการ');
+      p.name = name;
+    }
+    if (dto.unit !== undefined) p.unit = dto.unit.trim();
+    if (dto.unitPrice !== undefined) p.unitPrice = Number(dto.unitPrice) || 0;
+    if (dto.note !== undefined) p.note = dto.note.trim();
+    return this.products.save(p);
+  }
+
+  async removeProduct(id: number) {
+    await this.getProduct(id);
+    await this.products.delete(id);
   }
 }

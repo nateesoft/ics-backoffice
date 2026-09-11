@@ -142,6 +142,8 @@ const apisGenSubItems = [
 
 const quotationSubItems = [
   { href: '/quotations', label: 'ใบเสนอราคา' },
+  { href: '/quotations/customers', label: 'ลูกค้า' },
+  { href: '/quotations/products', label: 'สินค้า/บริการ' },
   { href: '/quotations/templates', label: 'แม่แบบ' },
 ];
 
