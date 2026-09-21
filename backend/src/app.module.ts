@@ -59,6 +59,10 @@ import { QuotationTemplate } from './entities/quotation-template.entity';
 import { Quotation } from './entities/quotation.entity';
 import { QuotationCustomer } from './entities/quotation-customer.entity';
 import { QuotationProduct } from './entities/quotation-product.entity';
+import { ExpensesModule } from './expenses/expenses.module';
+import { Expense } from './entities/expense.entity';
+import { ExpenseAttachment } from './entities/expense-attachment.entity';
+import { ExpenseCategory } from './entities/expense-category.entity';
 
 @Module({
   imports: [
@@ -68,7 +72,7 @@ import { QuotationProduct } from './entities/quotation-product.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply, Collection, RecordEntity, CustomEndpoint, UisGenProject, UisGenSitemap, UisGenDeployment, UisGenActorCredential, Contact, QuotationTemplate, Quotation, QuotationCustomer, QuotationProduct],
+        entities: [User, Issue, IssueAttachment, Document, DocumentAttachment, DocumentFolder, Note, IssueComment, CommentAttachment, CommentReaction, IssueHistory, Notification, ChatMessage, PushSubscription, DocumentComment, DocumentCommentReaction, ProjectPlan, ProjectPhase, NoteReaction, NoteReply, Collection, RecordEntity, CustomEndpoint, UisGenProject, UisGenSitemap, UisGenDeployment, UisGenActorCredential, Contact, QuotationTemplate, Quotation, QuotationCustomer, QuotationProduct, Expense, ExpenseAttachment, ExpenseCategory],
         synchronize: true,
         timezone: '+07:00',
       }),
@@ -102,6 +106,7 @@ import { QuotationProduct } from './entities/quotation-product.entity';
     DeployModule,
     ContactsModule,
     QuotationsModule,
+    ExpensesModule,
   ],
 })
 export class AppModule {}

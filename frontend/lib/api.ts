@@ -17,6 +17,14 @@ import type {
   QuotationTemplate,
   TemplateInput,
 } from '@/types/quotation';
+import type {
+  Expense,
+  ExpenseAttachment,
+  ExpenseCategory,
+  ExpenseCategoryInput,
+  ExpenseInput,
+  ExpenseSummary,
+} from '@/types/expense';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/ics-backoffice/api';
 
@@ -398,6 +406,35 @@ export const quotationProductsApi = {
   update: (id: number, data: ProductInput) =>
     api.put<QuotationProduct>(`/quotation-products/${id}`, data),
   remove: (id: number) => api.delete(`/quotation-products/${id}`),
+};
+
+export const expenseCategoriesApi = {
+  getAll: () => api.get<ExpenseCategory[]>('/expense-categories'),
+  create: (data: ExpenseCategoryInput) => api.post<ExpenseCategory>('/expense-categories', data),
+  update: (id: number, data: ExpenseCategoryInput) =>
+    api.put<ExpenseCategory>(`/expense-categories/${id}`, data),
+  remove: (id: number) => api.delete(`/expense-categories/${id}`),
+};
+
+export const expensesApi = {
+  getAll: (params?: { from?: string; to?: string; categoryId?: number }) =>
+    api.get<Expense[]>('/expenses', { params }),
+  getOne: (id: number) => api.get<Expense>(`/expenses/${id}`),
+  getSummary: (date: string) => api.get<ExpenseSummary>('/expenses/summary', { params: { date } }),
+  create: (data: ExpenseInput) => api.post<Expense>('/expenses', data),
+  update: (id: number, data: ExpenseInput) => api.put<Expense>(`/expenses/${id}`, data),
+  remove: (id: number) => api.delete(`/expenses/${id}`),
+  uploadAttachment: (expenseId: number, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post<ExpenseAttachment>(`/expenses/${expenseId}/attachments`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  removeAttachment: (expenseId: number, id: number) =>
+    api.delete(`/expenses/${expenseId}/attachments/${id}`),
+  downloadUrl: (expenseId: number, id: number) =>
+    `${api.defaults.baseURL}/expenses/${expenseId}/attachments/${id}/download`,
 };
 
 export default api;
